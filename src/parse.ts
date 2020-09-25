@@ -2,8 +2,6 @@ import {
     LxNode,
     LxParseArg,
     LxNodeType,
-    LxError,
-    LxParseError,
     LxLocation,
     LxParseOptions,
     LxParseResult,
@@ -25,24 +23,11 @@ import {
 } from "./message";
 
 const RexSpace = /\s/g;
-class LxErrorImpl extends Error implements LxError {
-    lxCol: number;
-    lxLine: number;
-    constructor(line: number, col: number, ...args) {
-        super(...args);
-        this.lxLine = line;
-        this.lxCol = col;
-    }
-    toJSON(): LxParseError {
-        return {
-            message: this.message,
-            line: this.lxLine,
-            col: this.lxCol,
-        };
-    }
-}
 const throwError = (message: string, line: number, col: number) => {
-    throw new LxErrorImpl(line, col, message);
+    const err = new Error(message);
+    err["line"] = line;
+    err["col"] = line;
+    throw err;
 };
 
 export const firstAfterCharsIndex = (
@@ -631,9 +616,14 @@ export const parseResultToJSON = (
     parseResult: LxParseResult,
     options?: LxToJSONOptions
 ): LxParseResultJSON => {
-    const res: LxParseResultJSON = {
-        error: parseResult.error,
-    };
+    const res: LxParseResultJSON = {};
+    if (parseResult.error) {
+        res.error = {
+            message: parseResult.error.message,
+            line: parseResult.error.line,
+            col: parseResult.error.col,
+        };
+    }
     pick("maxLine", res, parseResult, options);
     pick("maxCol", res, parseResult, options);
     pick("xml", res, parseResult, options);

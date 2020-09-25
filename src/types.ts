@@ -4,13 +4,6 @@ export enum LxNodeType {
     text = "text",
     attr = "attr",
 }
-
-export interface LxError extends Error {
-    lxLine: number;
-    lxCol: number;
-    toJSON(): LxParseError;
-}
-
 export interface LxParseArg {
     index: number;
     xmlLength: number;

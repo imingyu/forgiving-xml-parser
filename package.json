@@ -1,0 +1,53 @@
+{
+    "name": "loose-xml-parser",
+    "version": "1.0.0",
+    "description": "语法松散的xml ast解析器",
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "dependencies": {},
+    "devDependencies": {
+        "@babel/core": "^7.11.1",
+        "@babel/preset-env": "^7.11.0",
+        "@babel/preset-typescript": "^7.10.4",
+        "@rollup/plugin-babel": "^5.1.0",
+        "@rollup/plugin-replace": "^2.3.3",
+        "@rollup/plugin-typescript": "^5.0.2",
+        "chai": "^4.2.0",
+        "fse": "^4.0.1",
+        "mocha": "^8.1.1",
+        "rollup": "^2.23.0",
+        "rollup-plugin-uglify": "^6.0.4",
+        "tslib": "^2.0.1",
+        "typescript": "^3.9.7"
+    },
+    "scripts": {
+        "build": "tsc --emitDeclarationOnly && node build/build.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/imingyu/loose-xml-parser.git"
+    },
+    "keywords": [
+        "loose-xml-parser",
+        "xml-parser",
+        "parse-xml",
+        "xml-to-json",
+        "xml2json",
+        "parser",
+        "parse",
+        "parseXML",
+        "xml2js",
+        "xml-to-js",
+        "js2xml",
+        "js-to-xml",
+        "json2xml",
+        "json-to-xml"
+    ],
+    "author": "imingyu <mingyuhisoft@163.com>",
+    "license": "BSD-3-Clause",
+    "bugs": {
+        "url": "https://github.com/imingyu/loose-xml-parser/issues"
+    },
+    "homepage": "https://github.com/imingyu/loose-xml-parser#readme"
+}
