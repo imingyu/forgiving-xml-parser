@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "declaration": true,
+        "lib": ["ES2015"]
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist", "*.d.ts"]
+}
