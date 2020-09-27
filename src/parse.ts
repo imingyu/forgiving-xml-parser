@@ -7,7 +7,7 @@ import {
     LxParseResult,
     LxParseResultJSON,
     LxToJSONOptions,
-    LxNodeJSON,
+    LxParseAttrTarget,
 } from "./types";
 import {
     TAG_NOT_CLOSE,
@@ -21,107 +21,25 @@ import {
     ATTR_IS_WRONG,
     TAG_NAME_NOT_EQUAL,
 } from "./message";
+import {
+    pick,
+    nodeToJSON,
+    plusArgNumber,
+    lxWrongToJSON,
+    pushElement,
+    addWarn,
+    throwError,
+    fireEvent,
+    checkLineBreak,
+} from "./util";
 
 const RexSpace = /\s/g;
-const throwError = (message: string, line: number, col: number) => {
-    const err = new Error(message);
-    err["line"] = line;
-    err["col"] = line;
-    throw err;
-};
-
-export const firstAfterCharsIndex = (
-    afterIndex: number,
-    chars: string,
-    str: string
-): number => {
-    const index = str.substr(afterIndex + 1).indexOf(chars);
-    if (index === -1) {
-        return index;
-    }
-    return afterIndex + index;
-};
-
-export const firstNoMatchIndex = (
-    afterIndex: number,
-    char: string | RegExp,
-    str: string
-): number => {
-    str = str.substr(afterIndex + 1);
-    if (!str) {
-        return -1;
-    }
-    for (let index = 0, len = str.length; index < len; index++) {
-        if (
-            (typeof char === "string" && str[index] !== char) ||
-            (char instanceof RegExp && !char.test(str[index]))
-        ) {
-            return afterIndex + 1 + index;
-        }
-    }
-    return -1;
-};
-
-// 标签头部是否闭合，<node name="sdf" 缺少“>”即表示未闭合
-const nodeIsClose = (node: LxNode): boolean => {
-    return (
-        node.selfcloseing ||
-        !!(node.locationInfo.startTag && node.locationInfo.endTag)
-    );
-};
-
-const pushElement = (node: LxNode, arg: LxParseArg) => {
-    if (arg.currentNode && arg.currentNode.type === LxNodeType.element) {
-        if (!arg.currentNode.children) {
-            arg.currentNode.children = [];
-        }
-        arg.currentNode.children.push(node);
-        node.parent = arg.currentNode;
-        if (
-            node.type === LxNodeType.text ||
-            (node.type === LxNodeType.element && !nodeIsClose(node))
-        ) {
-            arg.currentNode = node;
-        }
-        return;
-    }
-    if (
-        node.type === LxNodeType.text ||
-        (node.type === LxNodeType.element && !nodeIsClose(node))
-    ) {
-        arg.currentNode = node;
-    }
-    arg.nodes.push(node);
-};
-const plusArgNumber = (
-    arg: LxParseArg,
-    index?: number,
-    linePlus?: number,
-    colPlus?: number
-) => {
-    if (index) {
-        arg.index += index;
-    }
-    if (linePlus) {
-        arg.line += linePlus;
-    }
-    if (colPlus) {
-        arg.col += colPlus;
-        arg.col = Math.abs(arg.col);
-    }
-    if (linePlus || colPlus) {
-        arg.maxLine = arg.line;
-        if (arg.maxCol < arg.col) {
-            arg.maxCol = arg.col;
-        }
-    }
-};
-
 const parseStartTag = (startIndex: number, arg: LxParseArg) => {
     const { xml, xmlLength } = arg;
     let selfCloseing;
     let isComment;
     let tagName = "";
+    let startTagClosed;
     const startTag: LxLocation = {
         startLine: arg.line,
         startCol: arg.col,
@@ -148,18 +66,18 @@ const parseStartTag = (startIndex: number, arg: LxParseArg) => {
                     startCol: arg.col,
                     startOffset: arg.index,
                 };
-                plusArgNumber(arg, 3, 0, 2);
+                plusArgNumber(arg, 3, 0, 3);
                 endTag.endLine = arg.line;
                 endTag.endCol = arg.col;
                 endTag.endOffset = arg.index;
                 break;
             }
             tagName += char;
-            if (char === "\n") {
-                plusArgNumber(arg, 0, 1, -arg.col);
+            if (checkLineBreak(arg)) {
+                plusArgNumber(arg, 0, 1, -(arg.col + 1));
             }
             if (arg.index === xmlLength - 1) {
-                return throwError(TAG_NOT_CLOSE, arg.line, arg.col);
+                throwError(TAG_NOT_CLOSE, arg);
             }
         } else {
             if (RexSpace.test(char)) {
@@ -167,49 +85,44 @@ const parseStartTag = (startIndex: number, arg: LxParseArg) => {
                     break;
                 }
                 if (!arg.options || !arg.options.ignoreNearTagNameSpace) {
-                    return throwError(
-                        TAG_BOUNDARY_CHAR_HAS_SPACE,
-                        arg.line,
-                        arg.col
-                    );
+                    throwError(TAG_BOUNDARY_CHAR_HAS_SPACE, arg);
                 }
-                if (char === "\n") {
-                    plusArgNumber(arg, 0, 1, -arg.col);
+                if (checkLineBreak(arg)) {
+                    plusArgNumber(arg, 0, 1, -(arg.col + 1));
                 }
                 if (arg.index === xmlLength - 1) {
-                    return throwError(TAG_NAME_IS_EMPTY, arg.line, arg.col);
+                    throwError(TAG_NAME_IS_EMPTY, arg);
                 }
             }
             if (char === "<") {
-                return throwError(
-                    TAG_HAS_MORE_BOUNDARY_CHAR,
-                    arg.line,
-                    arg.col
-                );
+                throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
             }
             if (char === ">") {
                 startTag.endLine = arg.line;
                 startTag.endCol = arg.col;
                 startTag.endOffset = arg.index;
+                startTagClosed = true;
+                plusArgNumber(arg, 0, 0, 1);
                 break;
             }
             if (char === "/" && xml[arg.index + 1] === ">") {
                 selfCloseing = true;
+                plusArgNumber(arg, 1, 0, 2);
                 startTag.endLine = arg.line;
                 startTag.endCol = arg.col;
                 startTag.endOffset = arg.index;
-                plusArgNumber(arg, 1, 0, 1);
                 break;
             }
             if (arg.index === xmlLength - 1) {
-                return throwError(TAG_NOT_CLOSE, arg.line, arg.col);
+                throwError(TAG_NOT_CLOSE, arg);
             }
             tagName += char;
         }
     }
     if (!isComment && !tagName) {
-        return throwError(
+        throwError(
             TAG_NAME_IS_EMPTY,
+            arg,
             startTag.startLine,
             startTag.startCol
         );
@@ -239,14 +152,16 @@ const parseStartTag = (startIndex: number, arg: LxParseArg) => {
         startTag.endOffset = node.locationInfo.endOffset = startTag.endOffset;
         return pushElement(node, arg);
     }
-    const attrs = parseAttrs(arg, node);
-    if (attrs.length) {
-        node.attrs = attrs;
-        node.locationInfo.attrs = {};
-        attrs.forEach((attr) => {
-            attr.parent = node;
-            node.locationInfo.attrs[attr.name] = attr.locationInfo;
-        });
+    if (!startTagClosed) {
+        const attrs = parseAttrs(arg, node);
+        if (attrs.length) {
+            node.attrs = attrs;
+            node.locationInfo.attrs = {};
+            attrs.forEach((attr) => {
+                attr.parent = node;
+                node.locationInfo.attrs[attr.name] = attr.locationInfo;
+            });
+        }
     }
     return pushElement(node, arg);
 };
@@ -264,7 +179,7 @@ const parseEndTag = (startIndex: number, arg: LxParseArg) => {
         plusArgNumber(arg, 0, 0, 1);
         const char = xml[arg.index];
         if (char === "<") {
-            return throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg.line, arg.col);
+            throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
         }
         if (char === ">") {
             if (value !== arg.currentNode.name) {
@@ -276,7 +191,13 @@ const parseEndTag = (startIndex: number, arg: LxParseArg) => {
                             arg.currentNode.name.toLowerCase()
                     )
                 ) {
-                    return throwError(TAG_NAME_NOT_EQUAL, arg.line, arg.col);
+                    throwError(
+                        TAG_NAME_NOT_EQUAL,
+                        arg,
+                        arg.line,
+                        arg.col,
+                        `start-tag=<${arg.currentNode.name}>, end-tag=</${value}>`
+                    );
                 }
             }
             arg.currentNode.locationInfo.endOffset = endTag.endOffset =
@@ -289,6 +210,7 @@ const parseEndTag = (startIndex: number, arg: LxParseArg) => {
             } else {
                 delete arg.currentNode;
             }
+            plusArgNumber(arg, 0, 0, 1);
             break;
         }
         if (char !== "/") {
@@ -296,13 +218,6 @@ const parseEndTag = (startIndex: number, arg: LxParseArg) => {
         }
     }
 };
-
-enum LxParseAttrTarget {
-    name = "name",
-    equal = "equal",
-    leftBoundary = "leftBoundary",
-    content = "content",
-}
 
 const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     const { xml, xmlLength } = arg;
@@ -315,7 +230,7 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     for (; arg.index < xmlLength; arg.index++) {
         arg.col++;
         const char = xml[arg.index];
-        if (char === "\n") {
+        if (checkLineBreak(arg)) {
             if (findTarget === LxParseAttrTarget.name && value) {
                 currentAttr.name = value;
                 currentAttr.locationInfo.endOffset = arg.index;
@@ -323,13 +238,13 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
                 currentAttr.locationInfo.endCol = arg.col;
                 value = undefined;
                 findTarget = LxParseAttrTarget.equal;
-                plusArgNumber(arg, 0, 1, -arg.col);
+                plusArgNumber(arg, 0, 1, -(arg.col + 1));
                 continue;
             }
             if (findTarget === LxParseAttrTarget.content) {
-                return throwError(ATTR_CONTENT_HAS_BR, arg.line, arg.col);
+                throwError(ATTR_CONTENT_HAS_BR, arg);
             }
-            plusArgNumber(arg, 0, 1, -arg.col);
+            plusArgNumber(arg, 0, 1, -(arg.col + 1));
             continue;
         }
         if (RexSpace.test(char)) {
@@ -377,7 +292,7 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
         if (char === "=") {
             if (findTarget === LxParseAttrTarget.name) {
                 if (!value) {
-                    return throwError(ATTR_NAME_IS_EMPTY, arg.line, arg.col);
+                    throwError(ATTR_NAME_IS_EMPTY, arg);
                 }
                 currentAttr.name = value;
                 currentAttr.locationInfo.endOffset = arg.index;
@@ -392,15 +307,15 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
                 continue;
             }
             if (findTarget === LxParseAttrTarget.leftBoundary) {
-                return throwError(ATTR_HAS_MORE_EQUAL, arg.line, arg.col);
+                throwError(ATTR_HAS_MORE_EQUAL, arg);
             }
         }
         if (char === "'" || char === '"') {
             if (findTarget === LxParseAttrTarget.name) {
-                return throwError(ATTR_NAME_IS_WRONG, arg.line, arg.col);
+                throwError(ATTR_NAME_IS_WRONG, arg);
             }
             if (findTarget === LxParseAttrTarget.equal) {
-                return throwError(ATTR_IS_WRONG, arg.line, arg.col);
+                throwError(ATTR_IS_WRONG, arg);
             }
             if (findTarget === LxParseAttrTarget.leftBoundary) {
                 currentAttr.hasQuotationMarks = true;
@@ -425,10 +340,12 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
                 element.locationInfo.startTag.endOffset = arg.index;
                 element.locationInfo.startTag.endLine = arg.line;
                 element.locationInfo.startTag.endCol = arg.col;
+                plusArgNumber(arg, 0, 0, 1);
                 break;
             }
         }
         if (char === "/" && xml[arg.index + 1] === ">" && !findTarget) {
+            plusArgNumber(arg, 1, 0, 2);
             element.locationInfo.startTag.endOffset = arg.index;
             element.locationInfo.startTag.endLine = arg.line;
             element.locationInfo.startTag.endCol = arg.col;
@@ -436,7 +353,6 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
             element.locationInfo.endOffset = arg.index;
             element.locationInfo.endLine = arg.line;
             element.locationInfo.endCol = arg.col;
-            plusArgNumber(arg, 1, 0, 1);
             break;
         }
         if (
@@ -474,6 +390,9 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
 const loopParse = (arg: LxParseArg): LxParseArg => {
     const { xml, xmlLength } = arg;
     for (; arg.index < xmlLength; arg.index++) {
+        if (!arg.maxLine) {
+            arg.maxLine = 1;
+        }
         const char = xml[arg.index];
         if (char === "<") {
             if (!arg.currentNode) {
@@ -519,7 +438,7 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
                 },
                 arg
             );
-            if (char === "\n") {
+            if (checkLineBreak(arg)) {
                 plusArgNumber(arg, 0, 1, -(arg.col + 1));
             } else {
                 plusArgNumber(arg, 0, 0, 1);
@@ -537,27 +456,25 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
                 },
             };
             pushElement(node, arg);
-            if (char === "\n") {
+            if (checkLineBreak(arg)) {
                 plusArgNumber(arg, 0, 1, -(arg.col + 1));
             } else {
                 plusArgNumber(arg, 0, 0, 1);
             }
             continue;
         }
-
+        plusArgNumber(arg, 0, 0, 1);
         arg.currentNode.content += char;
     }
     return arg;
 };
 
 export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
-    const xmlRows = xml.split("\n");
     const arg = {
         index: 0,
         xmlLength: xml.length,
         xml,
-        xmlRows,
-        maxLine: xmlRows.length,
+        maxLine: 0,
         maxCol: 0,
         line: 1,
         col: 1,
@@ -568,7 +485,6 @@ export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
         loopParse(arg);
         return {
             xml,
-            xmlRows,
             maxLine: arg.maxLine,
             maxCol: arg.maxCol,
             nodes: arg.nodes,
@@ -577,39 +493,8 @@ export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
         return {
             error,
             xml,
-            xmlRows,
         } as LxParseResult;
     }
-};
-
-const pick = (
-    prop: string,
-    res: LxParseResultJSON,
-    parseResult: LxParseResult,
-    options?: LxToJSONOptions
-) => {
-    if (options && options[prop]) {
-        res[prop] = parseResult[prop];
-    }
-};
-const nodeToJSON = (node: LxNode, needLocation: boolean): LxNodeJSON => {
-    const res = {} as LxNodeJSON;
-    for (let prop in node) {
-        if (prop !== "parent") {
-            if (prop !== "locationInfo") {
-                if (prop === "attrs" || prop === "children") {
-                    res[prop] = node[prop].map((item) =>
-                        nodeToJSON(item, needLocation)
-                    );
-                } else {
-                    res[prop] = node[prop];
-                }
-            } else if (needLocation) {
-                res[prop] = JSON.parse(JSON.stringify(node[prop]));
-            }
-        }
-    }
-    return res;
 };
 
 export const parseResultToJSON = (
@@ -618,16 +503,14 @@ export const parseResultToJSON = (
 ): LxParseResultJSON => {
     const res: LxParseResultJSON = {};
     if (parseResult.error) {
-        res.error = {
-            message: parseResult.error.message,
-            line: parseResult.error.line,
-            col: parseResult.error.col,
-        };
+        res.error = lxWrongToJSON(parseResult.error);
+    }
+    if (parseResult.warnings) {
+        res.warnings = parseResult.warnings.map((item) => lxWrongToJSON(item));
     }
     pick("maxLine", res, parseResult, options);
     pick("maxCol", res, parseResult, options);
     pick("xml", res, parseResult, options);
-    pick("xmlRows", res, parseResult, options);
     if (!parseResult.error) {
         res.nodes = parseResult.nodes.map((node) =>
             nodeToJSON(node, !!(options && options.locationInfo))

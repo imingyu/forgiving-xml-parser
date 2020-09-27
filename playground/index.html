@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>loose-xml-parser</title>
+        <link
+            rel="stylesheet"
+            data-name="vs/editor/editor.main"
+            href="./node_modules/monaco-editor/min/vs/editor/editor.main.css"
+        />
+        <style>
+            body {
+                padding: 0;
+            }
+            h3 {
+                margin-top: 0;
+            }
+            .container {
+                width: 80%;
+                margin: 20px auto;
+                display: flex;
+            }
+            .text-container {
+                flex: 1;
+                margin-left: 20px;
+            }
+            .text-editor {
+                display: block;
+                box-sizing: border-box;
+                width: 100%;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
+                min-height: 700px;
+            }
+            .select-platform {
+                height: 50px;
+                line-height: 50px;
+                border: 1px solid #ccc;
+                border-radius: 10px;
+                margin-top: 15px;
+                padding: 0 20px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            .btn-action {
+                width: 160px;
+                height: 50px;
+                line-height: 50px;
+                background: none;
+                border: none;
+                border-radius: 8px;
+                background-image: linear-gradient(180deg, #5a52fd, #665ff3);
+                color: #fff;
+                font-size: 14px;
+                float: right;
+                margin-top: 15px;
+            }
+            .btn-action:focus,
+            .btn-action:active {
+                outline: none;
+            }
+            .chk-location {
+                float: left;
+                margin-top: 30px;
+                margin-left: -5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="text-container">
+                <h3>XML</h3>
+                <div class="text-editor" id="txtXml"></div>
+                <label class="chk-location">
+                    <input type="checkbox" id="chkLocation" />
+                    显示节点位置信息
+                </label>
+                <button class="btn-action" type="button" id="btnParse">
+                    解析
+                </button>
+            </div>
+            <div class="text-container">
+                <h3>JSON</h3>
+                <div class="text-editor" id="txtJSON"></div>
+                <!-- <button class="btn-action" type="button" id="btnCopy">
+                    复制结果
+                </button> -->
+            </div>
+        </div>
+        <script src="../dist/index.umd.js"></script>
+        <script src="./node_modules/jquery/dist/jquery.js"></script>
+        <script>
+            var require = {
+                paths: { vs: "./node_modules/monaco-editor/min/vs" },
+            };
+        </script>
+        <script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
+        <script src="./node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+        <script src="./node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
+
+        <script>
+            const txtXml = $("#txtXml");
+            const txtJSON = $("#txtJSON");
+
+            const xmlEditor = monaco.editor.create(txtXml[0], {
+                value: `
+<span>123</span>
+<import />
+<!-- abc -->`.trim(),
+                language: "xml",
+            });
+            xmlEditor.trigger("anyString", "editor.action.formatDocument");
+            window.xmlEditor = xmlEditor;
+            const jsonEditor = monaco.editor.create(txtJSON[0], {
+                value: "",
+                language: "json",
+            });
+            window.jsonEditor = jsonEditor;
+            $("#btnParse").bind("click", (e) => {
+                const json = LooseXmlParser.parse(xmlEditor.getValue());
+                const parseResult = LooseXmlParser.parseResultToJSON(json, {
+                    locationInfo: $("#chkLocation").prop("checked"),
+                });
+                console.log(parseResult);
+                const strJSON = JSON.stringify(parseResult, null, 4);
+                jsonEditor.setValue(strJSON);
+            });
+        </script>
+    </body>
+</html>
