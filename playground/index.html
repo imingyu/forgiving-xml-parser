@@ -21,9 +21,11 @@
                 margin: 20px auto 0 auto;
                 display: flex;
             }
+            .container > .text-container:last-child {
+                margin-left: 20px;
+            }
             .text-container {
                 flex: 1;
-                margin-left: 20px;
             }
             .text-editor {
                 display: block;
@@ -67,11 +69,27 @@
                 margin-left: -5px;
             }
             .container-options {
-                flex-direction: column;
-                padding: 0 10px;
+                position: relative;
+                flex-wrap: wrap;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #ededed;
+            }
+            .container-options:after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                bottom: -1px;
+                height: 1px;
+                background-color: #fff;
+                width: 30px;
+            }
+            .container-options > .option-item:nth-child(2n) {
+                padding-left: 30px;
             }
             .option-item {
-                margin-left: 20px;
+                width: 50%;
+                flex-shrink: 0;
+                box-sizing: border-box;
             }
             .option-item small {
                 color: #666;
