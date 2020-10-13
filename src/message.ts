@@ -44,3 +44,7 @@ export const TAG_NAME_NOT_EQUAL = {
     code: 11,
     message: "标签名称前后不一致",
 };
+export const ATTR_EQUAL_NEAR_SPACE = {
+    code: 12,
+    message: "标签“=”附近存在空白字符",
+};

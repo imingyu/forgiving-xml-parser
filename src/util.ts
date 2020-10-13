@@ -9,6 +9,8 @@ import {
     LxMessage,
     LxWrong,
     LxEventType,
+    LxParseOptionsKeys,
+    LxEacher,
 } from "./types";
 export const throwError = (
     msg: LxMessage,
@@ -152,15 +154,79 @@ export const fireEvent = (type: LxEventType, arg: LxParseArg, data: any) => {
         arg.options.onEvent(type, arg, data);
 };
 
-export const checkLineBreak = (arg: LxParseArg): boolean => {
+export const checkLineBreak = (arg: LxParseArg, plusNumber = true): boolean => {
     const char = arg.xml[arg.index];
     if (char === "\n") {
+        plusNumber && plusArgNumber(arg, 0, 1, -arg.col);
         return true;
     }
     if (char === "\r" && arg.xml[arg.index + 1] === "\n") {
-        arg.index++;
-        arg.col++;
+        if (plusNumber) {
+            plusArgNumber(arg, 1, 1, 1);
+            plusArgNumber(arg, 0, 0, -arg.col);
+        }
         return true;
     }
     return false;
+};
+
+export function isTrueOption(
+    arg: LxParseArg,
+    prop: LxParseOptionsKeys
+): boolean {
+    return !!(arg.options && arg.options[prop]);
+}
+export function equalOption(
+    arg: LxParseArg,
+    prop: LxParseOptionsKeys,
+    value: any,
+    defaultValue?: any
+): boolean {
+    if (arg.options) {
+        if (arg.options[prop]) {
+            return arg.options[prop] === value;
+        }
+        return value === defaultValue;
+    }
+    return value === defaultValue;
+}
+export const equalTagName = (
+    arg: LxParseArg,
+    node: LxNode,
+    endTagName: string
+) => {
+    const startTagName = node.name;
+    const lowerStartTagName = startTagName.toLowerCase();
+    if (endTagName !== startTagName) {
+        if (
+            !isTrueOption(arg, "ignoreTagNameCaseEqual") ||
+            endTagName.toLowerCase() !== lowerStartTagName
+        ) {
+            return false;
+        }
+    }
+    return true;
+};
+
+export const lxEach = (arg: LxParseArg, handler: LxEacher) => {
+    const { xmlLength } = arg;
+    for (; arg.index < xmlLength; arg.index++) {
+        handler(
+            arg,
+            () => {
+                arg.continueEach = true;
+            },
+            () => {
+                arg.breakEach = true;
+            }
+        );
+        if (arg.continueEach) {
+            delete arg.continueEach;
+            continue;
+        }
+        if (arg.breakEach) {
+            delete arg.breakEach;
+            break;
+        }
+    }
 };

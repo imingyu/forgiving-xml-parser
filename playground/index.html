@@ -18,7 +18,7 @@
             }
             .container {
                 width: 80%;
-                margin: 20px auto;
+                margin: 20px auto 0 auto;
                 display: flex;
             }
             .text-container {
@@ -32,7 +32,7 @@
                 border: 1px solid #ccc;
                 border-radius: 5px;
                 padding: 10px;
-                min-height: 700px;
+                min-height: 400px;
             }
             .select-platform {
                 height: 50px;
@@ -66,12 +66,95 @@
                 margin-top: 30px;
                 margin-left: -5px;
             }
+            .container-options {
+                flex-direction: column;
+                padding: 0 10px;
+            }
+            .option-item {
+                margin-left: 20px;
+            }
+            .option-item small {
+                color: #666;
+            }
         </style>
     </head>
     <body>
+        <div class="container container-options">
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowNearTagNameSpace</b>
+                <small>是否允许标签名称附近存在空白字符</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>ignoreTagNameCaseEqual</b>
+                <small>忽略标签名称大小写对比</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowTagNotClose</b>
+                <small>是否允许标签不关闭</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowAttrNameEmpty</b>
+                <small>是否允许属性名为空</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowAttrContentHasBr</b>
+                <small
+                    >是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效</small
+                >
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowNearAttrEqualSpace</b>
+                <small>是否允许属性等号附近存在空白字符</small>
+            </label>
+            <div class="option-item">
+                <b>encounterAttrMoreEqual</b>
+                <small>当遇到属性中含有多个“=”时怎么处置？</small>
+                <label>
+                    <input
+                        type="radio"
+                        name="encounterAttrMoreEqual"
+                        value="throwError"
+                    />
+                    <b>throwError</b>
+                    <small>报错</small>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="encounterAttrMoreEqual"
+                        value="merge"
+                    />
+                    <b>merge</b>
+                    <small>合并</small>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="encounterAttrMoreEqual"
+                        value="newAttr"
+                    />
+                    <b>newAttr</b>
+                    <small>新创建一个属性对象</small>
+                </label>
+            </div>
+        </div>
         <div class="container">
             <div class="text-container">
-                <h3>XML</h3>
+                <h3>
+                    XML
+                    <small
+                        >（光标位置 行：<span id="cusLine"></span> 列：<span
+                            id="cusCol"
+                        ></span
+                        >）</small
+                    >
+                </h3>
                 <div class="text-editor" id="txtXml"></div>
                 <label class="chk-location">
                     <input type="checkbox" id="chkLocation" />
@@ -104,29 +187,83 @@
             const txtXml = $("#txtXml");
             const txtJSON = $("#txtJSON");
 
-            const xmlEditor = monaco.editor.create(txtXml[0], {
-                value: `
-<span>123</span>
-<import />
-<!-- abc -->`.trim(),
-                language: "xml",
-            });
-            xmlEditor.trigger("anyString", "editor.action.formatDocument");
-            window.xmlEditor = xmlEditor;
-            const jsonEditor = monaco.editor.create(txtJSON[0], {
-                value: "",
-                language: "json",
-            });
-            window.jsonEditor = jsonEditor;
-            $("#btnParse").bind("click", (e) => {
-                const json = LooseXmlParser.parse(xmlEditor.getValue());
-                const parseResult = LooseXmlParser.parseResultToJSON(json, {
-                    locationInfo: $("#chkLocation").prop("checked"),
+            const getOptions = (getEl = false) => {
+                const options = {};
+                $(".option-item").each((index, el) => {
+                    el = $(el);
+                    const name = el.children("b").html();
+                    let val = el
+                        .children("input[type='checkbox']")
+                        .prop("checked");
+                    if (name === "encounterAttrMoreEqual") {
+                        val = el.find('input[type="radio"]:checked').val();
+                    }
+                    options[name] = val;
+                    if (getEl) {
+                        if (!options.elMap) {
+                            options.elMap = {};
+                        }
+                        options.elMap[name] = el;
+                    }
                 });
-                console.log(parseResult);
-                const strJSON = JSON.stringify(parseResult, null, 4);
-                jsonEditor.setValue(strJSON);
-            });
+                return options;
+            };
+
+            const setOptions = (options) => {
+                const ops = getOptions(true);
+                for (let prop in ops.elMap) {
+                    if (options[prop]) {
+                        const el = ops.elMap[prop];
+                        if (prop !== "encounterAttrMoreEqual") {
+                            el.children("input[type='checkbox']").prop(
+                                "checked",
+                                true
+                            );
+                        } else {
+                            el.find(
+                                'input[type="radio"][name="' + prop + '"]'
+                            ).prop("checked", true);
+                        }
+                    }
+                }
+            };
+            const pageInit = () => {
+                setOptions(
+                    JSON.parse(localStorage.getItem("Lx.Options") || "{}")
+                );
+                const xmlEditor = monaco.editor.create(txtXml[0], {
+                    value: (
+                        localStorage.getItem("Lx.Xml") ||
+                        `<span name="Tom" man age=20 ></span>`
+                    ).trim(),
+                    language: "xml",
+                });
+                xmlEditor.onDidChangeCursorPosition((e) => {
+                    const { lineNumber, column } = e.position;
+                    $("#cusLine").html(lineNumber);
+                    $("#cusCol").html(column);
+                });
+                xmlEditor.trigger("anyString", "editor.action.formatDocument");
+                window.xmlEditor = xmlEditor;
+                const jsonEditor = monaco.editor.create(txtJSON[0], {
+                    value: "",
+                    language: "json",
+                });
+                window.jsonEditor = jsonEditor;
+                $("#btnParse").bind("click", (e) => {
+                    const options = getOptions();
+                    const xml = xmlEditor.getValue();
+                    localStorage.setItem("Lx.Xml", xml);
+                    const json = LooseXmlParser.parse(xml, options);
+                    const parseResult = LooseXmlParser.parseResultToJSON(json, {
+                        locationInfo: $("#chkLocation").prop("checked"),
+                    });
+                    localStorage.setItem("Lx.Options", JSON.stringify(options));
+                    const strJSON = JSON.stringify(parseResult, null, 4);
+                    jsonEditor.setValue(strJSON);
+                });
+            };
+            pageInit();
         </script>
     </body>
 </html>

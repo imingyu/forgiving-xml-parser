@@ -13,6 +13,22 @@ export enum LxParseAttrTarget {
 export enum LxEventType {
     nodeStart,
     nodeEnd,
+    nodeNameStart,
+    nodeNameEnd,
+    startTagStart,
+    startTagEnd,
+    endTagStart,
+    endTagEnd,
+    attrsStart,
+    attrNameStart,
+    attrEqualStart,
+    attrEqualEnd,
+    attrLeftBoundaryStart,
+    attrLeftBoundaryEnd,
+    attrRightBoundaryStart,
+    attrRightBoundaryEnd,
+    nodeContentStart,
+    nodeContentEnd,
     error,
     warn,
 }
@@ -27,6 +43,9 @@ export interface LxMessage {
     code: number;
     message: string;
 }
+export interface LxEacher {
+    (arg: LxParseArg, continueFire?: Function, breakFire?: Function);
+}
 export interface LxParseArg {
     index: number;
     xmlLength: number;
@@ -39,6 +58,10 @@ export interface LxParseArg {
     currentNode?: LxNode;
     options?: LxParseOptions;
     warnings?: LxWrong[];
+    // 是否终止本轮循环
+    continueEach?: boolean;
+    // 是否终止循环
+    breakEach?: boolean;
 }
 export interface LxErrorChecker {
     (err: LxWrong, arg: LxParseArg): boolean;
@@ -46,15 +69,31 @@ export interface LxErrorChecker {
 export interface LxEventHandler {
     (type: LxEventType, arg: LxParseArg, data: any);
 }
+export enum AttrMoreEqualDisposal {
+    throwError = "throwError",
+    merge = "merge",
+    newAttr = "newAttr",
+}
 export interface LxParseOptions {
-    // 忽略标签名称附近的空格
-    ignoreNearTagNameSpace?: boolean;
+    // 是否允许标签名称附近存在空白字符
+    allowNearTagNameSpace?: boolean;
     // 忽略标签名称大小写对比
     ignoreTagNameCaseEqual?: boolean;
+    // 是否允许标签不关闭
+    allowTagNotClose?: boolean;
+    // 是否允许属性名为空
+    allowAttrNameEmpty?: boolean;
+    // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
+    allowAttrContentHasBr?: boolean;
+    // 是否允许属性等号附近存在空白字符
+    allowNearAttrEqualSpace?: boolean;
+    // 当遇到属性中含有多个“=”时怎么处置？
+    encounterAttrMoreEqual?: AttrMoreEqualDisposal;
     // 当发生异常时均将异常信息传递到该函数，如果【结果===true】则抛出，否则均不抛出错误，并将结果连同原异常信息存入wranings
     checkError?: LxErrorChecker;
     onEvent?: LxEventHandler;
 }
+export type LxParseOptionsKeys = keyof LxParseOptions;
 export interface LxToJSONOptions {
     maxLine?: boolean;
     maxCol?: boolean;
@@ -93,7 +132,8 @@ export interface LxNodeJSON {
     attrs?: LxNodeJSON[];
     selfcloseing?: boolean;
     locationInfo?: LxNodeLocationInfo;
-    hasQuotationMarks?: boolean;
+    boundaryChar?: string;
+    equalCount?: number;
 }
 export interface LxNode extends LxNodeJSON {
     children?: LxNode[];

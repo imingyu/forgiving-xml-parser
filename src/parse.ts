@@ -8,6 +8,8 @@ import {
     LxParseResultJSON,
     LxToJSONOptions,
     LxParseAttrTarget,
+    LxEventType,
+    AttrMoreEqualDisposal,
 } from "./types";
 import {
     TAG_NOT_CLOSE,
@@ -20,6 +22,7 @@ import {
     ATTR_NAME_IS_WRONG,
     ATTR_IS_WRONG,
     TAG_NAME_NOT_EQUAL,
+    ATTR_EQUAL_NEAR_SPACE,
 } from "./message";
 import {
     pick,
@@ -31,13 +34,17 @@ import {
     throwError,
     fireEvent,
     checkLineBreak,
+    isTrueOption,
+    equalTagName,
+    lxEach,
+    equalOption,
 } from "./util";
 
 const RexSpace = /\s/g;
 const parseStartTag = (startIndex: number, arg: LxParseArg) => {
     const { xml, xmlLength } = arg;
     let selfCloseing;
-    let isComment;
+    let isComment = arg.xml.substr(startIndex, 4) === "<!--";
     let tagName = "";
     let startTagClosed;
     const startTag: LxLocation = {
@@ -46,53 +53,59 @@ const parseStartTag = (startIndex: number, arg: LxParseArg) => {
         startOffset: arg.index,
     };
     let endTag: LxLocation;
-
-    if (arg.xml.substr(startIndex, 4) === "<!--") {
-        isComment = true;
-        plusArgNumber(arg, 4, 0, 3);
+    const node: LxNode = {
+        type: isComment ? LxNodeType.comment : LxNodeType.element,
+        locationInfo: {
+            startLine: startTag.startLine,
+            startCol: startTag.startCol,
+            startOffset: startTag.startOffset,
+            startTag,
+        },
+    };
+    if (isComment) {
+        plusArgNumber(arg, 4, 0, 4);
         startTag.endLine = arg.line;
         startTag.endCol = arg.col;
         startTag.endOffset = arg.index;
     } else {
-        plusArgNumber(arg, 1);
+        plusArgNumber(arg, 1, 0, 1);
     }
-    for (; arg.index < xmlLength; arg.index++) {
-        plusArgNumber(arg, 0, 0, 1);
+
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
         const char = xml[arg.index];
         if (isComment) {
             if (char === "-" && arg.xml.substr(arg.index, 3) === "-->") {
+                node.content = tagName;
                 endTag = {
                     startLine: arg.line,
                     startCol: arg.col,
                     startOffset: arg.index,
                 };
-                plusArgNumber(arg, 3, 0, 3);
+                plusArgNumber(arg, 2, 0, 2);
                 endTag.endLine = arg.line;
                 endTag.endCol = arg.col;
                 endTag.endOffset = arg.index;
                 break;
             }
             tagName += char;
-            if (checkLineBreak(arg)) {
-                plusArgNumber(arg, 0, 1, -(arg.col + 1));
-            }
+            checkLineBreak(arg);
             if (arg.index === xmlLength - 1) {
                 throwError(TAG_NOT_CLOSE, arg);
             }
         } else {
             if (RexSpace.test(char)) {
                 if (arg.index > startIndex && tagName) {
+                    plusArgNumber(arg, 1, 0, 1);
                     break;
                 }
-                if (!arg.options || !arg.options.ignoreNearTagNameSpace) {
+                if (!isTrueOption(arg, "allowNearTagNameSpace")) {
                     throwError(TAG_BOUNDARY_CHAR_HAS_SPACE, arg);
                 }
-                if (checkLineBreak(arg)) {
-                    plusArgNumber(arg, 0, 1, -(arg.col + 1));
-                }
+                checkLineBreak(arg);
                 if (arg.index === xmlLength - 1) {
                     throwError(TAG_NAME_IS_EMPTY, arg);
                 }
+                continue;
             }
             if (char === "<") {
                 throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
@@ -102,15 +115,16 @@ const parseStartTag = (startIndex: number, arg: LxParseArg) => {
                 startTag.endCol = arg.col;
                 startTag.endOffset = arg.index;
                 startTagClosed = true;
-                plusArgNumber(arg, 0, 0, 1);
+                plusArgNumber(arg, 1, 0, 1);
                 break;
             }
             if (char === "/" && xml[arg.index + 1] === ">") {
                 selfCloseing = true;
-                plusArgNumber(arg, 1, 0, 2);
+                plusArgNumber(arg, 1, 0, 1);
                 startTag.endLine = arg.line;
                 startTag.endCol = arg.col;
                 startTag.endOffset = arg.index;
+                plusArgNumber(arg, 1, 0, 1);
                 break;
             }
             if (arg.index === xmlLength - 1) {
@@ -127,15 +141,7 @@ const parseStartTag = (startIndex: number, arg: LxParseArg) => {
             startTag.startCol
         );
     }
-    const node: LxNode = {
-        type: isComment ? LxNodeType.comment : LxNodeType.element,
-        locationInfo: {
-            startLine: startTag.startLine,
-            startCol: startTag.startCol,
-            startOffset: startTag.startOffset,
-            startTag,
-        },
-    };
+
     if (isComment) {
         node.content = tagName;
         node.locationInfo.endTag = endTag;
@@ -173,24 +179,19 @@ const parseEndTag = (startIndex: number, arg: LxParseArg) => {
         startCol: arg.col,
         startOffset: startIndex,
     };
-    plusArgNumber(arg, 1);
+    plusArgNumber(arg, 1, 0, 1);
     let value = "";
-    for (; arg.index < xmlLength; arg.index++) {
-        plusArgNumber(arg, 0, 0, 1);
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
         const char = xml[arg.index];
         if (char === "<") {
             throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
         }
         if (char === ">") {
-            if (value !== arg.currentNode.name) {
-                if (
-                    !(
-                        arg.options &&
-                        arg.options.ignoreTagNameCaseEqual &&
-                        value.toLowerCase() ===
-                            arg.currentNode.name.toLowerCase()
-                    )
-                ) {
+            if (!equalTagName(arg, arg.currentNode, value)) {
+                if (isTrueOption(arg, "allowTagNotClose")) {
+                    if (equalTagName(arg, arg.currentNode.parent, value)) {
+                    }
+                } else {
                     throwError(
                         TAG_NAME_NOT_EQUAL,
                         arg,
@@ -221,157 +222,17 @@ const parseEndTag = (startIndex: number, arg: LxParseArg) => {
 
 const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     const { xml, xmlLength } = arg;
-    arg.index++;
     const attrs = [] as LxNode[];
     let currentAttr: LxNode;
     let value;
     let findTarget: LxParseAttrTarget; // 表示正在寻找某目标，而不是当前已经是某目标
     let leftBoundaryValue = "";
-    for (; arg.index < xmlLength; arg.index++) {
-        arg.col++;
-        const char = xml[arg.index];
-        if (checkLineBreak(arg)) {
-            if (findTarget === LxParseAttrTarget.name && value) {
-                currentAttr.name = value;
-                currentAttr.locationInfo.endOffset = arg.index;
-                currentAttr.locationInfo.endLine = arg.line;
-                currentAttr.locationInfo.endCol = arg.col;
-                value = undefined;
-                findTarget = LxParseAttrTarget.equal;
-                plusArgNumber(arg, 0, 1, -(arg.col + 1));
-                continue;
-            }
-            if (findTarget === LxParseAttrTarget.content) {
-                throwError(ATTR_CONTENT_HAS_BR, arg);
-            }
-            plusArgNumber(arg, 0, 1, -(arg.col + 1));
-            continue;
-        }
-        if (RexSpace.test(char)) {
-            if (!findTarget) {
-                continue;
-            }
-            if (
-                findTarget === LxParseAttrTarget.equal ||
-                findTarget === LxParseAttrTarget.leftBoundary
-            ) {
-                currentAttr.locationInfo.endOffset = arg.index;
-                currentAttr.locationInfo.endLine = arg.line;
-                currentAttr.locationInfo.endCol = arg.col;
-                attrs.push(currentAttr);
-                leftBoundaryValue = currentAttr = findTarget = value = undefined;
-                continue;
-            }
-            if (
-                findTarget === LxParseAttrTarget.content &&
-                !leftBoundaryValue
-            ) {
-                if (value) {
-                    currentAttr.content = value;
-                }
-                currentAttr.locationInfo.endOffset = arg.index;
-                currentAttr.locationInfo.endLine = arg.line;
-                currentAttr.locationInfo.endCol = arg.col;
-                attrs.push(currentAttr);
-                leftBoundaryValue = currentAttr = findTarget = value = undefined;
-                continue;
-            }
-            if (findTarget === LxParseAttrTarget.name) {
-                if (!value) {
-                    continue;
-                }
-                currentAttr.name = value;
-                currentAttr.locationInfo.endOffset = arg.index;
-                currentAttr.locationInfo.endLine = arg.line;
-                currentAttr.locationInfo.endCol = arg.col;
-                value = undefined;
-                findTarget = LxParseAttrTarget.equal;
-                continue;
-            }
-        }
-        if (char === "=") {
-            if (findTarget === LxParseAttrTarget.name) {
-                if (!value) {
-                    throwError(ATTR_NAME_IS_EMPTY, arg);
-                }
-                currentAttr.name = value;
-                currentAttr.locationInfo.endOffset = arg.index;
-                currentAttr.locationInfo.endLine = arg.line;
-                currentAttr.locationInfo.endCol = arg.col;
-                value = undefined;
-                findTarget = LxParseAttrTarget.leftBoundary;
-                continue;
-            }
-            if (findTarget === LxParseAttrTarget.equal) {
-                findTarget = LxParseAttrTarget.leftBoundary;
-                continue;
-            }
-            if (findTarget === LxParseAttrTarget.leftBoundary) {
-                throwError(ATTR_HAS_MORE_EQUAL, arg);
-            }
-        }
-        if (char === "'" || char === '"') {
-            if (findTarget === LxParseAttrTarget.name) {
-                throwError(ATTR_NAME_IS_WRONG, arg);
-            }
-            if (findTarget === LxParseAttrTarget.equal) {
-                throwError(ATTR_IS_WRONG, arg);
-            }
-            if (findTarget === LxParseAttrTarget.leftBoundary) {
-                currentAttr.hasQuotationMarks = true;
-                findTarget = LxParseAttrTarget.content;
-                leftBoundaryValue = char;
-                continue;
-            }
-            if (findTarget === LxParseAttrTarget.content) {
-                if (leftBoundaryValue === char) {
-                    currentAttr.content = value;
-                    currentAttr.locationInfo.endOffset = arg.index;
-                    currentAttr.locationInfo.endLine = arg.line;
-                    currentAttr.locationInfo.endCol = arg.col;
-                    attrs.push(currentAttr);
-                    leftBoundaryValue = currentAttr = findTarget = value = undefined;
-                    continue;
-                }
-            }
-        }
-        if (char === ">") {
-            if (!findTarget) {
-                element.locationInfo.startTag.endOffset = arg.index;
-                element.locationInfo.startTag.endLine = arg.line;
-                element.locationInfo.startTag.endCol = arg.col;
-                plusArgNumber(arg, 0, 0, 1);
-                break;
-            }
-        }
-        if (char === "/" && xml[arg.index + 1] === ">" && !findTarget) {
-            plusArgNumber(arg, 1, 0, 2);
-            element.locationInfo.startTag.endOffset = arg.index;
-            element.locationInfo.startTag.endLine = arg.line;
-            element.locationInfo.startTag.endCol = arg.col;
-            element.selfcloseing = true;
-            element.locationInfo.endOffset = arg.index;
-            element.locationInfo.endLine = arg.line;
-            element.locationInfo.endCol = arg.col;
-            break;
-        }
-        if (
-            findTarget === LxParseAttrTarget.equal ||
-            findTarget === LxParseAttrTarget.leftBoundary
-        ) {
-            if (!currentAttr.locationInfo.endOffset) {
-                currentAttr.locationInfo.endOffset = arg.index;
-                currentAttr.locationInfo.endLine = arg.line;
-                currentAttr.locationInfo.endCol = arg.col;
-            }
-            attrs.push(currentAttr);
-            leftBoundaryValue = currentAttr = findTarget = value = undefined;
-            continue;
-        }
+    const plusNormalChar = (char?: string) => {
         if (!findTarget) {
             findTarget = LxParseAttrTarget.name;
             currentAttr = {
                 type: LxNodeType.attr,
+                equalCount: 0,
                 locationInfo: {
                     startLine: arg.line,
                     startCol: arg.col,
@@ -379,17 +240,216 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
                 },
             } as LxNode;
         }
-        if (!value) {
-            value = "";
+        if (char) {
+            if (!value) {
+                value = "";
+            }
+            value += char;
+            endLocation();
         }
-        value += char;
+    };
+    const endLocation = () => {
+        currentAttr.locationInfo.endOffset = arg.index;
+        currentAttr.locationInfo.endLine = arg.line;
+        currentAttr.locationInfo.endCol = arg.col;
+    };
+    const validateAttrQuealNearSpace = () => {
+        const nearHasSpace =
+            RexSpace.test(xml[arg.index - 1]) ||
+            RexSpace.test(xml[arg.index + 1]);
+        if (nearHasSpace && !isTrueOption(arg, "allowNearAttrEqualSpace")) {
+            throwError(ATTR_EQUAL_NEAR_SPACE, arg);
+        }
+    };
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const char = xml[arg.index];
+        if (checkLineBreak(arg, false)) {
+            if (findTarget === LxParseAttrTarget.name && value) {
+                currentAttr.name = value;
+                value = undefined;
+                findTarget = LxParseAttrTarget.equal;
+                plusArgNumber(arg, 0, 1, -arg.col);
+                continue;
+            }
+            if (findTarget === LxParseAttrTarget.content) {
+                if (!isTrueOption(arg, "allowAttrContentHasBr")) {
+                    throwError(ATTR_CONTENT_HAS_BR, arg);
+                }
+                plusNormalChar(char);
+            }
+            plusArgNumber(arg, 0, 1, -arg.col);
+            continue;
+        }
+        if (RexSpace.test(char)) {
+            if (findTarget === LxParseAttrTarget.name) {
+                if (!value) {
+                    continue;
+                }
+                currentAttr.name = value;
+                value = undefined;
+                findTarget = LxParseAttrTarget.equal;
+                continue;
+            }
+            if (findTarget === LxParseAttrTarget.content) {
+                if (leftBoundaryValue) {
+                    value += char;
+                    continue;
+                }
+                if (value) {
+                    currentAttr.content = value;
+                }
+                attrs.push(currentAttr);
+                leftBoundaryValue = currentAttr = findTarget = value = undefined;
+                continue;
+            }
+            continue;
+        }
+        if (char === "=") {
+            if (!findTarget) {
+                plusNormalChar();
+                if (!isTrueOption(arg, "allowAttrNameEmpty")) {
+                    throwError(ATTR_NAME_IS_EMPTY, arg);
+                }
+                endLocation();
+                value = undefined;
+                findTarget = LxParseAttrTarget.leftBoundary;
+                currentAttr.equalCount++;
+                validateAttrQuealNearSpace();
+                continue;
+            }
+            if (findTarget === LxParseAttrTarget.name) {
+                if (!value && !isTrueOption(arg, "allowAttrNameEmpty")) {
+                    throwError(ATTR_NAME_IS_EMPTY, arg);
+                }
+                if (value) {
+                    currentAttr.name = value;
+                }
+                endLocation();
+                value = undefined;
+                findTarget = LxParseAttrTarget.leftBoundary;
+                currentAttr.equalCount++;
+                validateAttrQuealNearSpace();
+                continue;
+            }
+            if (findTarget === LxParseAttrTarget.equal) {
+                endLocation();
+                findTarget = LxParseAttrTarget.leftBoundary;
+                currentAttr.equalCount++;
+                validateAttrQuealNearSpace();
+                continue;
+            }
+            if (findTarget === LxParseAttrTarget.leftBoundary) {
+                if (
+                    equalOption(
+                        arg,
+                        "encounterAttrMoreEqual",
+                        AttrMoreEqualDisposal.throwError,
+                        AttrMoreEqualDisposal.throwError
+                    )
+                ) {
+                    currentAttr.equalCount++;
+                    throwError(ATTR_HAS_MORE_EQUAL, arg);
+                } else if (
+                    equalOption(
+                        arg,
+                        "encounterAttrMoreEqual",
+                        AttrMoreEqualDisposal.newAttr,
+                        AttrMoreEqualDisposal.throwError
+                    )
+                ) {
+                    attrs.push(currentAttr);
+                    leftBoundaryValue = currentAttr = findTarget = value = undefined;
+                    plusNormalChar();
+                    currentAttr.equalCount++;
+                    if (!isTrueOption(arg, "allowAttrNameEmpty")) {
+                        throwError(ATTR_NAME_IS_EMPTY, arg);
+                    }
+                    endLocation();
+                    value = undefined;
+                    findTarget = LxParseAttrTarget.leftBoundary;
+                    continue;
+                }
+                currentAttr.equalCount++;
+                endLocation();
+                continue;
+            }
+        }
+        if (char === "'" || char === '"') {
+            if (!findTarget || findTarget === LxParseAttrTarget.name) {
+                throwError(ATTR_NAME_IS_WRONG, arg);
+            }
+            if (findTarget === LxParseAttrTarget.equal) {
+                throwError(ATTR_IS_WRONG, arg);
+            }
+            if (findTarget === LxParseAttrTarget.leftBoundary) {
+                currentAttr.boundaryChar = char;
+                findTarget = LxParseAttrTarget.content;
+                value = undefined;
+                leftBoundaryValue = char;
+                continue;
+            }
+            if (findTarget === LxParseAttrTarget.content) {
+                if (leftBoundaryValue === char) {
+                    currentAttr.content = value;
+                    endLocation();
+                    attrs.push(currentAttr);
+                    leftBoundaryValue = currentAttr = findTarget = value = undefined;
+                    continue;
+                }
+            }
+        }
+        const selfClose = char === "/" && xml[arg.index + 1] === ">";
+        if (char === ">" || selfClose) {
+            if (
+                !findTarget ||
+                findTarget === LxParseAttrTarget.name ||
+                findTarget === LxParseAttrTarget.equal ||
+                findTarget === LxParseAttrTarget.leftBoundary ||
+                (findTarget === LxParseAttrTarget.content &&
+                    currentAttr &&
+                    !currentAttr.boundaryChar)
+            ) {
+                if (selfClose) {
+                    plusArgNumber(arg, 1, 0, 1);
+                    element.selfcloseing = true;
+                    element.locationInfo.endOffset = arg.index;
+                    element.locationInfo.endLine = arg.line;
+                    element.locationInfo.endCol = arg.col;
+                }
+                element.locationInfo.startTag.endOffset = arg.index;
+                element.locationInfo.startTag.endLine = arg.line;
+                element.locationInfo.startTag.endCol = arg.col;
+                if (currentAttr) {
+                    if (findTarget === LxParseAttrTarget.name && value) {
+                        currentAttr.name = value;
+                    }
+                    attrs.push(currentAttr);
+                }
+                currentAttr = findTarget = value = undefined;
+                break;
+            }
+        }
+        if (findTarget === LxParseAttrTarget.leftBoundary) {
+            findTarget = LxParseAttrTarget.content;
+            value = undefined;
+            leftBoundaryValue = undefined;
+            plusNormalChar(char);
+            continue;
+        }
+        if (findTarget === LxParseAttrTarget.equal) {
+            attrs.push(currentAttr);
+            leftBoundaryValue = currentAttr = findTarget = value = undefined;
+            plusNormalChar(char);
+            continue;
+        }
+        plusNormalChar(char);
     }
     return attrs;
 };
 
 const loopParse = (arg: LxParseArg): LxParseArg => {
     const { xml, xmlLength } = arg;
-    for (; arg.index < xmlLength; arg.index++) {
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
         if (!arg.maxLine) {
             arg.maxLine = 1;
         }
@@ -438,11 +498,7 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
                 },
                 arg
             );
-            if (checkLineBreak(arg)) {
-                plusArgNumber(arg, 0, 1, -(arg.col + 1));
-            } else {
-                plusArgNumber(arg, 0, 0, 1);
-            }
+            checkLineBreak(arg);
             continue;
         }
         if (arg.currentNode.type === LxNodeType.element) {
@@ -456,11 +512,7 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
                 },
             };
             pushElement(node, arg);
-            if (checkLineBreak(arg)) {
-                plusArgNumber(arg, 0, 1, -(arg.col + 1));
-            } else {
-                plusArgNumber(arg, 0, 0, 1);
-            }
+            checkLineBreak(arg);
             continue;
         }
         plusArgNumber(arg, 0, 0, 1);
