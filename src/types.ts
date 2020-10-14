@@ -3,6 +3,7 @@ export enum LxNodeType {
     element = "element",
     text = "text",
     attr = "attr",
+    cdata = "cdata",
 }
 export enum LxParseAttrTarget {
     name = "name",

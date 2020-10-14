@@ -158,7 +158,6 @@ export const checkLineBreak = (arg: LxParseArg, plusNumber = true): boolean => {
     const char = arg.xml[arg.index];
     if (char === "\n") {
         plusNumber && plusArgNumber(arg, 0, 1, -arg.col);
-        debugger;
         return true;
     }
     if (char === "\r" && arg.xml[arg.index + 1] === "\n") {

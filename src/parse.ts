@@ -40,6 +40,8 @@ import {
 } from "./util";
 
 const RexSpace = /\s/;
+const CDATA_START = "<![CDATA[";
+const CDATA_END = "]]>";
 const parseStartTag = (startIndex: number, arg: LxParseArg) => {
     const { xml, xmlLength } = arg;
     let selfCloseing;
@@ -535,6 +537,53 @@ const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     return attrs;
 };
 
+const parseCDATA = (arg: LxParseArg) => {
+    const { xml, xmlLength } = arg;
+    const node: LxNode = {
+        type: LxNodeType.cdata,
+        locationInfo: {
+            startCol: arg.col,
+            startOffset: arg.index,
+            startLine: arg.line,
+        },
+    };
+    plusArgNumber(arg, CDATA_START.length, 0, CDATA_START.length);
+    let value = "";
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const char = xml[arg.index];
+        if (
+            char === "]" &&
+            xml.substr(arg.index, CDATA_END.length) === CDATA_END
+        ) {
+            plusArgNumber(arg, CDATA_END.length - 1, 0, CDATA_END.length - 1);
+            if (value) {
+                node.content = value;
+            }
+            node.locationInfo.endCol = arg.col;
+            node.locationInfo.endLine = arg.line;
+            node.locationInfo.endOffset = arg.index;
+            break;
+        }
+        value += char;
+        checkLineBreak(arg);
+        if (arg.index === xmlLength - 1) {
+            throwError(TAG_NOT_CLOSE, arg);
+        }
+    }
+    if (arg.currentNode) {
+        if (arg.currentNode.type === LxNodeType.element) {
+            if (!arg.currentNode.children) {
+                arg.currentNode.children = [];
+            }
+            arg.currentNode.children.push(node);
+            return;
+        }
+        arg.nodes.push(arg.currentNode);
+        delete arg.currentNode;
+    }
+    arg.nodes.push(node);
+};
+
 const loopParse = (arg: LxParseArg): LxParseArg => {
     const { xml, xmlLength } = arg;
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
@@ -543,6 +592,10 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
         }
         const char = xml[arg.index];
         if (char === "<") {
+            if (xml.substr(arg.index, CDATA_START.length) === CDATA_START) {
+                parseCDATA(arg);
+                continue;
+            }
             if (!arg.currentNode) {
                 parseStartTag(arg.index, arg);
                 continue;
