@@ -2,7 +2,7 @@
     "compilerOptions": {
         "baseUrl": ".",
         "declaration": true,
-        "lib": ["ES2015", "ES6"],
+        "lib": ["ES2015", "ES6", "DOM"],
         "moduleResolution": "node"
     },
     "include": ["src/*.ts"],

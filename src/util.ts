@@ -31,13 +31,16 @@ export const throwError = (
         !arg.options.checkError ||
         typeof arg.options.checkError !== "function"
     ) {
+        fireEvent(LxEventType.error, arg, err);
         throw err;
     }
     const checkResult = arg.options.checkError(err, arg);
     if (checkResult === true) {
+        fireEvent(LxEventType.error, arg, err);
         throw err;
     }
     err.customIgnore = checkResult;
+    fireEvent(LxEventType.warn, arg, err);
     addWarn(arg, err);
 };
 
@@ -149,6 +152,7 @@ export const lxWrongToJSON = (wrong: LxWrong): LxWrong => {
 };
 
 export const fireEvent = (type: LxEventType, arg: LxParseArg, data: any) => {
+    console.log(type, data);
     arg.options &&
         typeof arg.options.onEvent === "function" &&
         arg.options.onEvent(type, arg, data);
