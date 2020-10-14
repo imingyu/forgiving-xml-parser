@@ -152,10 +152,10 @@ export const lxWrongToJSON = (wrong: LxWrong): LxWrong => {
 };
 
 export const fireEvent = (type: LxEventType, arg: LxParseArg, data: any) => {
-    console.log(type, data);
-    arg.options &&
-        typeof arg.options.onEvent === "function" &&
-        arg.options.onEvent(type, arg, data);
+    // console.log(type, data);
+    // arg.options &&
+    //     typeof arg.options.onEvent === "function" &&
+    //     arg.options.onEvent(type, arg, data);
 };
 
 export const checkLineBreak = (arg: LxParseArg, plusNumber = true): boolean => {

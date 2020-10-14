@@ -78,6 +78,13 @@ export const parseStartTag = (startIndex: number, arg: LxParseArg) => {
     }
 
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
+        }
         const char = xml[arg.index];
         if (isComment) {
             if (char === "-" && arg.xml.substr(arg.index, 3) === "-->") {
@@ -300,6 +307,13 @@ export const parseEndTag = (startIndex: number, arg: LxParseArg) => {
     plusArgNumber(arg, 1, 0, 1);
     let value = "";
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
+        }
         const char = xml[arg.index];
         if (char === "<") {
             throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
@@ -360,6 +374,13 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
         }
     };
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
+        }
         const char = xml[arg.index];
         if (checkLineBreak(arg, false)) {
             if (findTarget === LxParseAttrTarget.name && value) {
@@ -599,7 +620,7 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     return attrs;
 };
 
-const parseCDATA = (arg: LxParseArg) => {
+export const parseCDATA = (arg: LxParseArg) => {
     const { xml, xmlLength } = arg;
     const node: LxNode = {
         type: LxNodeType.cdata,
@@ -612,6 +633,13 @@ const parseCDATA = (arg: LxParseArg) => {
     plusArgNumber(arg, CDATA_START.length, 0, CDATA_START.length);
     let value = "";
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
+        }
         const char = xml[arg.index];
         if (
             char === "]" &&
@@ -646,11 +674,24 @@ const parseCDATA = (arg: LxParseArg) => {
     arg.nodes.push(node);
 };
 
+const execLoopHook = (arg: LxParseArg): number => {
+    if (arg.options && typeof arg.options.loopHook === "function") {
+        return arg.options.loopHook(arg);
+    }
+};
+
 const loopParse = (arg: LxParseArg): LxParseArg => {
     const { xml, xmlLength } = arg;
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
         if (!arg.maxLine) {
             arg.maxLine = 1;
+        }
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
         }
         const char = xml[arg.index];
         if (char === "<") {
