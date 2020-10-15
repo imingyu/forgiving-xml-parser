@@ -1,9 +1,14 @@
 export enum LxNodeType {
+    // <!-- -->
     comment = "comment",
+    // <span>
     element = "element",
     text = "text",
     attr = "attr",
+    // <![CDATA[  ]]>
     cdata = "cdata",
+    // <? ?>
+    processingInstruction = "processingInstruction",
 }
 export enum LxParseAttrTarget {
     name = "name",
@@ -36,6 +41,7 @@ export interface LxWrong extends LxMessage {
     col: number;
     detail?: string;
     customIgnore?: any;
+    stack: string;
 }
 export interface LxMessage {
     code: number;
@@ -75,13 +81,16 @@ export enum AttrMoreEqualDisposal {
 export interface LxLoopHookHandler {
     (arg: LxParseArg): number;
 }
+export interface LxNodeNotCloseChecker {
+    (node: LxNode, arg: LxParseArg): boolean;
+}
 export interface LxParseOptions {
     // 是否允许标签名称附近存在空白字符
     allowNearTagNameSpace?: boolean;
     // 忽略标签名称大小写对比
     ignoreTagNameCaseEqual?: boolean;
-    // 是否允许标签不关闭
-    allowTagNotClose?: boolean;
+    // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
+    allowNodeNotClose?: boolean | RegExp | LxNodeNotCloseChecker;
     // 是否允许属性名为空
     allowAttrNameEmpty?: boolean;
     // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
@@ -134,6 +143,7 @@ export interface LxNodeJSON {
     children?: LxNodeJSON[];
     attrs?: LxNodeJSON[];
     selfcloseing?: boolean;
+    notClose?: boolean;
     locationInfo?: LxNodeLocationInfo;
     boundaryChar?: string;
     equalCount?: number;

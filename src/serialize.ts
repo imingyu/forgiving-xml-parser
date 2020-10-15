@@ -11,11 +11,17 @@ export const serialize = (nodes: LxNodeJSON[]): string => {
             return;
         }
         if (node.type === LxNodeType.cdata) {
-            xml += `<![CDATA[${node.content}]]>`;
+            xml += `<![CDATA[${node.content}${node.notClose ? "" : "]]>"}`;
             return;
         }
         if (node.type === LxNodeType.comment) {
-            xml += `<!--${node.content}-->`;
+            xml += `<!--${node.content}${node.notClose ? "" : "-->"}`;
+            return;
+        }
+        if (node.type === LxNodeType.processingInstruction) {
+            xml += `<?${node.name}${
+                node.attrs ? " " + serialize(node.attrs).trim() : ""
+            }?>`;
             return;
         }
         if (node.type === LxNodeType.attr) {

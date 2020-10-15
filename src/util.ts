@@ -11,7 +11,16 @@ import {
     LxEventType,
     LxParseOptionsKeys,
     LxEacher,
+    LxParseOptions,
 } from "./types";
+import {
+    CDATA_END,
+    CDATA_START,
+    COMMENT_END,
+    COMMENT_START,
+    PI_END,
+    PI_START,
+} from "./var";
 export const throwError = (
     msg: LxMessage,
     arg: LxParseArg,
@@ -148,6 +157,7 @@ export const nodeToJSON = (node: LxNode, needLocation: boolean): LxNodeJSON => {
 export const lxWrongToJSON = (wrong: LxWrong): LxWrong => {
     const json = JSON.parse(JSON.stringify(wrong));
     json.message = wrong.message;
+    json.stack = wrong.stack;
     return json;
 };
 
@@ -174,17 +184,31 @@ export const checkLineBreak = (arg: LxParseArg, plusNumber = true): boolean => {
     return false;
 };
 
+export const allowNodeNotClose = (arg: LxParseArg, node: LxNode): boolean => {
+    if (isTrueOption(arg, "allowNodeNotClose")) {
+        if (arg.options.allowNodeNotClose instanceof RegExp) {
+            return arg.options.allowNodeNotClose.test(node.name);
+        }
+        if (typeof arg.options.allowNodeNotClose === "function") {
+            return arg.options.allowNodeNotClose(node, arg);
+        }
+        return arg.options.allowNodeNotClose === true;
+    }
+    return false;
+};
+
 export function isTrueOption(
     arg: LxParseArg,
     prop: LxParseOptionsKeys
 ): boolean {
     return !!(arg.options && arg.options[prop]);
 }
-export function equalOption(
+
+export function equalOption<P extends keyof LxParseOptions>(
     arg: LxParseArg,
-    prop: LxParseOptionsKeys,
-    value: any,
-    defaultValue?: any
+    prop: P,
+    value: LxParseOptions[P],
+    defaultValue?: LxParseOptions[P]
 ): boolean {
     if (arg.options) {
         if (arg.options[prop]) {
@@ -232,5 +256,112 @@ export const lxEach = (arg: LxParseArg, handler: LxEacher) => {
             delete arg.breakEach;
             break;
         }
+    }
+};
+
+export const execEndTag = (arg: LxParseArg, node: LxNode) => {
+    node.locationInfo.endTag = {
+        startCol: arg.col,
+        startOffset: arg.index,
+        startLine: arg.line,
+    };
+    fireEvent(LxEventType.endTagStart, arg, node);
+    if (node.type === LxNodeType.cdata) {
+        plusArgNumber(arg, CDATA_END.length - 1, 0, CDATA_END.length - 1);
+    } else if (node.type === LxNodeType.processingInstruction) {
+        plusArgNumber(arg, 2, 0, 2);
+    } else if (node.type === LxNodeType.comment) {
+        plusArgNumber(arg, 3, 0, 3);
+    }
+    node.locationInfo.endTag.endCol = node.locationInfo.endCol = arg.col;
+    node.locationInfo.endTag.endLine = node.locationInfo.endLine = arg.line;
+    node.locationInfo.endTag.endOffset = node.locationInfo.endOffset =
+        arg.index;
+    fireEvent(LxEventType.endTagEnd, arg, node);
+    fireEvent(LxEventType.nodeEnd, arg, node);
+};
+
+export const initNode = (
+    type: LxNodeType,
+    arg: LxParseArg,
+    fireNodeEvent: boolean = true
+): LxNode => {
+    const node: LxNode = {
+        type,
+        locationInfo: {
+            startLine: arg.line,
+            startCol: arg.col,
+            startOffset: arg.index,
+        },
+    };
+    if (type !== LxNodeType.text) {
+        node.locationInfo.startTag = {
+            startLine: arg.line,
+            startCol: arg.col,
+            startOffset: arg.index,
+        };
+    }
+    if (fireNodeEvent) {
+        fireEvent(LxEventType.nodeStart, arg, node);
+        if (type === LxNodeType.text) {
+            node.content = "";
+            fireEvent(LxEventType.nodeContentStart, arg, node);
+            return node;
+        }
+        fireEvent(LxEventType.startTagStart, arg, node);
+        if (type === LxNodeType.element) {
+            plusArgNumber(arg, 1, 0, 1);
+            fireEvent(LxEventType.nodeNameStart, arg, node);
+            return node;
+        }
+        if (type === LxNodeType.processingInstruction) {
+            plusArgNumber(arg, PI_START.length, 0, PI_START.length);
+            fireEvent(LxEventType.nodeNameStart, arg, node);
+            return node;
+        }
+        if (type === LxNodeType.comment) {
+            plusArgNumber(arg, COMMENT_START.length, 0, COMMENT_START.length);
+            node.locationInfo.startTag.endLine = arg.line;
+            node.locationInfo.startTag.endCol = arg.col;
+            node.locationInfo.startTag.endOffset = arg.index;
+            fireEvent(LxEventType.startTagEnd, arg, node);
+            node.content = "";
+            fireEvent(LxEventType.nodeContentStart, arg, node);
+            return node;
+        }
+        if (type === LxNodeType.cdata) {
+            plusArgNumber(arg, CDATA_START.length, 0, CDATA_START.length);
+            node.locationInfo.startTag.endLine = arg.line;
+            node.locationInfo.startTag.endCol = arg.col;
+            node.locationInfo.startTag.endOffset = arg.index;
+            fireEvent(LxEventType.startTagEnd, arg, node);
+            node.content = "";
+            fireEvent(LxEventType.nodeContentStart, arg, node);
+            return node;
+        }
+    }
+    return node;
+};
+
+export const checkNodeContentEnd = (arg: LxParseArg, content?: string) => {
+    const { xml, currentNode, xmlLength } = arg;
+    let isEnd;
+    if (currentNode.type === LxNodeType.cdata) {
+        isEnd = xml.substr(arg.index + 1, CDATA_END.length) === CDATA_END;
+    }
+    if (currentNode.type === LxNodeType.comment) {
+        isEnd = xml.substr(arg.index + 1, COMMENT_END.length) === COMMENT_END;
+    }
+    if (currentNode.type === LxNodeType.processingInstruction) {
+        isEnd = xml.substr(arg.index + 1, PI_END.length) === PI_END;
+    }
+    if (arg.index === xmlLength - 1) {
+        isEnd = true;
+    }
+    if (isEnd) {
+        if (content) {
+            currentNode.content = content;
+        }
+        fireEvent(LxEventType.nodeContentEnd, arg, currentNode);
     }
 };

@@ -30,170 +30,20 @@ import {
     plusArgNumber,
     lxWrongToJSON,
     pushElement,
-    addWarn,
     throwError,
     fireEvent,
     checkLineBreak,
     isTrueOption,
     equalTagName,
     equalOption,
+    allowNodeNotClose,
+    execEndTag,
+    checkNodeContentEnd,
+    initNode,
 } from "./util";
+import { CDATA_END, CDATA_START, COMMENT_END } from "./var";
 
 export const RexSpace = /\s/;
-export const CDATA_START = "<![CDATA[";
-export const CDATA_END = "]]>";
-export const parseStartTag = (startIndex: number, arg: LxParseArg) => {
-    const { xml, xmlLength } = arg;
-    let selfCloseing;
-    let isComment = arg.xml.substr(startIndex, 4) === "<!--";
-    let tagName = "";
-    let startTagClosed;
-    const startTag: LxLocation = {
-        startLine: arg.line,
-        startCol: arg.col,
-        startOffset: arg.index,
-    };
-    let endTag: LxLocation;
-    const node: LxNode = {
-        type: isComment ? LxNodeType.comment : LxNodeType.element,
-        locationInfo: {
-            startLine: startTag.startLine,
-            startCol: startTag.startCol,
-            startOffset: startTag.startOffset,
-            startTag,
-        },
-    };
-    fireEvent(LxEventType.nodeStart, arg, node);
-    fireEvent(LxEventType.startTagStart, arg, node);
-    if (isComment) {
-        fireEvent(LxEventType.nodeContentStart, arg, node);
-        plusArgNumber(arg, 4, 0, 4);
-        startTag.endLine = arg.line;
-        startTag.endCol = arg.col;
-        startTag.endOffset = arg.index;
-        fireEvent(LxEventType.startTagEnd, arg, node);
-    } else {
-        plusArgNumber(arg, 1, 0, 1);
-        fireEvent(LxEventType.nodeNameStart, arg, node);
-    }
-
-    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
-        const hookResult = execLoopHook(arg);
-        if (hookResult === 1) {
-            continue;
-        }
-        if (hookResult === 2) {
-            break;
-        }
-        const char = xml[arg.index];
-        if (isComment) {
-            if (char === "-" && arg.xml.substr(arg.index, 3) === "-->") {
-                node.locationInfo.endTag = endTag;
-                node.content = tagName;
-                fireEvent(LxEventType.nodeContentEnd, arg, node);
-                fireEvent(LxEventType.endTagStart, arg, node);
-                endTag = {
-                    startLine: arg.line,
-                    startCol: arg.col,
-                    startOffset: arg.index,
-                };
-                plusArgNumber(arg, 2, 0, 2);
-                endTag.endLine = arg.line;
-                endTag.endCol = arg.col;
-                endTag.endOffset = arg.index;
-                fireEvent(LxEventType.endTagEnd, arg, node);
-                fireEvent(LxEventType.nodeEnd, arg, node);
-                break;
-            }
-            tagName += char;
-            checkLineBreak(arg);
-            if (arg.index === xmlLength - 1) {
-                throwError(TAG_NOT_CLOSE, arg);
-            }
-        } else {
-            if (RexSpace.test(char)) {
-                if (arg.index > startIndex && tagName) {
-                    node.name = tagName;
-                    fireEvent(LxEventType.nodeNameEnd, arg, node);
-                    plusArgNumber(arg, 1, 0, 1);
-                    break;
-                }
-                if (!isTrueOption(arg, "allowNearTagNameSpace")) {
-                    throwError(TAG_BOUNDARY_CHAR_HAS_SPACE, arg);
-                }
-                checkLineBreak(arg);
-                if (arg.index === xmlLength - 1) {
-                    throwError(TAG_NAME_IS_EMPTY, arg);
-                }
-                continue;
-            }
-            if (char === "<") {
-                throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
-            }
-            if (char === ">") {
-                startTag.endLine = arg.line;
-                startTag.endCol = arg.col;
-                startTag.endOffset = arg.index;
-                startTagClosed = true;
-                fireEvent(LxEventType.nodeNameEnd, arg, node);
-                fireEvent(LxEventType.startTagEnd, arg, node);
-                break;
-            }
-            if (char === "/" && xml[arg.index + 1] === ">") {
-                selfCloseing = true;
-                plusArgNumber(arg, 1, 0, 1);
-                startTag.endLine = arg.line;
-                startTag.endCol = arg.col;
-                startTag.endOffset = arg.index;
-                fireEvent(LxEventType.nodeNameEnd, arg, node);
-                fireEvent(LxEventType.startTagEnd, arg, node);
-                fireEvent(LxEventType.nodeEnd, arg, node);
-                break;
-            }
-            if (arg.index === xmlLength - 1) {
-                throwError(TAG_NOT_CLOSE, arg);
-            }
-            tagName += char;
-        }
-    }
-    if (!isComment && !tagName) {
-        throwError(
-            TAG_NAME_IS_EMPTY,
-            arg,
-            startTag.startLine,
-            startTag.startCol
-        );
-    }
-
-    if (isComment) {
-        node.content = tagName;
-        node.locationInfo.endLine = endTag.endLine;
-        node.locationInfo.endCol = endTag.endCol;
-        node.locationInfo.endOffset = endTag.endOffset;
-        return pushElement(node, arg);
-    }
-    node.name = tagName;
-    if (selfCloseing) {
-        node.selfcloseing = true;
-        startTag.endLine = node.locationInfo.endLine = startTag.endLine;
-        startTag.endCol = node.locationInfo.endCol = startTag.endCol;
-        startTag.endOffset = node.locationInfo.endOffset = startTag.endOffset;
-        return pushElement(node, arg);
-    }
-    if (!startTagClosed) {
-        fireEvent(LxEventType.attrsStart, arg, node);
-        const attrs = parseAttrs(arg, node);
-        if (attrs.length) {
-            node.attrs = attrs;
-            node.locationInfo.attrs = {};
-            attrs.forEach((attr) => {
-                attr.parent = node;
-                node.locationInfo.attrs[attr.name] = attr.locationInfo;
-            });
-        }
-    }
-    return pushElement(node, arg);
-};
 
 const equalTagNameParentIndex = (
     arg: LxParseArg,
@@ -211,13 +61,41 @@ const equalTagNameParentIndex = (
     return index;
 };
 
+export const closeNode = (node: LxNode, arg: LxParseArg, tagName?: string) => {
+    if (!allowNodeNotClose(arg, node)) {
+        const endTag = tagName ? `</${tagName}>` : "";
+        const startTag =
+            node.type === LxNodeType.element
+                ? `<${node.name}>`
+                : node.type === LxNodeType.comment
+                ? "<!--"
+                : node.type === LxNodeType.processingInstruction
+                ? `<?${node.name}`
+                : "";
+        throwError(
+            TAG_NAME_NOT_EQUAL,
+            arg,
+            arg.line,
+            arg.col,
+            `start-tag=${startTag}, end-tag=${endTag}`
+        );
+    }
+    if (!tagName) {
+        node.notClose = true;
+        node.locationInfo.endOffset = arg.index;
+        node.locationInfo.endCol = arg.col;
+        node.locationInfo.endLine = arg.line;
+        fireEvent(LxEventType.nodeEnd, arg, node);
+    }
+};
+
 export const closeElement = (
     arg: LxParseArg,
-    tagName: string,
-    endTag: LxLocation
+    tagName?: string,
+    endTag?: LxLocation
 ) => {
     const currentNode = arg.currentNode;
-    if (equalTagName(arg, currentNode, tagName)) {
+    if (tagName && equalTagName(arg, currentNode, tagName)) {
         currentNode.locationInfo.endOffset = endTag.endOffset = arg.index;
         currentNode.locationInfo.endCol = endTag.endCol = arg.col;
         currentNode.locationInfo.endLine = endTag.endLine = arg.line;
@@ -231,81 +109,88 @@ export const closeElement = (
         }
         return;
     }
-    if (!isTrueOption(arg, "allowTagNotClose")) {
-        throwError(
-            TAG_NAME_NOT_EQUAL,
+    closeNode(arg.currentNode, arg, tagName);
+    if (tagName) {
+        const parentIndex = equalTagNameParentIndex(
             arg,
-            arg.line,
-            arg.col,
-            `start-tag=<${currentNode.name}>, end-tag=</${tagName}>`
+            arg.currentNode,
+            tagName
         );
-    }
-    const parentIndex = equalTagNameParentIndex(arg, arg.currentNode, tagName);
-    if (parentIndex !== -1) {
-        const len = parentIndex + 1;
-        let node = currentNode;
-        for (let index = 0; index < len; index++) {
-            const children = node.children || [];
-            delete node.children;
-            const textChildren = [];
-            const otherChildren = [];
-            let breakEach;
-            children.forEach((item) => {
-                if (
-                    breakEach ||
-                    item.type === LxNodeType.element ||
-                    item.type === LxNodeType.comment
-                ) {
-                    breakEach = true;
-                    otherChildren.push(item);
-                    return;
+        if (parentIndex !== -1) {
+            const len = parentIndex + 1;
+            let node = currentNode;
+            for (let index = 0; index < len; index++) {
+                const children = node.children || [];
+                delete node.children;
+                const textChildren = [];
+                const otherChildren = [];
+                let breakEach;
+                children.forEach((item) => {
+                    if (
+                        breakEach ||
+                        item.type === LxNodeType.element ||
+                        item.type === LxNodeType.comment
+                    ) {
+                        breakEach = true;
+                        otherChildren.push(item);
+                        return;
+                    }
+                    textChildren.push(item);
+                });
+                if (textChildren.length) {
+                    node.children = textChildren;
+                    const lastTextLoc =
+                        textChildren[textChildren.length - 1].locationInfo;
+                    node.locationInfo.endOffset = lastTextLoc.endOffset;
+                    node.locationInfo.endCol = lastTextLoc.endCol;
+                    node.locationInfo.endLine = lastTextLoc.endLine;
+                } else {
+                    node.locationInfo.endOffset =
+                        node.locationInfo.startTag.endOffset;
+                    node.locationInfo.endCol =
+                        node.locationInfo.startTag.endCol;
+                    node.locationInfo.endLine =
+                        node.locationInfo.startTag.endLine;
                 }
-                textChildren.push(item);
-            });
-            if (textChildren.length) {
-                node.children = textChildren;
-                const lastTextLoc =
-                    textChildren[textChildren.length - 1].locationInfo;
-                node.locationInfo.endOffset = lastTextLoc.endOffset;
-                node.locationInfo.endCol = lastTextLoc.endCol;
-                node.locationInfo.endLine = lastTextLoc.endLine;
-            } else {
-                node.locationInfo.endOffset =
-                    node.locationInfo.startTag.endOffset;
-                node.locationInfo.endCol = node.locationInfo.startTag.endCol;
-                node.locationInfo.endLine = node.locationInfo.startTag.endLine;
+                node.parent.children = node.parent.children.concat(
+                    otherChildren
+                );
+                fireEvent(LxEventType.endTagEnd, arg, node);
+                fireEvent(LxEventType.nodeEnd, arg, node);
+                node.notClose = true;
+                node = node.parent;
+                arg.currentNode = node;
             }
-            node.parent.children = node.parent.children.concat(otherChildren);
+            node.locationInfo.endOffset = endTag.endOffset = arg.index;
+            node.locationInfo.endCol = endTag.endCol = arg.col;
+            node.locationInfo.endLine = endTag.endLine = arg.line;
+            node.locationInfo.endTag = endTag;
             fireEvent(LxEventType.endTagEnd, arg, node);
             fireEvent(LxEventType.nodeEnd, arg, node);
-            node.selfcloseing = true;
-            node = node.parent;
-            arg.currentNode = node;
+            if (node.parent) {
+                arg.currentNode = node.parent;
+            } else {
+                delete arg.currentNode;
+            }
         }
-        node.locationInfo.endOffset = endTag.endOffset = arg.index;
-        node.locationInfo.endCol = endTag.endCol = arg.col;
-        node.locationInfo.endLine = endTag.endLine = arg.line;
-        node.locationInfo.endTag = endTag;
-        fireEvent(LxEventType.endTagEnd, arg, node);
-        fireEvent(LxEventType.nodeEnd, arg, node);
-        if (node.parent) {
-            arg.currentNode = node.parent;
-        } else {
-            delete arg.currentNode;
-        }
+        return;
+    }
+    if (currentNode.parent) {
+        arg.currentNode = currentNode.parent;
+        closeElement(arg);
     }
 };
 
-export const parseEndTag = (startIndex: number, arg: LxParseArg) => {
+export const parseStartTag = (startIndex: number, arg: LxParseArg) => {
     const { xml, xmlLength } = arg;
-    const endTag: LxLocation = {
-        startLine: arg.line,
-        startCol: arg.col,
-        startOffset: startIndex,
-    };
-    fireEvent(LxEventType.endTagStart, arg, arg.currentNode);
-    plusArgNumber(arg, 1, 0, 1);
-    let value = "";
+    let selfCloseing;
+    let isPI = xml[arg.index + 1] === "?";
+    let tagName = "";
+    let startTagClosed;
+    const node = initNode(
+        isPI ? LxNodeType.processingInstruction : LxNodeType.element,
+        arg
+    );
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
         const hookResult = execLoopHook(arg);
         if (hookResult === 1) {
@@ -315,17 +200,104 @@ export const parseEndTag = (startIndex: number, arg: LxParseArg) => {
             break;
         }
         const char = xml[arg.index];
+        if (RexSpace.test(char)) {
+            if (arg.index > startIndex && tagName) {
+                node.name = tagName;
+                fireEvent(LxEventType.nodeNameEnd, arg, node);
+                if (isPI) {
+                    node.locationInfo.startTag.endLine = arg.line;
+                    node.locationInfo.startTag.endCol = arg.col;
+                    node.locationInfo.startTag.endOffset = arg.index;
+                    startTagClosed = true;
+                    fireEvent(LxEventType.startTagEnd, arg, node);
+                }
+                plusArgNumber(arg, 1, 0, 1);
+                break;
+            }
+            if (!isTrueOption(arg, "allowNearTagNameSpace")) {
+                throwError(TAG_BOUNDARY_CHAR_HAS_SPACE, arg);
+            }
+            checkLineBreak(arg);
+            if (arg.index === xmlLength - 1) {
+                throwError(TAG_NAME_IS_EMPTY, arg);
+            }
+            continue;
+        }
         if (char === "<") {
             throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
         }
-        if (char === ">") {
-            closeElement(arg, value, endTag);
+        if (char === "?" && isPI && xml[arg.index + 1] === ">") {
+            node.locationInfo.endTag = {
+                startCol: arg.col,
+                startLine: arg.line,
+                startOffset: arg.index,
+            };
+            fireEvent(LxEventType.endTagStart, arg, node);
+            plusArgNumber(arg, 1, 0, 1);
+            fireEvent(LxEventType.endTagEnd, arg, node);
+            fireEvent(LxEventType.nodeEnd, arg, node);
             break;
         }
-        if (char !== "/") {
-            value += char;
+        if (char === ">") {
+            if (tagName) {
+                node.name = tagName;
+            }
+            node.locationInfo.startTag.endLine = arg.line;
+            node.locationInfo.startTag.endCol = arg.col;
+            node.locationInfo.startTag.endOffset = arg.index;
+            startTagClosed = true;
+            fireEvent(LxEventType.nodeNameEnd, arg, node);
+            fireEvent(LxEventType.startTagEnd, arg, node);
+            break;
+        }
+        if (char === "/" && xml[arg.index + 1] === ">") {
+            if (tagName) {
+                node.name = tagName;
+            }
+            fireEvent(LxEventType.nodeNameEnd, arg, node);
+            selfCloseing = true;
+            plusArgNumber(arg, 1, 0, 1);
+            node.locationInfo.startTag.endLine = arg.line;
+            node.locationInfo.startTag.endCol = arg.col;
+            node.locationInfo.startTag.endOffset = arg.index;
+            fireEvent(LxEventType.startTagEnd, arg, node);
+            fireEvent(LxEventType.nodeEnd, arg, node);
+            break;
+        }
+        if (arg.index === xmlLength - 1) {
+            // TODO:适配allowNodeNotClose
+            throwError(TAG_NOT_CLOSE, arg);
+        }
+        tagName += char;
+    }
+    if (!tagName) {
+        // TODO:适配allowNodeNameNotClose
+        throwError(
+            TAG_NAME_IS_EMPTY,
+            arg,
+            node.locationInfo.startLine,
+            node.locationInfo.startCol
+        );
+    }
+    if (selfCloseing) {
+        node.selfcloseing = true;
+        node.locationInfo.endLine = node.locationInfo.startTag.endLine;
+        node.locationInfo.endCol = node.locationInfo.startTag.endCol;
+        node.locationInfo.endOffset = node.locationInfo.startTag.endOffset;
+        return pushElement(node, arg);
+    }
+    if (!startTagClosed || isPI) {
+        fireEvent(LxEventType.attrsStart, arg, node);
+        const attrs = parseAttrs(arg, node);
+        if (attrs.length) {
+            node.attrs = attrs;
+            node.locationInfo.attrs = {};
+            attrs.forEach((attr) => {
+                node.locationInfo.attrs[attr.name] = attr.locationInfo;
+            });
         }
     }
+    return pushElement(node, arg);
 };
 
 export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
@@ -339,18 +311,8 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     const plusNormalChar = (char?: string) => {
         if (!findTarget) {
             findTarget = LxParseAttrTarget.name;
-            currentAttr = {
-                type: LxNodeType.attr,
-                equalCount: 0,
-                locationInfo: {
-                    startLine: arg.line,
-                    startCol: arg.col,
-                    startOffset: arg.index,
-                },
-                parent: element,
-            } as LxNode;
-            fireEvent(LxEventType.nodeStart, arg, currentAttr);
-            fireEvent(LxEventType.nodeNameStart, arg, currentAttr);
+            currentAttr = initNode(LxNodeType.attr, arg);
+            currentAttr.parent = element;
         }
         if (char) {
             if (!value) {
@@ -557,7 +519,11 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
             }
         }
         const selfClose = char === "/" && xml[arg.index + 1] === ">";
-        if (char === ">" || selfClose) {
+        const piClose =
+            char === "?" &&
+            element.type === LxNodeType.processingInstruction &&
+            xml[arg.index + 1] === ">";
+        if (char === ">" || selfClose || piClose) {
             if (
                 !findTarget ||
                 findTarget === LxParseAttrTarget.name ||
@@ -567,7 +533,23 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
                     currentAttr &&
                     !currentAttr.boundaryChar)
             ) {
-                fireEvent(LxEventType.startTagEnd, arg, element);
+                !piClose && fireEvent(LxEventType.startTagEnd, arg, element);
+                if (piClose) {
+                    fireEvent(LxEventType.endTagStart, arg, element);
+                    element.locationInfo.endTag = {
+                        startLine: arg.line,
+                        startCol: arg.col,
+                        startOffset: arg.index,
+                    };
+                    plusArgNumber(arg, 1, 0, 1);
+                    fireEvent(LxEventType.nodeEnd, arg, element);
+                    element.locationInfo.endOffset = element.locationInfo.endTag.endOffset =
+                        arg.index;
+                    element.locationInfo.endLine = element.locationInfo.endTag.endLine =
+                        arg.line;
+                    element.locationInfo.endCol = element.locationInfo.endTag.endCol =
+                        arg.col;
+                }
                 if (selfClose) {
                     plusArgNumber(arg, 1, 0, 1);
                     fireEvent(LxEventType.nodeEnd, arg, element);
@@ -576,9 +558,11 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
                     element.locationInfo.endLine = arg.line;
                     element.locationInfo.endCol = arg.col;
                 }
-                element.locationInfo.startTag.endOffset = arg.index;
-                element.locationInfo.startTag.endLine = arg.line;
-                element.locationInfo.startTag.endCol = arg.col;
+                if (!piClose || selfClose) {
+                    element.locationInfo.startTag.endOffset = arg.index;
+                    element.locationInfo.startTag.endLine = arg.line;
+                    element.locationInfo.startTag.endCol = arg.col;
+                }
                 if (currentAttr) {
                     if (findTarget === LxParseAttrTarget.name) {
                         if (value) {
@@ -620,17 +604,15 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
     return attrs;
 };
 
-export const parseCDATA = (arg: LxParseArg) => {
+export const parseEndTag = (startIndex: number, arg: LxParseArg) => {
     const { xml, xmlLength } = arg;
-    const node: LxNode = {
-        type: LxNodeType.cdata,
-        locationInfo: {
-            startCol: arg.col,
-            startOffset: arg.index,
-            startLine: arg.line,
-        },
+    const endTag: LxLocation = {
+        startLine: arg.line,
+        startCol: arg.col,
+        startOffset: startIndex,
     };
-    plusArgNumber(arg, CDATA_START.length, 0, CDATA_START.length);
+    fireEvent(LxEventType.endTagStart, arg, arg.currentNode);
+    plusArgNumber(arg, 1, 0, 1);
     let value = "";
     for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
         const hookResult = execLoopHook(arg);
@@ -641,24 +623,41 @@ export const parseCDATA = (arg: LxParseArg) => {
             break;
         }
         const char = xml[arg.index];
-        if (
-            char === "]" &&
-            xml.substr(arg.index, CDATA_END.length) === CDATA_END
-        ) {
-            plusArgNumber(arg, CDATA_END.length - 1, 0, CDATA_END.length - 1);
-            if (value) {
-                node.content = value;
-            }
-            node.locationInfo.endCol = arg.col;
-            node.locationInfo.endLine = arg.line;
-            node.locationInfo.endOffset = arg.index;
+        if (char === "<") {
+            throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
+        }
+        if (char === ">") {
+            closeElement(arg, value, endTag);
             break;
         }
-        value += char;
-        checkLineBreak(arg);
-        if (arg.index === xmlLength - 1) {
-            throwError(TAG_NOT_CLOSE, arg);
+        if (char !== "/") {
+            value += char;
         }
+    }
+};
+
+export const parseCDATA = (arg: LxParseArg) => {
+    const { xml, xmlLength } = arg;
+    const node = initNode(LxNodeType.cdata, arg);
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
+        }
+        const char = xml[arg.index];
+        if (
+            char === CDATA_END[0] &&
+            xml.substr(arg.index, CDATA_END.length) === CDATA_END
+        ) {
+            execEndTag(arg, node);
+            break;
+        }
+        node.content += char;
+        checkLineBreak(arg);
+        checkNodeContentEnd(arg);
     }
     if (arg.currentNode) {
         if (arg.currentNode.type === LxNodeType.element) {
@@ -674,9 +673,46 @@ export const parseCDATA = (arg: LxParseArg) => {
     arg.nodes.push(node);
 };
 
+export const parseComment = (arg: LxParseArg) => {
+    const { xml, xmlLength } = arg;
+    const node = initNode(LxNodeType.comment, arg);
+    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
+        const hookResult = execLoopHook(arg);
+        if (hookResult === 1) {
+            continue;
+        }
+        if (hookResult === 2) {
+            break;
+        }
+        const char = xml[arg.index];
+        if (
+            char === COMMENT_END[0] &&
+            xml.substr(arg.index, COMMENT_END.length) === COMMENT_END
+        ) {
+            execEndTag(arg, node);
+            break;
+        }
+        node.content += char;
+        checkLineBreak(arg);
+        checkNodeContentEnd(arg);
+    }
+    return pushElement(node, arg);
+};
+
 const execLoopHook = (arg: LxParseArg): number => {
     if (arg.options && typeof arg.options.loopHook === "function") {
         return arg.options.loopHook(arg);
+    }
+};
+
+const loopClose = (arg: LxParseArg) => {
+    const node = arg.currentNode;
+    if (node.type !== LxNodeType.text && !node.locationInfo.endTag) {
+        closeNode(node, arg);
+    }
+    if (node.parent) {
+        arg.currentNode = node.parent;
+        return loopClose(arg);
     }
 };
 
@@ -763,6 +799,10 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
         }
         arg.currentNode.content += char;
         checkLineBreak(arg);
+    }
+    if (arg.currentNode) {
+        loopClose(arg);
+        delete arg.currentNode;
     }
     return arg;
 };

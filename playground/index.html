@@ -110,7 +110,7 @@
             </label>
             <label class="option-item">
                 <input type="checkbox" />
-                <b>allowTagNotClose</b>
+                <b>allowNodeNotClose</b>
                 <small>是否允许标签不关闭</small>
             </label>
             <label class="option-item">
@@ -255,6 +255,9 @@
                         `<span name="Tom" man age=20 ></span>`
                     ).trim(),
                     language: "xml",
+                    minimap: {
+                        enabled: false,
+                    },
                 });
                 xmlEditor.onDidChangeCursorPosition((e) => {
                     const { lineNumber, column } = e.position;
@@ -266,6 +269,9 @@
                 const jsonEditor = monaco.editor.create(txtJSON[0], {
                     value: "",
                     language: "json",
+                    minimap: {
+                        enabled: false,
+                    },
                 });
                 window.jsonEditor = jsonEditor;
                 $("#btnParse").bind("click", (e) => {
@@ -277,8 +283,21 @@
                         locationInfo: $("#chkLocation").prop("checked"),
                     });
                     localStorage.setItem("Lx.Options", JSON.stringify(options));
-                    const strJSON = JSON.stringify(parseResult, null, 4);
-                    jsonEditor.setValue(strJSON);
+                    jsonEditor.setValue(JSON.stringify(parseResult, null, 4));
+                    if (parseResult.error && parseResult.error.line) {
+                        const { line, col } = parseResult.error;
+                        xmlEditor.setPosition({
+                            lineNumber: line,
+                            column: col,
+                        });
+                        xmlEditor.setSelection({
+                            endColumn: col + 1,
+                            endLineNumber: line,
+                            startColumn: col,
+                            startLineNumber: line,
+                        });
+                        xmlEditor.focus();
+                    }
                 });
             };
             pageInit();
