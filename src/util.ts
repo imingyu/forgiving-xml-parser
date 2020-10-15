@@ -269,9 +269,9 @@ export const execEndTag = (arg: LxParseArg, node: LxNode) => {
     if (node.type === LxNodeType.cdata) {
         plusArgNumber(arg, CDATA_END.length - 1, 0, CDATA_END.length - 1);
     } else if (node.type === LxNodeType.processingInstruction) {
-        plusArgNumber(arg, 2, 0, 2);
+        plusArgNumber(arg, PI_END.length - 1, 0, PI_END.length - 1);
     } else if (node.type === LxNodeType.comment) {
-        plusArgNumber(arg, 3, 0, 3);
+        plusArgNumber(arg, COMMENT_END.length - 1, 0, COMMENT_END.length - 1);
     }
     node.locationInfo.endTag.endCol = node.locationInfo.endCol = arg.col;
     node.locationInfo.endTag.endLine = node.locationInfo.endLine = arg.line;
@@ -294,6 +294,9 @@ export const initNode = (
             startOffset: arg.index,
         },
     };
+    if (type === LxNodeType.attr) {
+        node.equalCount = 0;
+    }
     if (type !== LxNodeType.text) {
         node.locationInfo.startTag = {
             startLine: arg.line,

@@ -41,7 +41,13 @@ import {
     checkNodeContentEnd,
     initNode,
 } from "./util";
-import { CDATA_END, CDATA_START, COMMENT_END } from "./var";
+import {
+    CDATA_END,
+    CDATA_START,
+    COMMENT_END,
+    COMMENT_START,
+    PI_END,
+} from "./var";
 
 export const RexSpace = /\s/;
 
@@ -226,16 +232,12 @@ export const parseStartTag = (startIndex: number, arg: LxParseArg) => {
         if (char === "<") {
             throwError(TAG_HAS_MORE_BOUNDARY_CHAR, arg);
         }
-        if (char === "?" && isPI && xml[arg.index + 1] === ">") {
-            node.locationInfo.endTag = {
-                startCol: arg.col,
-                startLine: arg.line,
-                startOffset: arg.index,
-            };
-            fireEvent(LxEventType.endTagStart, arg, node);
-            plusArgNumber(arg, 1, 0, 1);
-            fireEvent(LxEventType.endTagEnd, arg, node);
-            fireEvent(LxEventType.nodeEnd, arg, node);
+        if (
+            char === PI_END[0] &&
+            isPI &&
+            xml.substr(arg.index, PI_END.length) === PI_END
+        ) {
+            execEndTag(arg, node);
             break;
         }
         if (char === ">") {
@@ -520,9 +522,9 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
         }
         const selfClose = char === "/" && xml[arg.index + 1] === ">";
         const piClose =
-            char === "?" &&
+            char === PI_END[0] &&
             element.type === LxNodeType.processingInstruction &&
-            xml[arg.index + 1] === ">";
+            xml.substr(arg.index, PI_END.length) === PI_END;
         if (char === ">" || selfClose || piClose) {
             if (
                 !findTarget ||
@@ -535,20 +537,7 @@ export const parseAttrs = (arg: LxParseArg, element: LxNode): LxNode[] => {
             ) {
                 !piClose && fireEvent(LxEventType.startTagEnd, arg, element);
                 if (piClose) {
-                    fireEvent(LxEventType.endTagStart, arg, element);
-                    element.locationInfo.endTag = {
-                        startLine: arg.line,
-                        startCol: arg.col,
-                        startOffset: arg.index,
-                    };
-                    plusArgNumber(arg, 1, 0, 1);
-                    fireEvent(LxEventType.nodeEnd, arg, element);
-                    element.locationInfo.endOffset = element.locationInfo.endTag.endOffset =
-                        arg.index;
-                    element.locationInfo.endLine = element.locationInfo.endTag.endLine =
-                        arg.line;
-                    element.locationInfo.endCol = element.locationInfo.endTag.endCol =
-                        arg.col;
+                    execEndTag(arg, element);
                 }
                 if (selfClose) {
                     plusArgNumber(arg, 1, 0, 1);
@@ -733,6 +722,10 @@ const loopParse = (arg: LxParseArg): LxParseArg => {
         if (char === "<") {
             if (xml.substr(arg.index, CDATA_START.length) === CDATA_START) {
                 parseCDATA(arg);
+                continue;
+            }
+            if (xml.substr(arg.index, COMMENT_START.length) === COMMENT_START) {
+                parseComment(arg);
                 continue;
             }
             if (!arg.currentNode) {
