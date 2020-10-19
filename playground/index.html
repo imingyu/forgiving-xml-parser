@@ -282,6 +282,7 @@
                     const parseResult = LooseXmlParser.parseResultToJSON(json, {
                         locationInfo: $("#chkLocation").prop("checked"),
                     });
+                    console.log(parseResult);
                     localStorage.setItem("Lx.Options", JSON.stringify(options));
                     jsonEditor.setValue(JSON.stringify(parseResult, null, 4));
                     if (parseResult.error && parseResult.error.line) {

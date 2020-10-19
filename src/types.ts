@@ -9,6 +9,8 @@ export enum LxNodeType {
     cdata = "cdata",
     // <? ?>
     processingInstruction = "processingInstruction",
+    // <!DOCTYPE >
+    dtd = "dtd",
 }
 export enum LxParseAttrTarget {
     name = "name",
@@ -132,9 +134,7 @@ export interface LxParseResultJSON {
 export interface LxNodeLocationInfo extends LxLocation {
     startTag?: LxLocation;
     endTag?: LxLocation;
-    attrs?: {
-        [prop: string]: LxLocation;
-    };
+    attrs?: LxLocation[];
 }
 export interface LxNodeJSON {
     type: LxNodeType;

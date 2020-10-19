@@ -14,10 +14,13 @@ import {
     LxParseOptions,
 } from "./types";
 import {
+    ALONE_NODE_MAP,
     CDATA_END,
     CDATA_START,
     COMMENT_END,
     COMMENT_START,
+    DTD_END,
+    DTD_START,
     PI_END,
     PI_START,
 } from "./var";
@@ -223,14 +226,16 @@ export const equalTagName = (
     node: LxNode,
     endTagName: string
 ) => {
-    const startTagName = node.name;
-    const lowerStartTagName = startTagName.toLowerCase();
-    if (endTagName !== startTagName) {
-        if (
-            !isTrueOption(arg, "ignoreTagNameCaseEqual") ||
-            endTagName.toLowerCase() !== lowerStartTagName
-        ) {
-            return false;
+    if (node.type === LxNodeType.element) {
+        const startTagName = node.name;
+        const lowerStartTagName = startTagName.toLowerCase();
+        if (endTagName !== startTagName) {
+            if (
+                !isTrueOption(arg, "ignoreTagNameCaseEqual") ||
+                endTagName.toLowerCase() !== lowerStartTagName
+            ) {
+                return false;
+            }
         }
     }
     return true;
@@ -281,11 +286,7 @@ export const execEndTag = (arg: LxParseArg, node: LxNode) => {
     fireEvent(LxEventType.nodeEnd, arg, node);
 };
 
-export const initNode = (
-    type: LxNodeType,
-    arg: LxParseArg,
-    fireNodeEvent: boolean = true
-): LxNode => {
+export const initNode = (type: LxNodeType, arg: LxParseArg): LxNode => {
     const node: LxNode = {
         type,
         locationInfo: {
@@ -304,59 +305,59 @@ export const initNode = (
             startOffset: arg.index,
         };
     }
-    if (fireNodeEvent) {
-        fireEvent(LxEventType.nodeStart, arg, node);
-        if (type === LxNodeType.text) {
-            node.content = "";
-            fireEvent(LxEventType.nodeContentStart, arg, node);
-            return node;
-        }
-        fireEvent(LxEventType.startTagStart, arg, node);
-        if (type === LxNodeType.element) {
-            plusArgNumber(arg, 1, 0, 1);
-            fireEvent(LxEventType.nodeNameStart, arg, node);
-            return node;
-        }
-        if (type === LxNodeType.processingInstruction) {
-            plusArgNumber(arg, PI_START.length, 0, PI_START.length);
-            fireEvent(LxEventType.nodeNameStart, arg, node);
-            return node;
-        }
-        if (type === LxNodeType.comment) {
-            plusArgNumber(arg, COMMENT_START.length, 0, COMMENT_START.length);
-            node.locationInfo.startTag.endLine = arg.line;
-            node.locationInfo.startTag.endCol = arg.col;
-            node.locationInfo.startTag.endOffset = arg.index;
-            fireEvent(LxEventType.startTagEnd, arg, node);
-            node.content = "";
-            fireEvent(LxEventType.nodeContentStart, arg, node);
-            return node;
-        }
-        if (type === LxNodeType.cdata) {
-            plusArgNumber(arg, CDATA_START.length, 0, CDATA_START.length);
-            node.locationInfo.startTag.endLine = arg.line;
-            node.locationInfo.startTag.endCol = arg.col;
-            node.locationInfo.startTag.endOffset = arg.index;
-            fireEvent(LxEventType.startTagEnd, arg, node);
-            node.content = "";
-            fireEvent(LxEventType.nodeContentStart, arg, node);
-            return node;
-        }
+    fireEvent(LxEventType.nodeStart, arg, node);
+    if (type === LxNodeType.text) {
+        node.content = "";
+        fireEvent(LxEventType.nodeContentStart, arg, node);
+        return node;
+    }
+    fireEvent(LxEventType.startTagStart, arg, node);
+    if (type === LxNodeType.element) {
+        plusArgNumber(arg, 1, 0, 1);
+        fireEvent(LxEventType.nodeNameStart, arg, node);
+        return node;
+    }
+    if (type === LxNodeType.processingInstruction) {
+        plusArgNumber(arg, PI_START.length, 0, PI_START.length);
+        fireEvent(LxEventType.nodeNameStart, arg, node);
+        return node;
+    }
+    if (type === LxNodeType.dtd) {
+        plusArgNumber(arg, DTD_START.length, 0, DTD_START.length);
+        fireEvent(LxEventType.nodeNameStart, arg, node);
+        return node;
+    }
+    if (type === LxNodeType.comment) {
+        plusArgNumber(arg, COMMENT_START.length, 0, COMMENT_START.length);
+        node.locationInfo.startTag.endLine = arg.line;
+        node.locationInfo.startTag.endCol = arg.col;
+        node.locationInfo.startTag.endOffset = arg.index;
+        fireEvent(LxEventType.startTagEnd, arg, node);
+        node.content = "";
+        fireEvent(LxEventType.nodeContentStart, arg, node);
+        return node;
+    }
+    if (type === LxNodeType.cdata) {
+        plusArgNumber(arg, CDATA_START.length, 0, CDATA_START.length);
+        node.locationInfo.startTag.endLine = arg.line;
+        node.locationInfo.startTag.endCol = arg.col;
+        node.locationInfo.startTag.endOffset = arg.index;
+        fireEvent(LxEventType.startTagEnd, arg, node);
+        node.content = "";
+        fireEvent(LxEventType.nodeContentStart, arg, node);
+        return node;
     }
     return node;
 };
 
 export const checkNodeContentEnd = (arg: LxParseArg, content?: string) => {
-    const { xml, currentNode, xmlLength } = arg;
+    const { currentNode, xmlLength } = arg;
     let isEnd;
-    if (currentNode.type === LxNodeType.cdata) {
-        isEnd = xml.substr(arg.index + 1, CDATA_END.length) === CDATA_END;
-    }
-    if (currentNode.type === LxNodeType.comment) {
-        isEnd = xml.substr(arg.index + 1, COMMENT_END.length) === COMMENT_END;
-    }
-    if (currentNode.type === LxNodeType.processingInstruction) {
-        isEnd = xml.substr(arg.index + 1, PI_END.length) === PI_END;
+    if (
+        ALONE_NODE_MAP[currentNode.type] &&
+        equalSubStr(arg.xml, arg.index + 1, ALONE_NODE_MAP[currentNode.type])
+    ) {
+        isEnd = true;
     }
     if (arg.index === xmlLength - 1) {
         isEnd = true;
@@ -366,5 +367,38 @@ export const checkNodeContentEnd = (arg: LxParseArg, content?: string) => {
             currentNode.content = content;
         }
         fireEvent(LxEventType.nodeContentEnd, arg, currentNode);
+    }
+};
+
+export const equalSubStr = (
+    fullStr: string,
+    index: number,
+    str: string
+): boolean => {
+    if (fullStr.substr(index, str.length) === str) {
+        return true;
+    }
+    return false;
+};
+
+export const getNodeType = (arg: LxParseArg): LxNodeType => {
+    if (equalSubStr(arg.xml, arg.index, CDATA_START)) {
+        return LxNodeType.cdata;
+    }
+    if (equalSubStr(arg.xml, arg.index, COMMENT_START)) {
+        return LxNodeType.comment;
+    }
+    if (equalSubStr(arg.xml, arg.index, PI_START)) {
+        return LxNodeType.processingInstruction;
+    }
+    if (equalSubStr(arg.xml, arg.index, DTD_START)) {
+        return LxNodeType.dtd;
+    }
+    return LxNodeType.element;
+};
+
+export const execLoopHook = (arg: LxParseArg): number => {
+    if (arg.options && typeof arg.options.loopHook === "function") {
+        return arg.options.loopHook(arg);
     }
 };
