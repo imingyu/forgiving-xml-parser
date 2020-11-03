@@ -1,124 +1,174 @@
 import {
-    LxParseArg,
+    LxParseContext,
     LxNodeType,
     LxParseOptions,
     LxParseResult,
     LxParseResultJSON,
     LxToJSONOptions,
+    LxNodeParser,
+    LxNodeParserMatcher,
+    LxCursorPosition,
 } from "./types";
-import {
-    pick,
-    nodeToJSON,
-    plusArgNumber,
-    lxWrongToJSON,
-    pushElement,
-    checkLineBreak,
-    getNodeType,
-    equalSubStr,
-    execLoopHook,
-    initNode,
-} from "./util";
-import { ALONE_NODE_MAP, ELEMENT_END, PI_END } from "./var";
-import { parseAloneNode } from "./node-alone";
-import {
-    closeNode,
-    maybeNewNoTextNode,
-    parseEndTag,
-    parseStartTag,
-    pushNode,
-} from "./node";
+import { pick, nodeToJSON, lxWrongToJSON, moveCursor } from "./util";
+import { DEFAULT_OPTIONS } from "./var";
+import { CommentParser } from "./node/comment";
+import { CDATAParser } from "./node/cdata";
+import { ElementParser } from "./node/element";
 
-const loopClose = (arg: LxParseArg) => {
-    const node = arg.currentNode;
-    if (node.type !== LxNodeType.text && !node.locationInfo.endTag) {
-        closeNode(node, arg);
-    }
-    if (node.parent) {
-        arg.currentNode = node.parent;
-        return loopClose(arg);
-    }
-};
+DEFAULT_OPTIONS.nodeParser = [CommentParser, CDATAParser, ElementParser];
+// import { closeNode, parseEndTag, parseStartTag } from "./node";
+// const loopClose = (context: LxParseContext) => {
+//     const node = context.currentNode;
+//     if (node.type !== LxNodeType.text && !node.locationInfo.endTag) {
+//         closeNode(node, context);
+//     }
+//     if (node.parent) {
+//         context.currentNode = node.parent;
+//         return loopClose(context);
+//     }
+// };
 
-const loopParse = (arg: LxParseArg): LxParseArg => {
-    const { xml, xmlLength } = arg;
-    for (; arg.index < xmlLength; plusArgNumber(arg, 1, 0, 1)) {
-        if (!arg.maxLine) {
-            arg.maxLine = 1;
-        }
-        const hookResult = execLoopHook(arg);
-        if (hookResult === 1) {
-            continue;
-        }
-        if (hookResult === 2) {
-            break;
-        }
-        if (maybeNewNoTextNode(arg)) {
-            const nodeType = getNodeType(arg);
-            if (ALONE_NODE_MAP[nodeType]) {
-                parseAloneNode(nodeType, arg);
-                continue;
-            }
-            parseStartTag(arg);
-            continue;
-        }
-        const char = xml[arg.index];
-        if (char === "<") {
+// const loopParse = (context: LxParseContext): LxParseContext => {
+//     const { xml, xmlLength } = context;
+//     for (; context.index < xmlLength; plusArgNumber(context, 1, 0, 1)) {
+//         if (!context.maxLine) {
+//             context.maxLine = 1;
+//         }
+//         const char = xml[context.index];
+//         if (char === "<") {
+//             if (!context.currentNode) {
+//                 const nodeType = getNodeType(context);
+//                 if (ALONE_NODE_MAP[nodeType]) {
+//                     parseAloneNode(nodeType, context);
+//                     continue;
+//                 }
+//                 parseStartTag(context);
+//                 continue;
+//             }
+//             if (checkElementEnd(context)) {
+//                 parseEndTag(context);
+//                 continue;
+//             }
+//         }
+//         if (checkDtdEnd(context) || checkPIEnd(context)) {
+//             parseEndTag(context);
+//             continue;
+//         }
+//         if (!context.currentNode) {
+//             pushNode(initNode(LxNodeType.text, context), context);
+//         }
+//         if (context.currentNode.type !== LxNodeType.text) {
+//             const node = initNode(LxNodeType.text, context);
+//             node.content = char;
+//             pushNode(node, context);
+//             checkLineBreak(context);
+//             continue;
+//         }
+//         context.currentNode.content += char;
+//         checkLineBreak(context);
+//     }
+//     if (context.currentNode) {
+//         loopClose(context);
+//         delete context.currentNode;
+//     }
+//     return context;
+// };
+
+export const findParser = (
+    context: LxParseContext,
+    cursor?: LxCursorPosition
+): LxNodeParser => {
+    return (context.options.nodeParser || []).find((parser) => {
+        const matchType = typeof parser.match;
+        if (matchType === "string") {
             if (
-                arg.currentNode.type === LxNodeType.element &&
-                equalSubStr(xml, arg.index, ELEMENT_END)
+                context.xml.substr(
+                    cursor ? cursor.offset : context.offset,
+                    (parser.match as string).length
+                ) === parser.match
             ) {
-                parseEndTag(arg.index, arg);
-                continue;
+                return true;
             }
+            return false;
         }
-        if (
-            char === "]" &&
-            (arg.currentNode.type === LxNodeType.dtd ||
-                (arg.currentNode.parent &&
-                    arg.currentNode.parent.type === LxNodeType.dtd))
-        ) {
-            parseEndTag(arg.index, arg);
-            continue;
+        if (matchType === "function") {
+            return (parser.match as LxNodeParserMatcher)(
+                context.xml,
+                cursor || {
+                    lineNumber: context.lineNumber,
+                    column: context.column,
+                    offset: context.offset,
+                }
+            );
         }
-        if (!arg.currentNode) {
-            pushNode(initNode(LxNodeType.text, arg), arg);
+        if (parser.match instanceof RegExp) {
+            return parser.match.test(
+                context.xml.substr(cursor ? cursor.offset : context.offset)
+            );
         }
-        if (arg.currentNode.type !== LxNodeType.text) {
-            const node = initNode(LxNodeType.text, arg);
-            node.content = char;
-            pushNode(node, arg);
-            checkLineBreak(arg);
-            continue;
-        }
-        arg.currentNode.content += char;
-        checkLineBreak(arg);
-    }
-    if (arg.currentNode) {
-        loopClose(arg);
-        delete arg.currentNode;
-    }
-    return arg;
+    });
 };
 
 export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
-    const arg = {
-        index: 0,
+    options = typeof options !== "object" ? {} : options;
+    options = Object.assign({}, DEFAULT_OPTIONS, options);
+    const context: LxParseContext = {
+        offset: 0,
         xmlLength: xml.length,
         xml,
-        maxLine: 0,
-        maxCol: 0,
-        line: 1,
-        col: 1,
+        maxLineNumber: 0,
+        maxColumn: 0,
+        lineNumber: 1,
+        column: 1,
         nodes: [],
         options,
     };
     try {
-        loopParse(arg);
+        for (
+            ;
+            context.offset < context.xmlLength;
+            moveCursor(context, 0, 1, 1)
+        ) {
+            const parser = findParser(context);
+            if (parser) {
+                parser.parse(context);
+                continue;
+            }
+            // if (!context.currentNode) {
+            //     pushNode(initNode(LxNodeType.text, context), context);
+            // }
+            // const char = xml[context.offset];
+            // if (context.currentNode.type !== LxNodeType.text) {
+            //     const node = initNode(LxNodeType.text, context);
+            //     node.content = char;
+            //     pushNode(node, context);
+            //     checkLineBreak(context);
+            //     continue;
+            // }
+            // context.currentNode.content += char;
+            // checkLineBreak(context);
+            // const nextParser = findParser(
+            //     context,
+            //     moveCursor(
+            //         {
+            //             lineNumber: context.lineNumber,
+            //             column: context.column,
+            //             offset: context.offset,
+            //         },
+            //         0,
+            //         1,
+            //         1
+            //     )
+            // );
+            // if (nextParser) {
+            //     // TEXT END
+            // }
+        }
         return {
             xml,
-            maxLine: arg.maxLine,
-            maxCol: arg.maxCol,
-            nodes: arg.nodes,
+            maxLine: context.maxLineNumber,
+            maxCol: context.maxColumn,
+            nodes: context.nodes,
         } as LxParseResult;
     } catch (error) {
         return {
@@ -143,9 +193,7 @@ export const parseResultToJSON = (
     pick("maxCol", res, parseResult, options);
     pick("xml", res, parseResult, options);
     if (!parseResult.error) {
-        res.nodes = parseResult.nodes.map((node) =>
-            nodeToJSON(node, !!(options && options.locationInfo))
-        );
+        res.nodes = parseResult.nodes.map((node) => nodeToJSON(node, options));
     }
     return res;
 };

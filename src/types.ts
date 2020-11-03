@@ -11,6 +11,8 @@ export enum LxNodeType {
     processingInstruction = "processingInstruction",
     // <!DOCTYPE >
     dtd = "dtd",
+    // 自定义的
+    custom = "custom",
 }
 export enum LxParseAttrTarget {
     name = "name",
@@ -28,7 +30,7 @@ export enum LxEventType {
     endTagStart = "endTagStart",
     endTagEnd = "endTagEnd",
     attrsStart = "attrsStart",
-    attrNameStart = "attrNameStart",
+    attrsEnd = "attrsEnd",
     attrEqual = "attrEqual",
     attrLeftBoundary = "attrLeftBoundary",
     attrRightBoundary = "attrRightBoundary",
@@ -37,30 +39,30 @@ export enum LxEventType {
     error = "error",
     warn = "warn",
 }
-export interface LxWrong extends LxMessage {
+export declare type LxPick<T, K extends keyof T> = {
+    [P in K]: T[P];
+};
+export declare type LxExclude<T, U> = T extends U ? never : T;
+export declare type LxOmit<T, K extends keyof any> = LxPick<
+    T,
+    LxExclude<keyof T, K>
+>;
+export interface LxWrong extends LxMessage, LxCursorPosition {
     fragment?: string;
-    line: number;
-    col: number;
     detail?: string;
     customIgnore?: any;
-    stack: string;
+    stack?: string;
 }
 export interface LxMessage {
     code: number;
     message: string;
 }
-export interface LxEacher {
-    (arg: LxParseArg, continueFire?: Function, breakFire?: Function);
-}
-export interface LxParseArg {
-    index: number;
+export interface LxParseContext extends LxCursorPosition {
     xmlLength: number;
     xml: string;
     nodes: LxNode[];
-    line: number;
-    col: number;
-    maxLine: number;
-    maxCol: number;
+    maxLineNumber: number;
+    maxColumn: number;
     currentNode?: LxNode;
     options?: LxParseOptions;
     warnings?: LxWrong[];
@@ -70,42 +72,95 @@ export interface LxParseArg {
     breakEach?: boolean;
 }
 export interface LxErrorChecker {
-    (err: LxWrong, arg: LxParseArg): boolean;
+    (err: LxWrong, context: LxParseContext): boolean;
 }
 export interface LxEventHandler {
-    (type: LxEventType, arg: LxParseArg, data: any);
+    (type: LxEventType, context: LxParseContext, data: LxNode | LxWrong);
+}
+export interface LxCursorPosition {
+    lineNumber: number;
+    column: number;
+    offset: number;
+}
+export interface LxTryStep {
+    step: LxEventType;
+    cursor: LxCursorPosition;
+    data?:
+        | LxNode
+        | string
+        | LxWrong
+        | LxNodeType
+        | [LxNodeType, boolean]
+        | [LxNodeType, LxNodeNature];
 }
 export enum AttrMoreEqualDisposal {
     throwError = "throwError",
     merge = "merge",
     newAttr = "newAttr",
 }
-export interface LxLoopHookHandler {
-    (arg: LxParseArg): number;
+export enum StartTagMoreLeftBoundaryCharDisposal {
+    throwError = "throwError",
+    ignore = "ignore",
+    // 将字符追加到tagName
+    accumulationToName = "accumulationToName",
+    // 当做一个新的node处理
+    newNode = "newNode",
+    // 当做当前的子node处理
+    childNode = "childNode",
 }
-export interface LxNodeNotCloseChecker {
-    (node: LxNode, arg: LxParseArg): boolean;
+export interface LxLoopHookHandler {
+    (context: LxParseContext): number;
+}
+export interface LxOptionChecker {
+    (cursor: LxCursorPosition): boolean;
+}
+export interface LxEqualNameChecker {
+    (
+        startTagNeme: string,
+        endTagName: string,
+        node: LxNode,
+        context: LxParseContext
+    ): boolean;
+}
+export interface LxOptionDisposal<T> {
+    (node: LxNode, cursor: LxCursorPosition): T;
 }
 export interface LxParseOptions {
-    // 是否允许标签名称附近存在空白字符
-    allowNearTagNameSpace?: boolean;
-    // 忽略标签名称大小写对比
-    ignoreTagNameCaseEqual?: boolean;
+    // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
+    allowStartTagLeftBoundarySpace?: boolean | RegExp | LxOptionChecker;
+    // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
+    ignoreTagNameCaseEqual?: boolean | RegExp | LxEqualNameChecker;
     // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
-    allowNodeNotClose?: boolean | RegExp | LxNodeNotCloseChecker;
-    // 是否允许属性名为空
-    allowAttrNameEmpty?: boolean;
+    allowNodeNotClose?: boolean | RegExp | LxOptionChecker;
+    // 是否允许属性名为空；函数会将当前节点传入，返回true规则才生效
+    allowAttrNameEmpty?: boolean | LxOptionChecker;
     // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
-    allowAttrContentHasBr?: boolean;
+    allowAttrContentHasBr?: boolean | LxOptionChecker;
     // 是否允许属性等号附近存在空白字符
-    allowNearAttrEqualSpace?: boolean;
+    allowNearAttrEqualSpace?: boolean | LxOptionChecker;
     // 当遇到属性中含有多个“=”时怎么处置？
-    encounterAttrMoreEqual?: AttrMoreEqualDisposal;
+    encounterAttrMoreEqual?:
+        | AttrMoreEqualDisposal
+        | LxOptionDisposal<AttrMoreEqualDisposal>;
     // 当发生异常时均将异常信息传递到该函数，如果【结果===true】则抛出，否则均不抛出错误，并将结果连同原异常信息存入wranings
     checkError?: LxErrorChecker;
     // onEvent?: LxEventHandler;
     // 每次循环都会执行参函数，如果返回值=1则跳出本轮循环，如果=2则跳出循环
     loopHook?: LxLoopHookHandler;
+    onEvent?: LxEventHandler;
+    nodeParser?: LxNodeParser[];
+}
+export enum LxNodeNature {
+    alone = "alone",
+    children = "children",
+}
+export interface LxNodeParser {
+    match: string | RegExp | LxNodeParserMatcher;
+    nodeNature: LxNodeNature;
+    parse(context: LxParseContext);
+}
+export interface LxNodeParserMatcher {
+    (xml: string, cursor: LxCursorPosition): boolean;
 }
 export type LxParseOptionsKeys = keyof LxParseOptions;
 export interface LxToJSONOptions {
@@ -113,6 +168,7 @@ export interface LxToJSONOptions {
     maxCol?: boolean;
     xml?: boolean;
     locationInfo?: boolean;
+    steps?: boolean;
 }
 
 export interface LxParseResult extends LxParseResultJSON {
@@ -131,6 +187,10 @@ export interface LxParseResultJSON {
     warnings?: LxWrong[];
 }
 
+export interface LxBoundStepsLoopCallback {
+    (stepItem: LxTryStep, stepItemIndex: number): boolean;
+}
+
 export interface LxNodeLocationInfo extends LxLocation {
     startTag?: LxLocation;
     endTag?: LxLocation;
@@ -147,17 +207,29 @@ export interface LxNodeJSON {
     locationInfo?: LxNodeLocationInfo;
     boundaryChar?: string;
     equalCount?: number;
+    nature?: LxNodeNature;
 }
 export interface LxNode extends LxNodeJSON {
     children?: LxNode[];
     attrs?: LxNode[];
     parent?: LxNode;
+    steps?: LxTryStep[];
 }
 export interface LxLocation {
-    startLine: number;
-    endLine?: number;
-    startCol: number;
-    endCol?: number;
+    startLineNumber: number;
+    endLineNumber?: number;
+    startColumn: number;
+    endColumn?: number;
     startOffset: number;
     endOffset?: number;
+}
+
+export interface LxElementEndTagInfo {
+    content: string;
+    name: string;
+    boundaryHasSpace?: boolean;
+    locationInfo: LxLocation;
+    wrongList?: LxWrong[];
+    closed: boolean;
+    parentIndex: number;
 }

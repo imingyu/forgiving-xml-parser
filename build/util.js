@@ -2,6 +2,7 @@ const fs = require('fs');
 const fse = require('fse');
 const path = require('path')
 exports.clearDir = dirName => {
+    if (!fs.existsSync(dirName)) return;
     fs.readdirSync(dirName).forEach(fileName => {
         const fullName = path.join(dirName, fileName);
         const stat = fs.statSync(fullName)

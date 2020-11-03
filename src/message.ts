@@ -1,8 +1,8 @@
 import { LxMessage } from "./types";
 
-export const TAG_BOUNDARY_CHAR_HAS_SPACE: LxMessage = {
+export const TAG_BOUNDARY_HAS_SPACE: LxMessage = {
     code: 1,
-    message: "标签尖括号处存在空白字符",
+    message: "标签边界符处存在空白字符",
 };
 export const TAG_HAS_MORE_BOUNDARY_CHAR = {
     code: 2,

@@ -5,6 +5,6 @@
         "lib": ["ES2015", "ES6", "DOM"],
         "moduleResolution": "node"
     },
-    "include": ["src/*.ts"],
+    "include": ["src/**/*.ts", "src/*.ts"],
     "exclude": ["node_modules", "dist", "*.d.ts"]
 }
