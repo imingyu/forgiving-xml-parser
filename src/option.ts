@@ -8,40 +8,6 @@ import {
     LxWrong,
 } from "./types";
 import { isFunc } from "./util";
-
-export const throwError = (
-    msg: LxMessage,
-    context: LxParseContext,
-    line?: number,
-    col?: number,
-    detail?: string
-) => {
-    const err = (new Error(msg.message) as unknown) as LxWrong;
-    err.code = msg.code;
-    err.lineNumber = line || context.lineNumber;
-    err.column = col || context.column;
-    err.offset = context.offset;
-    if (detail) {
-        err.detail = detail;
-    }
-    if (
-        !context.options ||
-        !context.options.checkError ||
-        typeof context.options.checkError !== "function"
-    ) {
-        fireEvent(LxEventType.error, context, err);
-        throw err;
-    }
-    const checkResult = context.options.checkError(err, context);
-    if (checkResult === true) {
-        fireEvent(LxEventType.error, context, err);
-        throw err;
-    }
-    err.customIgnore = checkResult;
-    fireEvent(LxEventType.warn, context, err);
-    addWarn(context, err);
-};
-
 export const addWarn = (context: LxParseContext, warn: LxWrong | LxMessage) => {
     if (!context.warnings) {
         context.warnings = [];

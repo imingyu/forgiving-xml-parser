@@ -9,7 +9,6 @@ import {
     AttrMoreEqualDisposal,
     LxCursorPosition,
     LxEventType,
-    LxNode,
     LxNodeNature,
     LxNodeType,
     LxParseAttrTarget,

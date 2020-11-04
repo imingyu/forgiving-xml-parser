@@ -150,11 +150,6 @@ export interface LxParseOptions {
     encounterAttrMoreEqual?:
         | AttrMoreEqualDisposal
         | LxOptionDisposal<AttrMoreEqualDisposal>;
-    // 当发生异常时均将异常信息传递到该函数，如果【结果===true】则抛出，否则均不抛出错误，并将结果连同原异常信息存入wranings
-    checkError?: LxErrorChecker;
-    // onEvent?: LxEventHandler;
-    // 每次循环都会执行参函数，如果返回值=1则跳出本轮循环，如果=2则跳出循环
-    loopHook?: LxLoopHookHandler;
     onEvent?: LxEventHandler;
     nodeParser?: LxNodeParser[];
 }

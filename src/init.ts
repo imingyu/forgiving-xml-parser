@@ -1,4 +1,4 @@
-import { fireEvent, throwError } from "./option";
+import { fireEvent } from "./option";
 import {
     LxNode,
     LxParseContext,
@@ -155,16 +155,7 @@ export const boundStepsToContext = (
         if (!noContext) {
             Object.assign(context, cursor);
             if (step === LxEventType.error) {
-                const err = data as LxWrong;
-                throwError(
-                    {
-                        code: err.code,
-                        message: err.message,
-                    },
-                    context,
-                    err.lineNumber,
-                    err.column
-                );
+                fireEvent(step, context, data as LxWrong);
             } else {
                 fireEvent(step, context, context.currentNode);
             }
