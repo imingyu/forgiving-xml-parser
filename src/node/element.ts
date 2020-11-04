@@ -2,14 +2,22 @@ import {
     LxCursorPosition,
     LxEventType,
     LxNode,
+    LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
+    LxNodeSerializer,
     LxNodeType,
     LxParseContext,
     LxParseOptions,
+    LxSerializeOptions,
     LxTryStep,
 } from "../types";
-import { createLxError, currentIsLineBreak, moveCursor } from "../util";
+import {
+    createLxError,
+    currentIsLineBreak,
+    moveCursor,
+    repeatString,
+} from "../util";
 import {
     TAG_BOUNDARY_HAS_SPACE,
     TAG_HAS_MORE_BOUNDARY_CHAR,
@@ -17,7 +25,7 @@ import {
 } from "../message";
 import { tryParseElementAttrs } from "./attr";
 import { boundStepsToContext } from "../init";
-import { DEFAULT_OPTIONS, REX_SPACE } from "../var";
+import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkOptionAllow } from "../option";
 export const trySelfClose = (
     xml: string,
@@ -211,7 +219,7 @@ export const tryParseStartTag = (
                     !checkOptionAllow(
                         options,
                         "allowStartTagLeftBoundarySpace",
-                        DEFAULT_OPTIONS.allowStartTagLeftBoundarySpace,
+                        DEFAULT_PARSE_OPTIONS.allowStartTagLeftBoundarySpace,
                         attrName,
                         elementNodeNameStartStep.cursor
                     )
@@ -285,8 +293,8 @@ export const tryParseStartTag = (
 };
 
 export const ElementParser: LxNodeParser = {
-    match: /<|<\//,
     nodeNature: LxNodeNature.children,
+    parseMatch: /<|<\//,
     parse(context: LxParseContext) {
         let steps: LxTryStep[];
         if (context.xml.substr(context.offset, 2) === "</") {
@@ -302,7 +310,42 @@ export const ElementParser: LxNodeParser = {
                 context.options
             );
         }
-        console.log(steps);
         boundStepsToContext(steps, context);
+    },
+    serializeMatch(node: LxNodeJSON): boolean {
+        return node.type === LxNodeType.element;
+    },
+    serialize(
+        node: LxNodeJSON,
+        brotherNodes: LxNodeJSON[],
+        rootNodes: LxNodeJSON[],
+        rootSerializer: LxNodeSerializer,
+        options: LxSerializeOptions
+    ): string {
+        let res = "<";
+        if (node.name) {
+            res += node.name;
+        }
+        if (node.attrs && node.attrs.length) {
+            res += "";
+            node.attrs.forEach((attr) => {
+                res += ` ${attr.name || ""}${repeatString(
+                    "=",
+                    attr.equalCount
+                )}${attr.content || ""}`;
+            });
+        }
+        if (node.selfcloseing) {
+            res += " />";
+            return res;
+        }
+        res += ">";
+        if (node.children && node.children.length) {
+            res += rootSerializer(node.children, options);
+        }
+        if (!node.notClose) {
+            res += `</${node.name || ""}>`;
+        }
+        return res;
     },
 };

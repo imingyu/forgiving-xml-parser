@@ -15,7 +15,7 @@ export const ALONE_NODE_MAP = {
     [LxNodeType.comment]: COMMENT_END,
 };
 
-export const DEFAULT_OPTIONS: LxParseOptions = {
+export const DEFAULT_PARSE_OPTIONS: LxParseOptions = {
     allowAttrContentHasBr: true,
     allowAttrNameEmpty: true,
     allowNodeNotClose: true,
@@ -24,3 +24,4 @@ export const DEFAULT_OPTIONS: LxParseOptions = {
     ignoreTagNameCaseEqual: true,
     encounterAttrMoreEqual: AttrMoreEqualDisposal.merge,
 };
+export const DEFAULT_SERIALIZE_OPTIONS: LxParseOptions = {};

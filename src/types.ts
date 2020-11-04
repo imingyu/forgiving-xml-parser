@@ -57,6 +57,9 @@ export interface LxMessage {
     code: number;
     message: string;
 }
+export interface LxSerializeOptions {
+    nodeParser?: LxNodeParser[];
+}
 export interface LxParseContext extends LxCursorPosition {
     xmlLength: number;
     xml: string;
@@ -154,13 +157,32 @@ export enum LxNodeNature {
     alone = "alone",
     children = "children",
 }
+export interface LxNodeSerializeMatcher {
+    (
+        currentNode: LxNodeJSON,
+        brotherNodes: LxNodeJSON[],
+        rootNodes: LxNodeJSON[],
+        options: LxSerializeOptions
+    ): boolean;
+}
+export interface LxNodeSerializer {
+    (nodes: LxNodeJSON[], options: LxSerializeOptions): string;
+}
 export interface LxNodeParser {
-    match: string | RegExp | LxNodeParserMatcher;
     nodeNature: LxNodeNature;
+    parseMatch: string | RegExp | LxNodeParserMatcher;
     parse(context: LxParseContext);
+    serializeMatch: LxNodeSerializeMatcher;
+    serialize(
+        currentNode: LxNodeJSON,
+        brotherNodes: LxNodeJSON[],
+        rootNodes: LxNodeJSON[],
+        rootSerializer: LxNodeSerializer,
+        options: LxSerializeOptions
+    ): string;
 }
 export interface LxNodeParserMatcher {
-    (xml: string, cursor: LxCursorPosition): boolean;
+    (xml: string, cursor: LxCursorPosition, options: LxParseOptions): boolean;
 }
 export type LxParseOptionsKeys = keyof LxParseOptions;
 export interface LxToJSONOptions {

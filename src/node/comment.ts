@@ -1,4 +1,5 @@
 import {
+    LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
     LxNodeType,
@@ -17,7 +18,15 @@ export const parseComment = (context: LxParseContext) => {
 };
 
 export const CommentParser: LxNodeParser = {
-    match: COMMENT_START,
     nodeNature: LxNodeNature.alone,
+    parseMatch: COMMENT_START,
     parse: parseComment,
+    serializeMatch(currentNode: LxNodeJSON): boolean {
+        return currentNode.type === LxNodeType.comment;
+    },
+    serialize(currentNode: LxNodeJSON): string {
+        return `${COMMENT_START}${currentNode.content || ""}${
+            currentNode.notClose ? "" : COMMENT_END
+        }`;
+    },
 };

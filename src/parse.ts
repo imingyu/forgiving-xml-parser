@@ -1,21 +1,24 @@
 import {
     LxParseContext,
-    LxNodeType,
     LxParseOptions,
     LxParseResult,
     LxParseResultJSON,
     LxToJSONOptions,
-    LxNodeParser,
-    LxNodeParserMatcher,
-    LxCursorPosition,
 } from "./types";
-import { pick, nodeToJSON, lxWrongToJSON, moveCursor } from "./util";
-import { DEFAULT_OPTIONS } from "./var";
+import {
+    pick,
+    nodeToJSON,
+    lxWrongToJSON,
+    moveCursor,
+    findNodeParser,
+} from "./util";
+import { DEFAULT_PARSE_OPTIONS } from "./var";
 import { CommentParser } from "./node/comment";
 import { CDATAParser } from "./node/cdata";
 import { ElementParser } from "./node/element";
+import { TextParser } from "./node/text";
 
-DEFAULT_OPTIONS.nodeParser = [CommentParser, CDATAParser, ElementParser];
+DEFAULT_PARSE_OPTIONS.nodeParser = [CommentParser, CDATAParser, ElementParser];
 // import { closeNode, parseEndTag, parseStartTag } from "./node";
 // const loopClose = (context: LxParseContext) => {
 //     const node = context.currentNode;
@@ -74,44 +77,9 @@ DEFAULT_OPTIONS.nodeParser = [CommentParser, CDATAParser, ElementParser];
 //     return context;
 // };
 
-export const findParser = (
-    context: LxParseContext,
-    cursor?: LxCursorPosition
-): LxNodeParser => {
-    return (context.options.nodeParser || []).find((parser) => {
-        const matchType = typeof parser.match;
-        if (matchType === "string") {
-            if (
-                context.xml.substr(
-                    cursor ? cursor.offset : context.offset,
-                    (parser.match as string).length
-                ) === parser.match
-            ) {
-                return true;
-            }
-            return false;
-        }
-        if (matchType === "function") {
-            return (parser.match as LxNodeParserMatcher)(
-                context.xml,
-                cursor || {
-                    lineNumber: context.lineNumber,
-                    column: context.column,
-                    offset: context.offset,
-                }
-            );
-        }
-        if (parser.match instanceof RegExp) {
-            return parser.match.test(
-                context.xml.substr(cursor ? cursor.offset : context.offset)
-            );
-        }
-    });
-};
-
 export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
     options = typeof options !== "object" ? {} : options;
-    options = Object.assign({}, DEFAULT_OPTIONS, options);
+    options = Object.assign({}, DEFAULT_PARSE_OPTIONS, options);
     const context: LxParseContext = {
         offset: 0,
         xmlLength: xml.length,
@@ -129,40 +97,20 @@ export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
             context.offset < context.xmlLength;
             moveCursor(context, 0, 1, 1)
         ) {
-            const parser = findParser(context);
+            const parser = findNodeParser(
+                context.xml,
+                {
+                    lineNumber: context.lineNumber,
+                    column: context.column,
+                    offset: context.offset,
+                },
+                context.options
+            );
             if (parser) {
                 parser.parse(context);
                 continue;
             }
-            // if (!context.currentNode) {
-            //     pushNode(initNode(LxNodeType.text, context), context);
-            // }
-            // const char = xml[context.offset];
-            // if (context.currentNode.type !== LxNodeType.text) {
-            //     const node = initNode(LxNodeType.text, context);
-            //     node.content = char;
-            //     pushNode(node, context);
-            //     checkLineBreak(context);
-            //     continue;
-            // }
-            // context.currentNode.content += char;
-            // checkLineBreak(context);
-            // const nextParser = findParser(
-            //     context,
-            //     moveCursor(
-            //         {
-            //             lineNumber: context.lineNumber,
-            //             column: context.column,
-            //             offset: context.offset,
-            //         },
-            //         0,
-            //         1,
-            //         1
-            //     )
-            // );
-            // if (nextParser) {
-            //     // TEXT END
-            // }
+            TextParser.parse(context);
         }
         return {
             xml,

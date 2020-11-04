@@ -7,6 +7,11 @@ import {
     LxMessage,
     LxWrong,
     LxCursorPosition,
+    LxParseContext,
+    LxNodeParser,
+    LxNodeParserMatcher,
+    LxParseOptions,
+    LxSerializeOptions,
 } from "./types";
 
 export const createLxError = (msg: LxMessage, cursor: LxCursorPosition) => {
@@ -177,3 +182,61 @@ export const equalSubStr = (
 //     }
 //     return LxNodeType.element;
 // };
+
+export const repeatString = (str: string, repeatCount: number): string => {
+    let res = "";
+    if (!str || !repeatCount) {
+        return res;
+    }
+    while (repeatCount--) {
+        res += str;
+    }
+    return res;
+};
+
+export const findNodeParser = (
+    xml: string,
+    cursor: LxCursorPosition,
+    options: LxParseOptions
+): LxNodeParser => {
+    return options.nodeParser.find((parser) => {
+        const matchType = typeof parser.parseMatch;
+        if (matchType === "string") {
+            if (
+                xml.substr(
+                    cursor.offset,
+                    (parser.parseMatch as string).length
+                ) === parser.parseMatch
+            ) {
+                return true;
+            }
+            return false;
+        }
+        if (matchType === "function") {
+            return (parser.parseMatch as LxNodeParserMatcher)(
+                xml,
+                cursor,
+                options
+            );
+        }
+        if (parser.parseMatch instanceof RegExp) {
+            return parser.parseMatch.test(xml.substr(cursor.offset));
+        }
+    });
+};
+
+export const findNodeSerializer = (
+    currentNode: LxNodeJSON,
+    brotherNodes: LxNodeJSON[],
+    rootNodes: LxNodeJSON[],
+    options: LxSerializeOptions
+): LxNodeParser => {
+    return options.nodeParser.find((parser) => {
+        return parser.serializeMatch(
+            currentNode,
+            brotherNodes,
+            rootNodes,
+            options
+        );
+    });
+};

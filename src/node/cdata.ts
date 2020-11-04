@@ -1,4 +1,5 @@
 import {
+    LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
     LxNodeType,
@@ -16,7 +17,15 @@ export const parseCDATA = (context: LxParseContext) => {
     );
 };
 export const CDATAParser: LxNodeParser = {
-    match: CDATA_START,
     nodeNature: LxNodeNature.alone,
+    parseMatch: CDATA_START,
     parse: parseCDATA,
+    serializeMatch(currentNode: LxNodeJSON): boolean {
+        return currentNode.type === LxNodeType.cdata;
+    },
+    serialize(currentNode: LxNodeJSON): string {
+        return `${CDATA_START}${currentNode.content || ""}${
+            currentNode.notClose ? "" : CDATA_END
+        }`;
+    },
 };

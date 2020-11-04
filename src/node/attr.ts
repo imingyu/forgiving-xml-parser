@@ -17,7 +17,7 @@ import {
     LxTryStep,
 } from "../types";
 import { createLxError, currentIsLineBreak, moveCursor } from "../util";
-import { DEFAULT_OPTIONS, REX_SPACE } from "../var";
+import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 export const checkAttrsEnd = (
     xml: string,
     cursor: LxCursorPosition
@@ -237,7 +237,7 @@ export const tryParseElementAttrs = (
                     !computeOption(
                         options,
                         "allowAttrNameEmpty",
-                        DEFAULT_OPTIONS.allowAttrNameEmpty,
+                        DEFAULT_PARSE_OPTIONS.allowAttrNameEmpty,
                         cursor
                     )
                 ) {
@@ -284,7 +284,7 @@ export const tryParseElementAttrs = (
                         "encounterAttrMoreEqual",
                         AttrMoreEqualDisposal.throwError,
                         options,
-                        DEFAULT_OPTIONS.encounterAttrMoreEqual
+                        DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual
                     )
                 ) {
                     steps.push({
@@ -305,7 +305,7 @@ export const tryParseElementAttrs = (
                         "encounterAttrMoreEqual",
                         AttrMoreEqualDisposal.newAttr,
                         options,
-                        DEFAULT_OPTIONS.encounterAttrMoreEqual
+                        DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual
                     )
                 ) {
                     steps.push({
@@ -340,7 +340,7 @@ export const tryParseElementAttrs = (
                     !computeOption(
                         options,
                         "allowAttrNameEmpty",
-                        DEFAULT_OPTIONS.allowAttrNameEmpty,
+                        DEFAULT_PARSE_OPTIONS.allowAttrNameEmpty,
                         cursor
                     )
                 ) {
@@ -469,7 +469,7 @@ export const tryParseElementAttrs = (
             !computeOption(
                 options,
                 "allowNearAttrEqualSpace",
-                DEFAULT_OPTIONS.allowNearAttrEqualSpace,
+                DEFAULT_PARSE_OPTIONS.allowNearAttrEqualSpace,
                 cursor
             )
         ) {

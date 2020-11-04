@@ -1,47 +1,44 @@
-import { LxNodeJSON, LxNodeType } from "./types";
-
-export const serialize = (nodes: LxNodeJSON[]): string => {
-    let xml = "";
-    if (!nodes || !nodes.length) {
+import { LxNodeJSON, LxSerializeOptions } from "./types";
+import { DEFAULT_SERIALIZE_OPTIONS } from "./var";
+import { findNodeSerializer } from "./util";
+import { CommentParser } from "./node/comment";
+import { CDATAParser } from "./node/cdata";
+import { ElementParser } from "./node/element";
+import { TextParser } from "./node/text";
+DEFAULT_SERIALIZE_OPTIONS.nodeParser = [
+    CommentParser,
+    CDATAParser,
+    ElementParser,
+];
+export const serialize = (
+    nodes: LxNodeJSON[],
+    options?: LxSerializeOptions
+): string => {
+    options = typeof options !== "object" ? {} : options;
+    options = Object.assign({}, DEFAULT_SERIALIZE_OPTIONS, options);
+    const rootNodes = nodes;
+    const rootSerialize = (
+        nodes: LxNodeJSON[],
+        options: LxSerializeOptions
+    ) => {
+        let xml = "";
+        nodes.forEach((node) => {
+            let serializer = findNodeSerializer(
+                node,
+                nodes,
+                rootNodes,
+                options
+            );
+            serializer = serializer || TextParser;
+            xml += serializer.serialize(
+                node,
+                nodes,
+                rootNodes,
+                rootSerialize,
+                options
+            );
+        });
         return xml;
-    }
-    nodes.forEach((node) => {
-        if (node.type === LxNodeType.text) {
-            xml += node.content;
-            return;
-        }
-        if (node.type === LxNodeType.cdata) {
-            xml += `<![CDATA[${node.content}${node.notClose ? "" : "]]>"}`;
-            return;
-        }
-        if (node.type === LxNodeType.comment) {
-            xml += `<!--${node.content}${node.notClose ? "" : "-->"}`;
-            return;
-        }
-        if (node.type === LxNodeType.processingInstruction) {
-            xml += `<?${node.name}${
-                node.attrs ? " " + serialize(node.attrs).trim() : ""
-            }?>`;
-            return;
-        }
-        if (node.type === LxNodeType.attr) {
-            let equal = "";
-            for (let i = 0; i < (node.equalCount || 0); i++) {
-                equal += "=";
-            }
-            xml += `${node.name || ""}${equal}${node.boundaryChar || ""}${
-                node.content || ""
-            }${node.boundaryChar || ""} `;
-            return;
-        }
-        if (node.type === LxNodeType.element) {
-            xml += `<${node.name || ""}${
-                node.attrs ? " " + serialize(node.attrs).trim() : ""
-            }${node.selfcloseing && !node.children ? " />" : ">"}${serialize(
-                node.children
-            )}${!node.selfcloseing ? "</" + node.name + ">" : ""}`;
-            return;
-        }
-    });
-    return xml;
+    };
+    return rootSerialize(nodes, options);
 };
