@@ -177,6 +177,7 @@ export const tryParseElementAttrs = (
                 cursor: {
                     ...cursor,
                 },
+                data: content,
             });
             content = undefined;
             if (!leftBoundaryValue) {

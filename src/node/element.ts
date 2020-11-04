@@ -327,12 +327,13 @@ export const ElementParser: LxNodeParser = {
             res += node.name;
         }
         if (node.attrs && node.attrs.length) {
-            res += "";
             node.attrs.forEach((attr) => {
                 res += ` ${attr.name || ""}${repeatString(
                     "=",
                     attr.equalCount
-                )}${attr.content || ""}`;
+                )}${attr.boundaryChar || ""}${attr.content || ""}${
+                    attr.boundaryChar || ""
+                }`;
             });
         }
         if (node.selfcloseing) {
