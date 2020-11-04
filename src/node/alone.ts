@@ -14,7 +14,6 @@ export const tryParseAloneNode = (
     xml: string,
     cursor: LxCursorPosition,
     nodeType: LxNodeType,
-    nodeNature: LxNodeNature,
     startTagText: string,
     endTagText: string
 ): LxTryStep[] => {
@@ -25,7 +24,7 @@ export const tryParseAloneNode = (
         cursor: {
             ...cursor,
         },
-        data: [nodeType, nodeNature],
+        data: [nodeType, LxNodeNature.alone],
     });
     steps.push({
         step: LxEventType.startTagStart,
@@ -126,7 +125,6 @@ export const tryParseAloneNode = (
 export const parseAloneNode = (
     context: LxParseContext,
     nodeType: LxNodeType,
-    nodeNature: LxNodeNature,
     startTagText: string,
     endTagText: string
 ) => {
@@ -138,7 +136,6 @@ export const parseAloneNode = (
             offset: context.offset,
         },
         nodeType,
-        nodeNature,
         startTagText,
         endTagText
     );

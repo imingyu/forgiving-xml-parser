@@ -8,13 +8,7 @@ import {
 import { parseAloneNode } from "./alone";
 import { COMMENT_START, COMMENT_END } from "../var";
 export const parseComment = (context: LxParseContext) => {
-    parseAloneNode(
-        context,
-        LxNodeType.comment,
-        LxNodeNature.alone,
-        COMMENT_START,
-        COMMENT_END
-    );
+    parseAloneNode(context, LxNodeType.comment, COMMENT_START, COMMENT_END);
 };
 
 export const CommentParser: LxNodeParser = {
