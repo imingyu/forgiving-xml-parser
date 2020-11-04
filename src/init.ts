@@ -133,8 +133,13 @@ export const boundStepsToContext = (
                     context.currentNode.locationInfo,
                     cursor
                 );
-                if (Array.isArray(data) && data[1]) {
-                    context.currentNode.selfcloseing = true;
+                if (Array.isArray(data)) {
+                    if (data[1]) {
+                        context.currentNode.selfcloseing = true;
+                    }
+                    if (data[2]) {
+                        context.currentNode.notClose = true;
+                    }
                 }
                 context.currentNode.steps.push(currentStepItem);
                 if (context.currentNode.parent) {
@@ -143,8 +148,9 @@ export const boundStepsToContext = (
                     delete context.currentNode;
                 }
             }
-        } else if (step !== LxEventType.error) {
-            context.currentNode.steps.push(currentStepItem);
+        } else {
+            context.currentNode &&
+                context.currentNode.steps.push(currentStepItem);
         }
         if (!noContext) {
             Object.assign(context, cursor);

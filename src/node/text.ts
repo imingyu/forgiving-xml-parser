@@ -61,6 +61,7 @@ export const tryParseText = (
                 cursor: {
                     ...cursor,
                 },
+                data: LxNodeType.text,
             });
             break;
         }

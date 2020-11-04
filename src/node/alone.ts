@@ -82,6 +82,7 @@ export const tryParseAloneNode = (
                 cursor: {
                     ...cursor,
                 },
+                data: nodeType,
             });
             moveCursor(cursor, 0, 1, 1);
             closeRight = true;
@@ -117,6 +118,7 @@ export const tryParseAloneNode = (
             cursor: {
                 ...cursor,
             },
+            data: nodeType,
         });
     }
     return steps;

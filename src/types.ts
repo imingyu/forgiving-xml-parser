@@ -93,7 +93,8 @@ export interface LxTryStep {
         | string
         | LxWrong
         | LxNodeType
-        | [LxNodeType, boolean]
+        | [LxNodeType, boolean] // nodetype. selfclose
+        | [LxNodeType, boolean, boolean] // nodetype. selfclose, notClose
         | [LxNodeType, LxNodeNature];
 }
 export enum AttrMoreEqualDisposal {
@@ -131,6 +132,10 @@ export interface LxOptionDisposal<T> {
 export interface LxParseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
     allowStartTagLeftBoundarySpace?: boolean | RegExp | LxOptionChecker;
+    // 是否允许结束标签的左边界符附近存在空白字符；函数会将当前光标位置传入，返回true规则才生效
+    allowEndTagLeftBoundarySpace?: boolean | LxOptionChecker;
+    // 是否允许结束标签中名称附近存在空白字符；正则会匹配endTagName，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
+    allowEndTagNameNearSpace?: boolean | RegExp | LxOptionChecker;
     // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     ignoreTagNameCaseEqual?: boolean | RegExp | LxEqualNameChecker;
     // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效

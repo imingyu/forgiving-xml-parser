@@ -20,6 +20,8 @@ export const DEFAULT_PARSE_OPTIONS: LxParseOptions = {
     allowAttrNameEmpty: true,
     allowNodeNotClose: true,
     allowStartTagLeftBoundarySpace: true,
+    allowEndTagLeftBoundarySpace: true,
+    allowEndTagNameNearSpace: true,
     allowNearAttrEqualSpace: true,
     ignoreTagNameCaseEqual: true,
     encounterAttrMoreEqual: AttrMoreEqualDisposal.merge,

@@ -1,7 +1,6 @@
 import {
     LxCursorPosition,
     LxEventType,
-    LxNode,
     LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
@@ -13,14 +12,18 @@ import {
     LxTryStep,
 } from "../types";
 import {
+    checkElementEndTagStart,
     createLxError,
     currentIsLineBreak,
+    equalCursor,
+    getEndCharCursor,
     moveCursor,
     repeatString,
 } from "../util";
 import {
-    TAG_BOUNDARY_HAS_SPACE,
+    BOUNDARY_HAS_SPACE,
     TAG_HAS_MORE_BOUNDARY_CHAR,
+    TAG_NAME_NEAR_SPACE,
     TAG_NOT_CLOSE,
 } from "../message";
 import { tryParseElementAttrs } from "./attr";
@@ -70,7 +73,7 @@ export const trySelfClose = (
 export const tryParseStartTag = (
     xml: string,
     cursor: LxCursorPosition,
-    options?: LxParseOptions
+    options: LxParseOptions
 ) => {
     let steps: LxTryStep[] = [];
     const xmlLength = xml.length;
@@ -114,17 +117,18 @@ export const tryParseStartTag = (
         }
         if (REX_SPACE.test(char)) {
             needParseAttrs = true;
-            const brType = currentIsLineBreak(xml, cursor.offset);
-            if (brType != -1) {
-                moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
-            }
             elementAttrsStartStep = {
                 step: LxEventType.attrsStart,
                 cursor: {
                     ...cursor,
                 },
             };
-            moveCursor(cursor, 0, 1, 1);
+            const brType = currentIsLineBreak(xml, cursor.offset);
+            if (brType != -1) {
+                moveCursor(cursor, 1, -cursor.column + 1, !brType ? 0 : 1);
+            } else {
+                moveCursor(cursor, 0, 1, 1);
+            }
             break;
         }
         if (REX_SPACE.test(xml[cursor.offset + 1])) {
@@ -138,18 +142,17 @@ export const tryParseStartTag = (
                 data: tagName,
             });
             needParseAttrs = true;
-            const brType = currentIsLineBreak(xml, cursor.offset);
-            if (brType != -1) {
-                moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
-            } else {
-                moveCursor(cursor, 0, 1, 1);
-            }
+            moveCursor(cursor, 0, 1, 1);
             steps.push({
                 step: LxEventType.attrsStart,
                 cursor: {
                     ...cursor,
                 },
             });
+            const brType = currentIsLineBreak(xml, cursor.offset);
+            if (brType != -1) {
+                moveCursor(cursor, 1, -cursor.column + 1, !brType ? 0 : 1);
+            }
             break;
         }
         const selfClose =
@@ -171,15 +174,14 @@ export const tryParseStartTag = (
                     ...cursor,
                 },
             });
-            steps.push({
-                step: LxEventType.nodeEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: selfClose
-                    ? [LxNodeType.element, true]
-                    : LxNodeType.element,
-            });
+            selfClose &&
+                steps.push({
+                    step: LxEventType.nodeEnd,
+                    cursor: {
+                        ...cursor,
+                    },
+                    data: [LxNodeType.element, true],
+                });
             startTagCloseRight = true;
             break;
         }
@@ -230,7 +232,7 @@ export const tryParseStartTag = (
                             ...elementNodeNameStartStep.cursor,
                         },
                         data: createLxError(
-                            TAG_BOUNDARY_HAS_SPACE,
+                            BOUNDARY_HAS_SPACE,
                             elementNodeNameStartStep.cursor
                         ),
                     });
@@ -292,13 +294,188 @@ export const tryParseStartTag = (
     return steps;
 };
 
+export const tryParseEndTag = (
+    xml: string,
+    cursor: LxCursorPosition,
+    options: LxParseOptions,
+    endTagStartCursor?: LxCursorPosition
+): LxTryStep[] => {
+    let steps: LxTryStep[] = [];
+    const xmlLength = xml.length;
+    endTagStartCursor =
+        endTagStartCursor ||
+        checkElementEndTagStart(xml, {
+            ...cursor,
+        });
+    steps.push({
+        step: LxEventType.endTagStart,
+        cursor: {
+            ...cursor,
+        },
+    });
+    const nextCursor: LxCursorPosition = {
+        lineNumber: cursor.lineNumber,
+        column: cursor.column + 1,
+        offset: cursor.offset + 1,
+    };
+    if (!equalCursor(nextCursor, endTagStartCursor)) {
+        if (
+            !checkOptionAllow(
+                options,
+                "allowEndTagLeftBoundarySpace",
+                DEFAULT_PARSE_OPTIONS.allowEndTagLeftBoundarySpace,
+                null,
+                nextCursor
+            )
+        ) {
+            steps.push({
+                step: LxEventType.error,
+                cursor: {
+                    ...nextCursor,
+                },
+                data: createLxError(BOUNDARY_HAS_SPACE, nextCursor),
+            });
+        }
+    }
+    Object.assign(cursor, endTagStartCursor);
+    // 将光标挪移到“/”的后一个字符
+    moveCursor(cursor, 0, 1, 1);
+    let closeRight;
+    let tagName = "";
+    let endTagNameStartNearSpaceCursor: LxCursorPosition;
+    let endTagNameEndNearSpaceCursor: LxCursorPosition;
+    let endTagEndCursorStep: LxTryStep;
+    for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
+        const char = xml[cursor.offset];
+        if (!tagName && REX_SPACE.test(char)) {
+            if (!endTagNameStartNearSpaceCursor) {
+                endTagNameStartNearSpaceCursor = cursor;
+            }
+            const brType = currentIsLineBreak(xml, cursor.offset);
+            if (brType != -1) {
+                moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
+            }
+            continue;
+        }
+        tagName += char;
+        if (REX_SPACE.test(char)) {
+            if (!endTagNameEndNearSpaceCursor) {
+                endTagNameEndNearSpaceCursor = cursor;
+            }
+        }
+        const nextChar = xml[cursor.offset + 1];
+        if (REX_SPACE.test(nextChar) || nextChar === ">") {
+            const endCursor = getEndCharCursor(
+                xml,
+                {
+                    lineNumber: cursor.lineNumber,
+                    column: cursor.column + 1,
+                    offset: cursor.offset + 1,
+                },
+                ">"
+            );
+            if (endCursor) {
+                // TODO: tagName equal
+                Object.assign(cursor, endCursor);
+                endTagEndCursorStep = {
+                    step: LxEventType.endTagEnd,
+                    cursor: {
+                        ...cursor,
+                    },
+                    data: tagName,
+                };
+                closeRight = true;
+                break;
+            }
+        }
+    }
+    if (
+        endTagNameStartNearSpaceCursor &&
+        !checkOptionAllow(
+            options,
+            "allowEndTagNameNearSpace",
+            DEFAULT_PARSE_OPTIONS.allowEndTagNameNearSpace,
+            tagName,
+            endTagNameStartNearSpaceCursor
+        )
+    ) {
+        steps.push({
+            step: LxEventType.error,
+            cursor: {
+                ...endTagNameStartNearSpaceCursor,
+            },
+            data: createLxError(TAG_NAME_NEAR_SPACE, nextCursor),
+        });
+    }
+    if (
+        endTagNameEndNearSpaceCursor &&
+        !checkOptionAllow(
+            options,
+            "allowEndTagNameNearSpace",
+            DEFAULT_PARSE_OPTIONS.allowEndTagNameNearSpace,
+            tagName,
+            endTagNameEndNearSpaceCursor
+        )
+    ) {
+        steps.push({
+            step: LxEventType.error,
+            cursor: {
+                ...endTagNameEndNearSpaceCursor,
+            },
+            data: createLxError(TAG_NAME_NEAR_SPACE, nextCursor),
+        });
+    }
+    if (closeRight) {
+        steps.push(endTagEndCursorStep);
+        steps.push({
+            step: LxEventType.nodeEnd,
+            cursor: {
+                ...cursor,
+            },
+            data: LxNodeType.element,
+        });
+    } else {
+        // TODO: 适配allowNodeNotClose
+        steps.push({
+            step: LxEventType.startTagEnd,
+            cursor: {
+                ...cursor,
+            },
+            data: tagName,
+        });
+        steps.push({
+            step: LxEventType.nodeEnd,
+            cursor: {
+                ...cursor,
+            },
+            data: [LxNodeType.element, false, true],
+        });
+    }
+    return steps;
+};
+
 export const ElementParser: LxNodeParser = {
     nodeNature: LxNodeNature.children,
-    parseMatch: /<|<\//,
+    parseMatch: /<\s*\/|</,
     parse(context: LxParseContext) {
         let steps: LxTryStep[];
-        if (context.xml.substr(context.offset, 2) === "</") {
+        const endTagStartCursor = checkElementEndTagStart(context.xml, {
+            lineNumber: context.lineNumber,
+            column: context.column,
+            offset: context.offset,
+        });
+        if (endTagStartCursor) {
             // 解析endTag
+            steps = tryParseEndTag(
+                context.xml,
+                {
+                    lineNumber: context.lineNumber,
+                    column: context.column,
+                    offset: context.offset,
+                },
+                context.options,
+                endTagStartCursor
+            );
         } else {
             steps = tryParseStartTag(
                 context.xml,

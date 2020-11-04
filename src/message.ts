@@ -1,8 +1,8 @@
 import { LxMessage } from "./types";
 
-export const TAG_BOUNDARY_HAS_SPACE: LxMessage = {
+export const BOUNDARY_HAS_SPACE: LxMessage = {
     code: 1,
-    message: "标签边界符处存在空白字符",
+    message: "边界符附近存在空白字符",
 };
 export const TAG_HAS_MORE_BOUNDARY_CHAR = {
     code: 2,
@@ -47,4 +47,8 @@ export const TAG_NAME_NOT_EQUAL = {
 export const ATTR_EQUAL_NEAR_SPACE = {
     code: 12,
     message: "标签“=”附近存在空白字符",
+};
+export const TAG_NAME_NEAR_SPACE = {
+    code: 13,
+    message: "标签名称附近存在空白字符",
 };

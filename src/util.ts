@@ -13,6 +13,7 @@ import {
     LxParseOptions,
     LxSerializeOptions,
 } from "./types";
+import { REX_SPACE } from "./var";
 
 export const createLxError = (msg: LxMessage, cursor: LxCursorPosition) => {
     const err = (new Error(msg.message) as unknown) as LxWrong;
@@ -35,6 +36,9 @@ export const moveCursor = (
     }
     if (column) {
         cursor.column += column;
+        if (cursor.column < 0) {
+            cursor.column = Math.abs(cursor.column);
+        }
     }
     if (offset) {
         cursor.offset += offset;
@@ -192,6 +196,63 @@ export const repeatString = (str: string, repeatCount: number): string => {
         res += str;
     }
     return res;
+};
+
+export const equalCursor = (
+    cursor1: LxCursorPosition,
+    cursor2: LxCursorPosition
+): boolean => {
+    return (
+        cursor1.lineNumber === cursor2.lineNumber &&
+        cursor1.column === cursor2.column &&
+        cursor1.offset === cursor2.offset
+    );
+};
+
+export const getEndCharCursor = (
+    xml: string,
+    cursor: LxCursorPosition,
+    targetChar: string
+) => {
+    const xmlLength = xml.length;
+    const resultCursor = {
+        ...cursor,
+    };
+    for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
+        const char = xml[resultCursor.offset];
+        if (REX_SPACE.test(char)) {
+            const brType = currentIsLineBreak(xml, resultCursor.offset);
+            if (brType !== -1) {
+                moveCursor(
+                    resultCursor,
+                    1,
+                    -resultCursor.column,
+                    !brType ? 0 : 1
+                );
+            }
+            continue;
+        }
+        if (char === targetChar) {
+            return resultCursor;
+        }
+        return;
+    }
+};
+
+export const checkElementEndTagStart = (
+    xml: string,
+    cursor: LxCursorPosition
+): LxCursorPosition => {
+    if (xml[cursor.offset] === "<") {
+        let resultCursor: LxCursorPosition = {
+            ...cursor,
+        };
+        moveCursor(resultCursor, 0, 1, 1);
+        resultCursor = getEndCharCursor(xml, resultCursor, "/");
+        if (resultCursor) {
+            return resultCursor;
+        }
+    }
 };
 
 export const findNodeParser = (
