@@ -15,7 +15,12 @@ import {
     LxParseOptions,
     LxTryStep,
 } from "../types";
-import { createLxError, currentIsLineBreak, moveCursor } from "../util";
+import {
+    createLxError,
+    currentIsLineBreak,
+    moveCursor,
+    pushStep,
+} from "../util";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 export const checkAttrsEnd = (
     xml: string,
@@ -96,9 +101,9 @@ export const tryParseElementAttrs = (
 ) => {
     const steps: LxTryStep[] = [];
     const xmlLength = xml.length;
-    let content;
+    let content: string;
     let findTarget: LxParseAttrTarget; // 表示正在寻找某目标，而不是当前已经是某目标
-    let leftBoundaryValue = "";
+    let leftBoundaryValue: string = "";
     const clear = () => {
         leftBoundaryValue = content = findTarget = undefined;
     };
@@ -106,20 +111,14 @@ export const tryParseElementAttrs = (
         if (!content) {
             content = char;
             if (findTarget === LxParseAttrTarget.name) {
-                steps.push({
-                    step: LxEventType.nodeNameStart,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: LxNodeType.attr,
-                });
+                pushStep(
+                    steps,
+                    LxEventType.nodeNameStart,
+                    cursor,
+                    LxNodeType.attr
+                );
             } else if (findTarget === LxParseAttrTarget.content) {
-                steps.push({
-                    step: LxEventType.nodeContentStart,
-                    cursor: {
-                        ...cursor,
-                    },
-                });
+                pushStep(steps, LxEventType.nodeContentStart, cursor);
             }
             return;
         }
@@ -127,43 +126,23 @@ export const tryParseElementAttrs = (
     };
     const initAttr = (char: string) => {
         findTarget = LxParseAttrTarget.name;
-        steps.push({
-            step: LxEventType.nodeStart,
-            cursor: {
-                ...cursor,
-            },
-            data: [LxNodeType.attr, LxNodeNature.alone],
-        });
+        pushStep(steps, LxEventType.nodeStart, cursor, [
+            LxNodeType.attr,
+            LxNodeNature.alone,
+        ]);
         plusContent(char);
     };
     const checkCurrentAttrNameEnd = () => {
         const endType = checkAttrNameEnd(xml, cursor);
         if (endType) {
-            steps.push({
-                step: LxEventType.nodeNameEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: content,
-            });
+            pushStep(steps, LxEventType.nodeNameEnd, cursor, content);
             content = undefined;
             findTarget = LxParseAttrTarget.equal;
             if (endType > 1) {
-                steps.push({
-                    step: LxEventType.nodeEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: LxNodeType.attr,
-                });
+                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
                 clear();
                 if (endType > 2) {
-                    steps.push({
-                        step: LxEventType.attrsEnd,
-                        cursor: {
-                            ...cursor,
-                        },
-                    });
+                    pushStep(steps, LxEventType.attrsEnd, cursor);
                 }
             }
         }
@@ -171,30 +150,13 @@ export const tryParseElementAttrs = (
     const checkCurrentAttrContentEnd = () => {
         const endType = checkAttrContentEnd(xml, cursor, leftBoundaryValue);
         if (endType) {
-            steps.push({
-                step: LxEventType.nodeContentEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: content,
-            });
+            pushStep(steps, LxEventType.nodeContentEnd, cursor, content);
             content = undefined;
             if (!leftBoundaryValue) {
-                steps.push({
-                    step: LxEventType.nodeEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: LxNodeType.attr,
-                });
+                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
                 clear();
                 if (endType > 1) {
-                    steps.push({
-                        step: LxEventType.attrsEnd,
-                        cursor: {
-                            ...cursor,
-                        },
-                    });
+                    pushStep(steps, LxEventType.attrsEnd, cursor);
                 }
             }
         }
@@ -208,22 +170,11 @@ export const tryParseElementAttrs = (
                 findTarget === LxParseAttrTarget.leftBoundary)
         ) {
             if (findTarget) {
-                steps.push({
-                    step: LxEventType.nodeEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: LxNodeType.attr,
-                });
+                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
             }
             clear();
             if (endType > 2) {
-                steps.push({
-                    step: LxEventType.attrsEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                });
+                pushStep(steps, LxEventType.attrsEnd, cursor);
             }
             return true;
         }
@@ -241,39 +192,25 @@ export const tryParseElementAttrs = (
                         cursor
                     )
                 ) {
-                    steps.push({
-                        step: LxEventType.error,
-                        cursor: {
-                            ...cursor,
-                        },
-                        data: createLxError(ATTR_NAME_IS_EMPTY, cursor),
-                    });
+                    pushStep(
+                        steps,
+                        LxEventType.error,
+                        cursor,
+                        ATTR_NAME_IS_EMPTY
+                    );
                 }
-                steps.push({
-                    step: LxEventType.nodeStart,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: [LxNodeType.attr, LxNodeNature.alone],
-                });
-                steps.push({
-                    step: LxEventType.attrEqual,
-                    cursor: {
-                        ...cursor,
-                    },
-                });
+                pushStep(steps, LxEventType.nodeStart, cursor, [
+                    LxNodeType.attr,
+                    LxNodeNature.alone,
+                ]);
+                pushStep(steps, LxEventType.attrEqual, cursor);
                 content = undefined;
                 findTarget = LxParseAttrTarget.leftBoundary;
                 checkNodeAttrsEnd();
                 continue;
             }
             if (findTarget === LxParseAttrTarget.equal) {
-                steps.push({
-                    step: LxEventType.attrEqual,
-                    cursor: {
-                        ...cursor,
-                    },
-                });
+                pushStep(steps, LxEventType.attrEqual, cursor);
                 findTarget = LxParseAttrTarget.leftBoundary;
                 checkNodeAttrsEnd();
                 continue;
@@ -287,19 +224,13 @@ export const tryParseElementAttrs = (
                         DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual
                     )
                 ) {
-                    steps.push({
-                        step: LxEventType.error,
-                        cursor: {
-                            ...cursor,
-                        },
-                        data: createLxError(ATTR_HAS_MORE_EQUAL, cursor),
-                    });
-                    steps.push({
-                        step: LxEventType.attrEqual,
-                        cursor: {
-                            ...cursor,
-                        },
-                    });
+                    pushStep(
+                        steps,
+                        LxEventType.error,
+                        cursor,
+                        ATTR_HAS_MORE_EQUAL
+                    );
+                    pushStep(steps, LxEventType.attrEqual, cursor);
                 } else if (
                     equalOption(
                         "encounterAttrMoreEqual",
@@ -308,22 +239,16 @@ export const tryParseElementAttrs = (
                         DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual
                     )
                 ) {
-                    steps.push({
-                        step: LxEventType.nodeEnd,
-                        cursor: {
-                            ...cursor,
-                        },
-                        data: LxNodeType.attr,
-                    });
+                    pushStep(
+                        steps,
+                        LxEventType.nodeEnd,
+                        cursor,
+                        LxNodeType.attr
+                    );
                     clear();
                     continue;
                 }
-                steps.push({
-                    step: LxEventType.attrEqual,
-                    cursor: {
-                        ...cursor,
-                    },
-                });
+                pushStep(steps, LxEventType.attrEqual, cursor);
                 checkNodeAttrsEnd();
                 continue;
             }
@@ -344,28 +269,18 @@ export const tryParseElementAttrs = (
                         cursor
                     )
                 ) {
-                    steps.push({
-                        step: LxEventType.error,
-                        cursor: {
-                            ...cursor,
-                        },
-                        data: createLxError(ATTR_NAME_IS_EMPTY, cursor),
-                    });
+                    pushStep(
+                        steps,
+                        LxEventType.error,
+                        cursor,
+                        ATTR_NAME_IS_EMPTY
+                    );
                 }
-                steps.push({
-                    step: LxEventType.nodeStart,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: [LxNodeType.attr, LxNodeNature.alone],
-                });
-                steps.push({
-                    step: LxEventType.attrLeftBoundary,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: char,
-                });
+                pushStep(steps, LxEventType.nodeStart, cursor, [
+                    LxNodeType.attr,
+                    LxNodeNature.alone,
+                ]);
+                pushStep(steps, LxEventType.attrLeftBoundary, cursor, char);
                 content = "";
                 findTarget = LxParseAttrTarget.content;
                 leftBoundaryValue = char;
@@ -376,13 +291,7 @@ export const tryParseElementAttrs = (
                 findTarget = LxParseAttrTarget.content;
                 content = "";
                 leftBoundaryValue = char;
-                steps.push({
-                    step: LxEventType.attrLeftBoundary,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: char,
-                });
+                pushStep(steps, LxEventType.attrLeftBoundary, cursor, char);
                 checkCurrentAttrContentEnd();
                 continue;
             }
@@ -390,20 +299,8 @@ export const tryParseElementAttrs = (
                 findTarget === LxParseAttrTarget.content &&
                 leftBoundaryValue === char
             ) {
-                steps.push({
-                    step: LxEventType.attrRightBoundary,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: char,
-                });
-                steps.push({
-                    step: LxEventType.nodeEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: LxNodeType.attr,
-                });
+                pushStep(steps, LxEventType.attrRightBoundary, cursor, char);
+                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
                 clear();
                 continue;
             }
@@ -418,20 +315,12 @@ export const tryParseElementAttrs = (
                 (findTarget === LxParseAttrTarget.content && !leftBoundaryValue)
             ) {
                 selfClose && moveCursor(cursor, 0, 1, 1);
-                steps.push({
-                    step: LxEventType.startTagEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                });
+                pushStep(steps, LxEventType.startTagEnd, cursor);
                 if (selfClose) {
-                    steps.push({
-                        step: LxEventType.nodeEnd,
-                        cursor: {
-                            ...cursor,
-                        },
-                        data: [parentNodeType, true],
-                    });
+                    pushStep(steps, LxEventType.nodeEnd, cursor, [
+                        parentNodeType,
+                        true,
+                    ]);
                 }
                 break;
             }
@@ -473,13 +362,7 @@ export const tryParseElementAttrs = (
                 cursor
             )
         ) {
-            steps.push({
-                step: LxEventType.error,
-                cursor: {
-                    ...cursor,
-                },
-                data: createLxError(ATTR_EQUAL_NEAR_SPACE, cursor),
-            });
+            pushStep(steps, LxEventType.error, cursor, ATTR_EQUAL_NEAR_SPACE);
         }
         const brType = currentIsLineBreak(xml, cursor.offset);
         if (brType !== -1) {
@@ -488,13 +371,12 @@ export const tryParseElementAttrs = (
             }
             if (findTarget === LxParseAttrTarget.content) {
                 if (!isTrueOption("allowAttrContentHasBr", options)) {
-                    steps.push({
-                        step: LxEventType.error,
-                        cursor: {
-                            ...cursor,
-                        },
-                        data: createLxError(ATTR_CONTENT_HAS_BR, cursor),
-                    });
+                    pushStep(
+                        steps,
+                        LxEventType.error,
+                        cursor,
+                        ATTR_CONTENT_HAS_BR
+                    );
                 }
                 plusContent(!brType ? char : char + xml[cursor.offset + 1]);
             }

@@ -12,6 +12,8 @@ import {
     LxNodeParserMatcher,
     LxParseOptions,
     LxSerializeOptions,
+    LxTryStep,
+    LxEventType,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -24,6 +26,35 @@ export const createLxError = (msg: LxMessage, cursor: LxCursorPosition) => {
 
 export const isFunc = (obj) =>
     typeof obj === "function" || obj instanceof Function;
+
+export const pushStep = <T = LxTryStep["data"] | LxWrong>(
+    steps: LxTryStep[],
+    step: LxEventType,
+    cursor: LxCursorPosition,
+    data?: T
+) => {
+    steps.push(createStep(step, cursor, data));
+};
+export const createStep = <T = LxTryStep["data"] | LxWrong>(
+    step: LxEventType,
+    cursor: LxCursorPosition,
+    data?: T
+): LxTryStep => {
+    let wrong: LxWrong;
+    if (data) {
+        let tsData = (data as unknown) as LxWrong;
+        if (tsData.code && tsData.message && !tsData.stack) {
+            wrong = createLxError((data as unknown) as LxMessage, cursor);
+        }
+    }
+    return ({
+        step,
+        cursor: {
+            ...cursor,
+        },
+        data: wrong || data,
+    } as unknown) as LxTryStep;
+};
 
 export const moveCursor = (
     cursor: LxCursorPosition,

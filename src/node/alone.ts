@@ -5,9 +5,8 @@ import {
     LxNodeType,
     LxParseContext,
     LxTryStep,
-    LxWrong,
 } from "../types";
-import { currentIsLineBreak, moveCursor } from "../util";
+import { currentIsLineBreak, moveCursor, pushStep } from "../util";
 import { TAG_NOT_CLOSE } from "../message";
 import { boundStepsToContext } from "../init";
 export const tryParseAloneNode = (
@@ -19,33 +18,15 @@ export const tryParseAloneNode = (
 ): LxTryStep[] => {
     const steps: LxTryStep[] = [];
     const xmlLength = xml.length;
-    steps.push({
-        step: LxEventType.nodeStart,
-        cursor: {
-            ...cursor,
-        },
-        data: [nodeType, LxNodeNature.alone],
-    });
-    steps.push({
-        step: LxEventType.startTagStart,
-        cursor: {
-            ...cursor,
-        },
-    });
+    pushStep(steps, LxEventType.nodeStart, cursor, [
+        nodeType,
+        LxNodeNature.alone,
+    ]);
+    pushStep(steps, LxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, startTagText.length - 1, startTagText.length - 1);
-    steps.push({
-        step: LxEventType.startTagEnd,
-        cursor: {
-            ...cursor,
-        },
-    });
+    pushStep(steps, LxEventType.startTagEnd, cursor);
     moveCursor(cursor, 0, 1, 1);
-    steps.push({
-        step: LxEventType.nodeContentStart,
-        cursor: {
-            ...cursor,
-        },
-    });
+    pushStep(steps, LxEventType.nodeContentStart, cursor);
     let content = "";
     let closeRight;
     for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
@@ -55,34 +36,12 @@ export const tryParseAloneNode = (
             xml.substr(cursor.offset + 1, endTagText.length) === endTagText;
         if (nextEnd) {
             content += char;
-            steps.push({
-                step: LxEventType.nodeContentEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: content,
-            });
+            pushStep(steps, LxEventType.nodeContentEnd, cursor, content);
             moveCursor(cursor, 0, 1, 1);
-            steps.push({
-                step: LxEventType.endTagStart,
-                cursor: {
-                    ...cursor,
-                },
-            });
+            pushStep(steps, LxEventType.endTagStart, cursor);
             moveCursor(cursor, 0, endTagText.length - 1, endTagText.length - 1);
-            steps.push({
-                step: LxEventType.endTagEnd,
-                cursor: {
-                    ...cursor,
-                },
-            });
-            steps.push({
-                step: LxEventType.nodeEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: nodeType,
-            });
+            pushStep(steps, LxEventType.endTagEnd, cursor);
+            pushStep(steps, LxEventType.nodeEnd, cursor, nodeType);
             moveCursor(cursor, 0, 1, 1);
             closeRight = true;
             break;
@@ -95,30 +54,9 @@ export const tryParseAloneNode = (
     }
     if (!closeRight) {
         // TODO:适配tag notclose
-        const err = (new Error(TAG_NOT_CLOSE.message) as unknown) as LxWrong;
-        err.code = TAG_NOT_CLOSE.code;
-        Object.assign(err, cursor);
-        steps.push({
-            step: LxEventType.error,
-            cursor: {
-                ...cursor,
-            },
-            data: err,
-        });
-        steps.push({
-            step: LxEventType.nodeContentEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: content,
-        });
-        steps.push({
-            step: LxEventType.nodeEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: nodeType,
-        });
+        pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+        pushStep(steps, LxEventType.nodeContentEnd, cursor, content);
+        pushStep(steps, LxEventType.nodeEnd, cursor, nodeType);
     }
     return steps;
 };

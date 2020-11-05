@@ -13,11 +13,12 @@ import {
 } from "../types";
 import {
     checkElementEndTagStart,
-    createLxError,
+    createStep,
     currentIsLineBreak,
     equalCursor,
     getEndCharCursor,
     moveCursor,
+    pushStep,
     repeatString,
 } from "../util";
 import {
@@ -39,34 +40,14 @@ export const trySelfClose = (
     const char = xml[cursor.offset];
     if (xml[cursor.offset + 1] === "/" && xml[cursor.offset + 2] === ">") {
         tagName += char;
-        steps.push({
-            step: LxEventType.nodeNameEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: tagName,
-        });
-        steps.push({
-            step: LxEventType.attrsEnd,
-            cursor: {
-                ...cursor,
-            },
-        });
-
+        pushStep(steps, LxEventType.nodeNameEnd, cursor, tagName);
+        pushStep(steps, LxEventType.attrsEnd, cursor);
         moveCursor(cursor, 0, 2, 2);
-        steps.push({
-            step: LxEventType.startTagEnd,
-            cursor: {
-                ...cursor,
-            },
-        });
-        steps.push({
-            step: LxEventType.nodeEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: [LxNodeType.element, true],
-        });
+        pushStep(steps, LxEventType.startTagEnd, cursor);
+        pushStep(steps, LxEventType.nodeEnd, cursor, [
+            LxNodeType.element,
+            true,
+        ]);
         return true;
     }
 };
@@ -77,26 +58,16 @@ export const tryParseStartTag = (
 ) => {
     let steps: LxTryStep[] = [];
     const xmlLength = xml.length;
-    steps.push({
-        step: LxEventType.nodeStart,
-        cursor: {
-            ...cursor,
-        },
-        data: [LxNodeType.element, LxNodeNature.children],
-    });
-    steps.push({
-        step: LxEventType.startTagStart,
-        cursor: {
-            ...cursor,
-        },
-    });
+    pushStep(steps, LxEventType.nodeStart, cursor, [
+        LxNodeType.element,
+        LxNodeNature.children,
+    ]);
+    pushStep(steps, LxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, 1, 1);
-    const elementNodeNameStartStep: LxTryStep = {
-        step: LxEventType.nodeNameStart,
-        cursor: {
-            ...cursor,
-        },
-    };
+    const elementNodeNameStartStep: LxTryStep = createStep(
+        LxEventType.nodeNameStart,
+        cursor
+    );
     let elementAttrsStartStep: LxTryStep;
     let startTagCloseRight;
     let hasError;
@@ -105,24 +76,18 @@ export const tryParseStartTag = (
     for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
         const char = xml[cursor.offset];
         if (char === "<") {
-            steps.push({
-                step: LxEventType.error,
-                cursor: {
-                    ...cursor,
-                },
-                data: createLxError(TAG_HAS_MORE_BOUNDARY_CHAR, cursor),
-            });
+            pushStep(
+                steps,
+                LxEventType.error,
+                cursor,
+                TAG_HAS_MORE_BOUNDARY_CHAR
+            );
             hasError = true;
             break;
         }
         if (REX_SPACE.test(char)) {
             needParseAttrs = true;
-            elementAttrsStartStep = {
-                step: LxEventType.attrsStart,
-                cursor: {
-                    ...cursor,
-                },
-            };
+            elementAttrsStartStep = createStep(LxEventType.attrsStart, cursor);
             const brType = currentIsLineBreak(xml, cursor.offset);
             if (brType != -1) {
                 moveCursor(cursor, 1, -cursor.column + 1, !brType ? 0 : 1);
@@ -134,21 +99,10 @@ export const tryParseStartTag = (
         if (REX_SPACE.test(xml[cursor.offset + 1])) {
             tagName += char;
             steps.push(elementNodeNameStartStep);
-            steps.push({
-                step: LxEventType.nodeNameEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: tagName,
-            });
+            pushStep(steps, LxEventType.nodeNameEnd, cursor, tagName);
             needParseAttrs = true;
             moveCursor(cursor, 0, 1, 1);
-            steps.push({
-                step: LxEventType.attrsStart,
-                cursor: {
-                    ...cursor,
-                },
-            });
+            pushStep(steps, LxEventType.attrsStart, cursor);
             const brType = currentIsLineBreak(xml, cursor.offset);
             if (brType != -1) {
                 moveCursor(cursor, 1, -cursor.column + 1, !brType ? 0 : 1);
@@ -160,28 +114,14 @@ export const tryParseStartTag = (
         if (xml[cursor.offset + 1] === ">" || selfClose) {
             steps.push(elementNodeNameStartStep);
             tagName += char;
-            steps.push({
-                step: LxEventType.nodeNameEnd,
-                cursor: {
-                    ...cursor,
-                },
-                data: tagName,
-            });
+            pushStep(steps, LxEventType.nodeNameEnd, cursor, tagName);
             moveCursor(cursor, 0, selfClose ? 2 : 1, selfClose ? 2 : 1);
-            steps.push({
-                step: LxEventType.startTagEnd,
-                cursor: {
-                    ...cursor,
-                },
-            });
+            pushStep(steps, LxEventType.startTagEnd, cursor);
             selfClose &&
-                steps.push({
-                    step: LxEventType.nodeEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: [LxNodeType.element, true],
-                });
+                pushStep(steps, LxEventType.nodeEnd, cursor, [
+                    LxNodeType.element,
+                    true,
+                ]);
             startTagCloseRight = true;
             break;
         }
@@ -226,16 +166,12 @@ export const tryParseStartTag = (
                         elementNodeNameStartStep.cursor
                     )
                 ) {
-                    steps.push({
-                        step: LxEventType.error,
-                        cursor: {
-                            ...elementNodeNameStartStep.cursor,
-                        },
-                        data: createLxError(
-                            BOUNDARY_HAS_SPACE,
-                            elementNodeNameStartStep.cursor
-                        ),
-                    });
+                    pushStep(
+                        steps,
+                        LxEventType.error,
+                        elementNodeNameStartStep.cursor,
+                        BOUNDARY_HAS_SPACE
+                    );
                 }
                 // 设置正确的tagName及插入nodeNameStart,nodeNameEnd
                 const firstAttrSteps = attrSteps.splice(
@@ -269,27 +205,13 @@ export const tryParseStartTag = (
         startTagCloseRight = true;
     }
     if (!hasError && !startTagCloseRight) {
-        steps.push({
-            step: LxEventType.error,
-            cursor: {
-                ...cursor,
-            },
-            data: createLxError(TAG_NOT_CLOSE, cursor),
-        });
-        steps.push({
-            step: LxEventType.nodeNameEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: tagName,
-        });
-        steps.push({
-            step: LxEventType.nodeEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: LxNodeType.element,
-        });
+        pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+        pushStep(steps, LxEventType.nodeNameEnd, cursor, tagName);
+        pushStep(steps, LxEventType.nodeEnd, cursor, [
+            LxNodeType.element,
+            false,
+            true,
+        ]);
     }
     return steps;
 };
@@ -307,12 +229,7 @@ export const tryParseEndTag = (
         checkElementEndTagStart(xml, {
             ...cursor,
         });
-    steps.push({
-        step: LxEventType.endTagStart,
-        cursor: {
-            ...cursor,
-        },
-    });
+    pushStep(steps, LxEventType.endTagStart, cursor);
     const nextCursor: LxCursorPosition = {
         lineNumber: cursor.lineNumber,
         column: cursor.column + 1,
@@ -328,13 +245,7 @@ export const tryParseEndTag = (
                 nextCursor
             )
         ) {
-            steps.push({
-                step: LxEventType.error,
-                cursor: {
-                    ...nextCursor,
-                },
-                data: createLxError(BOUNDARY_HAS_SPACE, nextCursor),
-            });
+            pushStep(steps, LxEventType.error, cursor, BOUNDARY_HAS_SPACE);
         }
     }
     Object.assign(cursor, endTagStartCursor);
@@ -399,13 +310,12 @@ export const tryParseEndTag = (
             endTagNameStartNearSpaceCursor
         )
     ) {
-        steps.push({
-            step: LxEventType.error,
-            cursor: {
-                ...endTagNameStartNearSpaceCursor,
-            },
-            data: createLxError(TAG_NAME_NEAR_SPACE, nextCursor),
-        });
+        pushStep(
+            steps,
+            LxEventType.error,
+            endTagNameStartNearSpaceCursor,
+            TAG_NAME_NEAR_SPACE
+        );
     }
     if (
         endTagNameEndNearSpaceCursor &&
@@ -417,39 +327,24 @@ export const tryParseEndTag = (
             endTagNameEndNearSpaceCursor
         )
     ) {
-        steps.push({
-            step: LxEventType.error,
-            cursor: {
-                ...endTagNameEndNearSpaceCursor,
-            },
-            data: createLxError(TAG_NAME_NEAR_SPACE, nextCursor),
-        });
+        pushStep(
+            steps,
+            LxEventType.error,
+            endTagNameEndNearSpaceCursor,
+            TAG_NAME_NEAR_SPACE
+        );
     }
     if (closeRight) {
         steps.push(endTagEndCursorStep);
-        steps.push({
-            step: LxEventType.nodeEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: LxNodeType.element,
-        });
+        pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.element);
     } else {
         // TODO: 适配allowNodeNotClose
-        steps.push({
-            step: LxEventType.startTagEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: tagName,
-        });
-        steps.push({
-            step: LxEventType.nodeEnd,
-            cursor: {
-                ...cursor,
-            },
-            data: [LxNodeType.element, false, true],
-        });
+        pushStep(steps, LxEventType.startTagEnd, cursor, tagName);
+        pushStep(steps, LxEventType.nodeEnd, cursor, [
+            LxNodeType.element,
+            false,
+            true,
+        ]);
     }
     return steps;
 };
