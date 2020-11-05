@@ -16,6 +16,7 @@ export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
     const [nodeType, nodeNature] = step.data as [LxNodeType, LxNodeNature];
     return {
         type: nodeType,
+        closed: false,
         nature: nodeNature,
         locationInfo: {
             startLineNumber: step.cursor.lineNumber,
@@ -135,11 +136,13 @@ export const boundStepsToContext = (
                 );
                 if (Array.isArray(data)) {
                     if (data[1]) {
-                        context.currentNode.selfcloseing = true;
+                        context.currentNode.closed = context.currentNode.selfcloseing = true;
                     }
-                    if (data[2]) {
-                        context.currentNode.notClose = true;
+                    if (data.length > 2) {
+                        context.currentNode.closed = data[2];
                     }
+                } else {
+                    context.currentNode.closed = true;
                 }
                 context.currentNode.steps.push(currentStepItem);
                 if (context.currentNode.parent) {

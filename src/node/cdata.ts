@@ -19,7 +19,7 @@ export const CDATAParser: LxNodeParser = {
     },
     serialize(currentNode: LxNodeJSON): string {
         return `${CDATA_START}${currentNode.content || ""}${
-            currentNode.notClose ? "" : CDATA_END
+            currentNode.closed ? CDATA_END : ""
         }`;
     },
 };

@@ -220,18 +220,19 @@ export interface LxNodeLocationInfo extends LxLocation {
 }
 export interface LxNodeJSON {
     type: LxNodeType;
+    closed: boolean;
     name?: string;
     content?: string;
     children?: LxNodeJSON[];
     attrs?: LxNodeJSON[];
     selfcloseing?: boolean;
-    notClose?: boolean;
     locationInfo?: LxNodeLocationInfo;
     boundaryChar?: string;
     equalCount?: number;
     nature?: LxNodeNature;
 }
 export interface LxNode extends LxNodeJSON {
+    locationInfo: LxNodeLocationInfo;
     children?: LxNode[];
     attrs?: LxNode[];
     parent?: LxNode;

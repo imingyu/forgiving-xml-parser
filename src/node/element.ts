@@ -210,7 +210,7 @@ export const tryParseStartTag = (
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
             false,
-            true,
+            false,
         ]);
     }
     return steps;
@@ -343,7 +343,7 @@ export const tryParseEndTag = (
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
             false,
-            true,
+            false,
         ]);
     }
     return steps;
@@ -416,7 +416,7 @@ export const ElementParser: LxNodeParser = {
         if (node.children && node.children.length) {
             res += rootSerializer(node.children, options);
         }
-        if (!node.notClose) {
+        if (node.closed) {
             res += `</${node.name || ""}>`;
         }
         return res;

@@ -20,7 +20,7 @@ export const CommentParser: LxNodeParser = {
     },
     serialize(currentNode: LxNodeJSON): string {
         return `${COMMENT_START}${currentNode.content || ""}${
-            currentNode.notClose ? "" : COMMENT_END
+            currentNode.closed ? COMMENT_END : ""
         }`;
     },
 };
