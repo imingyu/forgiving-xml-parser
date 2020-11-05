@@ -369,10 +369,10 @@ export const tryParseEndTag = (
         ) {
             return pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
         }
-        pushStep(steps, LxEventType.startTagEnd, cursor, tagName);
+        pushStep(steps, LxEventType.startTagEnd, cursor);
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
-            LxNodeCloseType.startTagClosed,
+            LxNodeCloseType.notClosed,
         ]);
     }
     return steps;
@@ -433,7 +433,10 @@ export const ElementParser: LxNodeParser = {
                     "=",
                     attr.equalCount
                 )}${attr.boundaryChar || ""}${attr.content || ""}${
-                    attr.boundaryChar || ""
+                    !attr.closeType ||
+                    attr.closeType === LxNodeCloseType.fullClosed
+                        ? attr.boundaryChar || ""
+                        : ""
                 }`;
             });
         }

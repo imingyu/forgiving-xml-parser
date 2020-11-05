@@ -321,7 +321,10 @@ export const tryParseElementAttrs = (
                 (findTarget === LxParseAttrTarget.content && !leftBoundaryValue)
             ) {
                 selfClose && moveCursor(cursor, 0, 1, 1);
-                pushStep(steps, LxEventType.startTagEnd, cursor);
+                pushStep(steps, LxEventType.startTagEnd, cursor, [
+                    parentNodeType,
+                    LxNodeCloseType.startTagClosed,
+                ]);
                 if (selfClose) {
                     pushStep(steps, LxEventType.nodeEnd, cursor, [
                         parentNodeType,

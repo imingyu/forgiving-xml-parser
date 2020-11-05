@@ -29,7 +29,10 @@ export const tryParseAloneNode = (
     ]);
     pushStep(steps, LxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, startTagText.length - 1, startTagText.length - 1);
-    pushStep(steps, LxEventType.startTagEnd, cursor);
+    pushStep(steps, LxEventType.startTagEnd, cursor, [
+        nodeType,
+        LxNodeCloseType.startTagClosed,
+    ]);
     moveCursor(cursor, 0, 1, 1);
     pushStep(steps, LxEventType.nodeContentStart, cursor);
     let content = "";

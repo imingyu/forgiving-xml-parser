@@ -99,6 +99,9 @@ export const boundStepsToContext = (
             }
         } else if (step === LxEventType.startTagEnd) {
             if (context.currentNode) {
+                if (Array.isArray(data) && data[1] in LxNodeCloseType) {
+                    context.currentNode.closeType = data[1] as LxNodeCloseType;
+                }
                 context.currentNode.steps.push(currentStepItem);
                 setNodeLocationByCursor(
                     context.currentNode.locationInfo,
@@ -140,7 +143,16 @@ export const boundStepsToContext = (
                     data[1] &&
                     data[1] in LxNodeCloseType
                 ) {
-                    context.currentNode.closeType = data[1] as LxNodeCloseType;
+                    if (
+                        !(
+                            context.currentNode.closeType ===
+                                LxNodeCloseType.startTagClosed &&
+                            (data[1] as LxNodeCloseType) ===
+                                LxNodeCloseType.notClosed
+                        )
+                    ) {
+                        context.currentNode.closeType = data[1] as LxNodeCloseType;
+                    }
                 }
                 context.currentNode.steps.push(currentStepItem);
                 if (context.currentNode.parent) {
