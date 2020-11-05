@@ -1,16 +1,21 @@
 import {
     LxCursorPosition,
     LxEventType,
+    LxNodeCloseType,
     LxNodeNature,
     LxNodeType,
     LxParseContext,
+    LxParseOptions,
     LxTryStep,
 } from "../types";
 import { currentIsLineBreak, moveCursor, pushStep } from "../util";
 import { TAG_NOT_CLOSE } from "../message";
 import { boundStepsToContext } from "../init";
+import { checkOptionAllow } from "src/option";
+import { DEFAULT_PARSE_OPTIONS } from "src/var";
 export const tryParseAloneNode = (
     xml: string,
+    options: LxParseOptions,
     cursor: LxCursorPosition,
     nodeType: LxNodeType,
     startTagText: string,
@@ -41,7 +46,10 @@ export const tryParseAloneNode = (
             pushStep(steps, LxEventType.endTagStart, cursor);
             moveCursor(cursor, 0, endTagText.length - 1, endTagText.length - 1);
             pushStep(steps, LxEventType.endTagEnd, cursor);
-            pushStep(steps, LxEventType.nodeEnd, cursor, nodeType);
+            pushStep(steps, LxEventType.nodeEnd, cursor, [
+                nodeType,
+                LxNodeCloseType.fullClosed,
+            ]);
             moveCursor(cursor, 0, 1, 1);
             closeRight = true;
             break;
@@ -53,10 +61,22 @@ export const tryParseAloneNode = (
         }
     }
     if (!closeRight) {
-        // TODO:适配tag notclose
-        pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+        if (
+            !checkOptionAllow(
+                options,
+                "allowNodeNotClose",
+                DEFAULT_PARSE_OPTIONS.allowNodeNotClose,
+                content,
+                cursor
+            )
+        ) {
+            return pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+        }
         pushStep(steps, LxEventType.nodeContentEnd, cursor, content);
-        pushStep(steps, LxEventType.nodeEnd, cursor, nodeType);
+        pushStep(steps, LxEventType.nodeEnd, cursor, [
+            nodeType,
+            LxNodeCloseType.startTagClosed,
+        ]);
     }
     return steps;
 };
@@ -68,6 +88,7 @@ export const parseAloneNode = (
 ) => {
     const steps = tryParseAloneNode(
         context.xml,
+        context.options,
         {
             lineNumber: context.lineNumber,
             column: context.column,

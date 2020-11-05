@@ -1,4 +1,5 @@
 import {
+    LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
@@ -20,7 +21,10 @@ export const CommentParser: LxNodeParser = {
     },
     serialize(currentNode: LxNodeJSON): string {
         return `${COMMENT_START}${currentNode.content || ""}${
-            currentNode.closed ? COMMENT_END : ""
+            !currentNode.closeType ||
+            currentNode.closeType === LxNodeCloseType.fullClosed
+                ? COMMENT_END
+                : ""
         }`;
     },
 };

@@ -9,18 +9,14 @@ import {
     AttrMoreEqualDisposal,
     LxCursorPosition,
     LxEventType,
+    LxNodeCloseType,
     LxNodeNature,
     LxNodeType,
     LxParseAttrTarget,
     LxParseOptions,
     LxTryStep,
 } from "../types";
-import {
-    createLxError,
-    currentIsLineBreak,
-    moveCursor,
-    pushStep,
-} from "../util";
+import { currentIsLineBreak, moveCursor, pushStep } from "../util";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 export const checkAttrsEnd = (
     xml: string,
@@ -104,6 +100,7 @@ export const tryParseElementAttrs = (
     let content: string;
     let findTarget: LxParseAttrTarget; // 表示正在寻找某目标，而不是当前已经是某目标
     let leftBoundaryValue: string = "";
+    let hasBreak;
     const clear = () => {
         leftBoundaryValue = content = findTarget = undefined;
     };
@@ -139,7 +136,10 @@ export const tryParseElementAttrs = (
             content = undefined;
             findTarget = LxParseAttrTarget.equal;
             if (endType > 1) {
-                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
+                pushStep(steps, LxEventType.nodeEnd, cursor, [
+                    LxNodeType.attr,
+                    LxNodeCloseType.fullClosed,
+                ]);
                 clear();
                 if (endType > 2) {
                     pushStep(steps, LxEventType.attrsEnd, cursor);
@@ -153,7 +153,10 @@ export const tryParseElementAttrs = (
             pushStep(steps, LxEventType.nodeContentEnd, cursor, content);
             content = undefined;
             if (!leftBoundaryValue) {
-                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
+                pushStep(steps, LxEventType.nodeEnd, cursor, [
+                    LxNodeType.attr,
+                    LxNodeCloseType.fullClosed,
+                ]);
                 clear();
                 if (endType > 1) {
                     pushStep(steps, LxEventType.attrsEnd, cursor);
@@ -170,7 +173,10 @@ export const tryParseElementAttrs = (
                 findTarget === LxParseAttrTarget.leftBoundary)
         ) {
             if (findTarget) {
-                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
+                pushStep(steps, LxEventType.nodeEnd, cursor, [
+                    LxNodeType.attr,
+                    LxNodeCloseType.fullClosed,
+                ]);
             }
             clear();
             if (endType > 2) {
@@ -192,7 +198,7 @@ export const tryParseElementAttrs = (
                         cursor
                     )
                 ) {
-                    pushStep(
+                    return pushStep(
                         steps,
                         LxEventType.error,
                         cursor,
@@ -224,13 +230,12 @@ export const tryParseElementAttrs = (
                         DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual
                     )
                 ) {
-                    pushStep(
+                    return pushStep(
                         steps,
                         LxEventType.error,
                         cursor,
                         ATTR_HAS_MORE_EQUAL
                     );
-                    pushStep(steps, LxEventType.attrEqual, cursor);
                 } else if (
                     equalOption(
                         "encounterAttrMoreEqual",
@@ -239,12 +244,10 @@ export const tryParseElementAttrs = (
                         DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual
                     )
                 ) {
-                    pushStep(
-                        steps,
-                        LxEventType.nodeEnd,
-                        cursor,
-                        LxNodeType.attr
-                    );
+                    pushStep(steps, LxEventType.nodeEnd, cursor, [
+                        LxNodeType.attr,
+                        LxNodeCloseType.fullClosed,
+                    ]);
                     clear();
                     continue;
                 }
@@ -269,7 +272,7 @@ export const tryParseElementAttrs = (
                         cursor
                     )
                 ) {
-                    pushStep(
+                    return pushStep(
                         steps,
                         LxEventType.error,
                         cursor,
@@ -300,7 +303,10 @@ export const tryParseElementAttrs = (
                 leftBoundaryValue === char
             ) {
                 pushStep(steps, LxEventType.attrRightBoundary, cursor, char);
-                pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.attr);
+                pushStep(steps, LxEventType.nodeEnd, cursor, [
+                    LxNodeType.attr,
+                    LxNodeCloseType.fullClosed,
+                ]);
                 clear();
                 continue;
             }
@@ -319,9 +325,10 @@ export const tryParseElementAttrs = (
                 if (selfClose) {
                     pushStep(steps, LxEventType.nodeEnd, cursor, [
                         parentNodeType,
-                        true,
+                        LxNodeCloseType.selfCloseing,
                     ]);
                 }
+                hasBreak = true;
                 break;
             }
             if (findTarget === LxParseAttrTarget.content && leftBoundaryValue) {
@@ -362,16 +369,22 @@ export const tryParseElementAttrs = (
                 cursor
             )
         ) {
-            pushStep(steps, LxEventType.error, cursor, ATTR_EQUAL_NEAR_SPACE);
+            return pushStep(
+                steps,
+                LxEventType.error,
+                cursor,
+                ATTR_EQUAL_NEAR_SPACE
+            );
         }
         const brType = currentIsLineBreak(xml, cursor.offset);
         if (brType !== -1) {
             if (checkNodeAttrsEnd()) {
+                hasBreak = true;
                 break;
             }
             if (findTarget === LxParseAttrTarget.content) {
                 if (!isTrueOption("allowAttrContentHasBr", options)) {
-                    pushStep(
+                    return pushStep(
                         steps,
                         LxEventType.error,
                         cursor,
@@ -386,6 +399,40 @@ export const tryParseElementAttrs = (
         if (findTarget === LxParseAttrTarget.content && leftBoundaryValue) {
             plusContent(char);
         }
+    }
+    if (!hasBreak && findTarget) {
+        if (findTarget === LxParseAttrTarget.name) {
+            pushStep(steps, LxEventType.nodeNameEnd, cursor, content);
+            pushStep(steps, LxEventType.nodeEnd, cursor, [
+                LxNodeType.attr,
+                LxNodeCloseType.fullClosed,
+            ]);
+        } else if (findTarget === LxParseAttrTarget.equal) {
+            pushStep(
+                steps,
+                LxEventType.nodeEnd,
+                steps[steps.length - 1].cursor,
+                [LxNodeType.attr, LxNodeCloseType.fullClosed]
+            );
+        } else if (findTarget === LxParseAttrTarget.leftBoundary) {
+            pushStep(steps, LxEventType.nodeEnd, cursor, [
+                LxNodeType.attr,
+                LxNodeCloseType.notClosed,
+            ]);
+        } else if (findTarget === LxParseAttrTarget.content) {
+            pushStep(
+                steps,
+                LxEventType.nodeEnd,
+                steps[steps.length - 1].cursor,
+                [
+                    LxNodeType.attr,
+                    leftBoundaryValue
+                        ? LxNodeCloseType.notClosed
+                        : LxNodeCloseType.fullClosed,
+                ]
+            );
+        }
+        pushStep(steps, LxEventType.attrsEnd, cursor);
     }
     return steps;
 };

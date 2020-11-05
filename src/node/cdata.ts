@@ -1,4 +1,5 @@
 import {
+    LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
@@ -19,7 +20,10 @@ export const CDATAParser: LxNodeParser = {
     },
     serialize(currentNode: LxNodeJSON): string {
         return `${CDATA_START}${currentNode.content || ""}${
-            currentNode.closed ? CDATA_END : ""
+            !currentNode.closeType ||
+            currentNode.closeType === LxNodeCloseType.fullClosed
+                ? CDATA_END
+                : ""
         }`;
     },
 };

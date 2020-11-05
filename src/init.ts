@@ -10,13 +10,13 @@ import {
     LxWrong,
     LxNodeNature,
     LxBoundStepsLoopCallback,
+    LxNodeCloseType,
 } from "./types";
 
 export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
     const [nodeType, nodeNature] = step.data as [LxNodeType, LxNodeNature];
     return {
         type: nodeType,
-        closed: false,
         nature: nodeNature,
         locationInfo: {
             startLineNumber: step.cursor.lineNumber,
@@ -30,7 +30,8 @@ export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
 export const boundStepsToContext = (
     steps: LxTryStep[],
     context?: LxParseContext,
-    loopCallback?: LxBoundStepsLoopCallback
+    loopCallback?: LxBoundStepsLoopCallback,
+    throwError: boolean = true
 ): LxNode[] => {
     let noContext;
     if (!context) {
@@ -134,15 +135,12 @@ export const boundStepsToContext = (
                     context.currentNode.locationInfo,
                     cursor
                 );
-                if (Array.isArray(data)) {
-                    if (data[1]) {
-                        context.currentNode.closed = context.currentNode.selfcloseing = true;
-                    }
-                    if (data.length > 2) {
-                        context.currentNode.closed = data[2];
-                    }
-                } else {
-                    context.currentNode.closed = true;
+                if (
+                    Array.isArray(data) &&
+                    data[1] &&
+                    data[1] in LxNodeCloseType
+                ) {
+                    context.currentNode.closeType = data[1] as LxNodeCloseType;
                 }
                 context.currentNode.steps.push(currentStepItem);
                 if (context.currentNode.parent) {
@@ -159,6 +157,9 @@ export const boundStepsToContext = (
             Object.assign(context, cursor);
             if (step === LxEventType.error) {
                 fireEvent(step, context, data as LxWrong);
+                if (throwError) {
+                    throw data;
+                }
             } else {
                 fireEvent(step, context, context.currentNode);
             }

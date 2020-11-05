@@ -93,8 +93,7 @@ export interface LxTryStep {
         | string
         | LxWrong
         | LxNodeType
-        | [LxNodeType, boolean] // nodetype. selfclose
-        | [LxNodeType, boolean, boolean] // nodetype. selfclose, notClose
+        | [LxNodeType, LxNodeCloseType]
         | [LxNodeType, LxNodeNature];
 }
 export enum AttrMoreEqualDisposal {
@@ -218,14 +217,19 @@ export interface LxNodeLocationInfo extends LxLocation {
     endTag?: LxLocation;
     attrs?: LxLocation[];
 }
+export enum LxNodeCloseType {
+    notClosed = "notClosed",
+    fullClosed = "fullClosed",
+    selfCloseing = "selfCloseing",
+    startTagClosed = "startTagClosed",
+}
 export interface LxNodeJSON {
     type: LxNodeType;
-    closed: boolean;
+    closeType?: LxNodeCloseType;
     name?: string;
     content?: string;
     children?: LxNodeJSON[];
     attrs?: LxNodeJSON[];
-    selfcloseing?: boolean;
     locationInfo?: LxNodeLocationInfo;
     boundaryChar?: string;
     equalCount?: number;

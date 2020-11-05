@@ -14,6 +14,8 @@ import {
     LxSerializeOptions,
     LxTryStep,
     LxEventType,
+    LxNodeType,
+    LxNodeCloseType,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -32,8 +34,9 @@ export const pushStep = <T = LxTryStep["data"] | LxWrong>(
     step: LxEventType,
     cursor: LxCursorPosition,
     data?: T
-) => {
+): LxTryStep[] => {
     steps.push(createStep(step, cursor, data));
+    return steps;
 };
 export const createStep = <T = LxTryStep["data"] | LxWrong>(
     step: LxEventType,

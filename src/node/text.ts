@@ -3,6 +3,7 @@ import { boundStepsToContext } from "../init";
 import {
     LxCursorPosition,
     LxEventType,
+    LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
@@ -61,7 +62,7 @@ export const tryParseText = (
                 cursor: {
                     ...cursor,
                 },
-                data: LxNodeType.text,
+                data: [LxNodeType.text, LxNodeCloseType.fullClosed],
             });
             break;
         }

@@ -1,6 +1,7 @@
 import {
     LxCursorPosition,
     LxEventType,
+    LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
@@ -46,7 +47,7 @@ export const trySelfClose = (
         pushStep(steps, LxEventType.startTagEnd, cursor);
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
-            true,
+            LxNodeCloseType.selfCloseing,
         ]);
         return true;
     }
@@ -70,20 +71,17 @@ export const tryParseStartTag = (
     );
     let elementAttrsStartStep: LxTryStep;
     let startTagCloseRight;
-    let hasError;
     let needParseAttrs;
     let tagName = "";
     for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
         const char = xml[cursor.offset];
         if (char === "<") {
-            pushStep(
+            return pushStep(
                 steps,
                 LxEventType.error,
                 cursor,
                 TAG_HAS_MORE_BOUNDARY_CHAR
             );
-            hasError = true;
-            break;
         }
         if (REX_SPACE.test(char)) {
             needParseAttrs = true;
@@ -120,7 +118,7 @@ export const tryParseStartTag = (
             selfClose &&
                 pushStep(steps, LxEventType.nodeEnd, cursor, [
                     LxNodeType.element,
-                    true,
+                    LxNodeCloseType.selfCloseing,
                 ]);
             startTagCloseRight = true;
             break;
@@ -166,7 +164,7 @@ export const tryParseStartTag = (
                         elementNodeNameStartStep.cursor
                     )
                 ) {
-                    pushStep(
+                    return pushStep(
                         steps,
                         LxEventType.error,
                         elementNodeNameStartStep.cursor,
@@ -202,15 +200,29 @@ export const tryParseStartTag = (
         } else {
             steps = steps.concat(attrSteps);
         }
-        startTagCloseRight = true;
+        const lastStep = steps[steps.length - 1];
+        startTagCloseRight =
+            lastStep.step === LxEventType.nodeEnd &&
+            lastStep.data &&
+            (lastStep.data === LxNodeType.element ||
+                lastStep.data[0] === LxNodeType.element);
     }
-    if (!hasError && !startTagCloseRight) {
-        pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+    if (!startTagCloseRight) {
+        if (
+            !checkOptionAllow(
+                options,
+                "allowNodeNotClose",
+                DEFAULT_PARSE_OPTIONS.allowNodeNotClose,
+                tagName,
+                cursor
+            )
+        ) {
+            return pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+        }
         pushStep(steps, LxEventType.nodeNameEnd, cursor, tagName);
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
-            false,
-            false,
+            LxNodeCloseType.notClosed,
         ]);
     }
     return steps;
@@ -245,7 +257,12 @@ export const tryParseEndTag = (
                 nextCursor
             )
         ) {
-            pushStep(steps, LxEventType.error, cursor, BOUNDARY_HAS_SPACE);
+            return pushStep(
+                steps,
+                LxEventType.error,
+                cursor,
+                BOUNDARY_HAS_SPACE
+            );
         }
     }
     Object.assign(cursor, endTagStartCursor);
@@ -310,7 +327,7 @@ export const tryParseEndTag = (
             endTagNameStartNearSpaceCursor
         )
     ) {
-        pushStep(
+        return pushStep(
             steps,
             LxEventType.error,
             endTagNameStartNearSpaceCursor,
@@ -327,7 +344,7 @@ export const tryParseEndTag = (
             endTagNameEndNearSpaceCursor
         )
     ) {
-        pushStep(
+        return pushStep(
             steps,
             LxEventType.error,
             endTagNameEndNearSpaceCursor,
@@ -336,14 +353,26 @@ export const tryParseEndTag = (
     }
     if (closeRight) {
         steps.push(endTagEndCursorStep);
-        pushStep(steps, LxEventType.nodeEnd, cursor, LxNodeType.element);
+        pushStep(steps, LxEventType.nodeEnd, cursor, [
+            LxNodeType.element,
+            LxNodeCloseType.fullClosed,
+        ]);
     } else {
-        // TODO: 适配allowNodeNotClose
+        if (
+            !checkOptionAllow(
+                options,
+                "allowNodeNotClose",
+                DEFAULT_PARSE_OPTIONS.allowNodeNotClose,
+                tagName,
+                cursor
+            )
+        ) {
+            return pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
+        }
         pushStep(steps, LxEventType.startTagEnd, cursor, tagName);
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
-            false,
-            false,
+            LxNodeCloseType.startTagClosed,
         ]);
     }
     return steps;
@@ -408,15 +437,21 @@ export const ElementParser: LxNodeParser = {
                 }`;
             });
         }
-        if (node.selfcloseing) {
+        if (node.closeType === LxNodeCloseType.selfCloseing) {
             res += " />";
             return res;
         }
-        res += ">";
+        if (
+            !node.closeType ||
+            node.closeType === LxNodeCloseType.fullClosed ||
+            node.closeType === LxNodeCloseType.startTagClosed
+        ) {
+            res += ">";
+        }
         if (node.children && node.children.length) {
             res += rootSerializer(node.children, options);
         }
-        if (node.closed) {
+        if (!node.closeType || node.closeType === LxNodeCloseType.fullClosed) {
             res += `</${node.name || ""}>`;
         }
         return res;
