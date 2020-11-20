@@ -8,14 +8,20 @@ import {
 } from "../types";
 import { parseAloneNode } from "./alone";
 import { COMMENT_START, COMMENT_END } from "../var";
-export const parseComment = (context: LxParseContext) => {
-    parseAloneNode(context, LxNodeType.comment, COMMENT_START, COMMENT_END);
-};
 
 export const CommentParser: LxNodeParser = {
+    nodeType: LxNodeType.comment,
     nodeNature: LxNodeNature.alone,
     parseMatch: COMMENT_START,
-    parse: parseComment,
+    parse: (context: LxParseContext) => {
+        parseAloneNode(
+            context,
+            LxNodeType.comment,
+            COMMENT_START,
+            COMMENT_END,
+            CommentParser
+        );
+    },
     serializeMatch(currentNode: LxNodeJSON): boolean {
         return currentNode.type === LxNodeType.comment;
     },

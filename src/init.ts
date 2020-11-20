@@ -8,16 +8,16 @@ import {
     LxNodeLocationInfo,
     LxCursorPosition,
     LxWrong,
-    LxNodeNature,
     LxBoundStepsLoopCallback,
     LxNodeCloseType,
+    LxNodeParser,
 } from "./types";
 
 export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
-    const [nodeType, nodeNature] = step.data as [LxNodeType, LxNodeNature];
+    const [nodeType, nodeParser] = step.data as [LxNodeType, LxNodeParser];
     return {
         type: nodeType,
-        nature: nodeNature,
+        parser: nodeParser,
         locationInfo: {
             startLineNumber: step.cursor.lineNumber,
             startColumn: step.cursor.column,
@@ -30,9 +30,9 @@ export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
 export const boundStepsToContext = (
     steps: LxTryStep[],
     context?: LxParseContext,
-    loopCallback?: LxBoundStepsLoopCallback,
-    throwError: boolean = true
+    loopCallback?: LxBoundStepsLoopCallback
 ): LxNode[] => {
+    console.log(steps);
     let noContext;
     if (!context) {
         noContext = true;
@@ -43,7 +43,7 @@ export const boundStepsToContext = (
         const currentStepItem = steps[index];
         const { step, cursor, data } = currentStepItem;
         if (step === LxEventType.nodeStart) {
-            const [nodeType] = data as [LxNodeType, LxNodeNature];
+            const [nodeType] = data as [LxNodeType, LxNodeParser];
             const node = createNodeByNodeStartStep(currentStepItem);
             node.steps.push(currentStepItem);
             if (context.currentNode) {
@@ -95,11 +95,19 @@ export const boundStepsToContext = (
         } else if (step === LxEventType.attrLeftBoundary) {
             if (data && context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
-                context.currentNode.boundaryChar = data as string;
+                context.currentNode.boundaryChar = [data as string];
+            }
+        } else if (step === LxEventType.attrRightBoundary) {
+            if (data && context.currentNode) {
+                context.currentNode.steps.push(currentStepItem);
+                context.currentNode.boundaryChar.push(data as string);
             }
         } else if (step === LxEventType.startTagEnd) {
             if (context.currentNode) {
-                if (Array.isArray(data) && data[1] in LxNodeCloseType) {
+                if (
+                    Array.isArray(data) &&
+                    (data[1] as LxNodeCloseType) in LxNodeCloseType
+                ) {
                     context.currentNode.closeType = data[1] as LxNodeCloseType;
                 }
                 context.currentNode.steps.push(currentStepItem);
@@ -141,7 +149,7 @@ export const boundStepsToContext = (
                 if (
                     Array.isArray(data) &&
                     data[1] &&
-                    data[1] in LxNodeCloseType
+                    (data[1] as LxNodeCloseType) in LxNodeCloseType
                 ) {
                     if (
                         !(
@@ -169,9 +177,7 @@ export const boundStepsToContext = (
             Object.assign(context, cursor);
             if (step === LxEventType.error) {
                 fireEvent(step, context, data as LxWrong);
-                if (throwError) {
-                    throw data;
-                }
+                throw data;
             } else {
                 fireEvent(step, context, context.currentNode);
             }

@@ -4,10 +4,14 @@ import { findNodeSerializer } from "./util";
 import { CommentParser } from "./node/comment";
 import { CDATAParser } from "./node/cdata";
 import { ElementParser } from "./node/element";
+import { DtdParser } from "./node/dtd";
+import { ProcessingInstructionParser } from "./node/pi";
 import { TextParser } from "./node/text";
 DEFAULT_SERIALIZE_OPTIONS.nodeParser = [
     CommentParser,
     CDATAParser,
+    ProcessingInstructionParser,
+    DtdParser,
     ElementParser,
 ];
 export const serialize = (
@@ -19,7 +23,8 @@ export const serialize = (
     const rootNodes = nodes;
     const rootSerialize = (
         nodes: LxNodeJSON[],
-        options: LxSerializeOptions
+        options: LxSerializeOptions,
+        parentNode?: LxNodeJSON
     ) => {
         let xml = "";
         nodes.forEach((node) => {
@@ -27,7 +32,8 @@ export const serialize = (
                 node,
                 nodes,
                 rootNodes,
-                options
+                options,
+                parentNode
             );
             serializer = serializer || TextParser;
             xml += serializer.serialize(
@@ -35,7 +41,8 @@ export const serialize = (
                 nodes,
                 rootNodes,
                 rootSerialize,
-                options
+                options,
+                parentNode
             );
         });
         return xml;

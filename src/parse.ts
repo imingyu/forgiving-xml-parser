@@ -16,9 +16,16 @@ import { DEFAULT_PARSE_OPTIONS } from "./var";
 import { CommentParser } from "./node/comment";
 import { CDATAParser } from "./node/cdata";
 import { ElementParser } from "./node/element";
+import { DtdParser } from "./node/dtd";
+import { ProcessingInstructionParser } from "./node/pi";
 import { TextParser } from "./node/text";
-
-DEFAULT_PARSE_OPTIONS.nodeParser = [CommentParser, CDATAParser, ElementParser];
+DEFAULT_PARSE_OPTIONS.nodeParser = [
+    CommentParser,
+    CDATAParser,
+    ProcessingInstructionParser,
+    DtdParser,
+    ElementParser,
+];
 // import { closeNode, parseEndTag, parseStartTag } from "./node";
 // const loopClose = (context: LxParseContext) => {
 //     const node = context.currentNode;

@@ -127,8 +127,8 @@
             </label>
             <label class="option-item">
                 <input type="checkbox" />
-                <b>allowAttrNameEmpty</b>
-                <small>是否允许属性名为空</small>
+                <b>allowNodeNameEmpty</b>
+                <small>是否允许节点名称为空</small>
             </label>
             <label class="option-item">
                 <input type="checkbox" />
@@ -277,7 +277,7 @@
             const pageInit = () => {
                 const localOptions =
                     JSON.parse(localStorage.getItem("Lx.Options") || "null") ||
-                    LooseXmlParser.DEFAULT_OPTIONS;
+                    LooseXmlParser.DEFAULT_PARSE_OPTIONS;
                 setOptions(localOptions);
                 const xmlEditor = monaco.editor.create(txtXml[0], {
                     value: (

@@ -7,19 +7,20 @@ import {
     LxMessage,
     LxWrong,
     LxCursorPosition,
-    LxParseContext,
     LxNodeParser,
     LxNodeParserMatcher,
     LxParseOptions,
     LxSerializeOptions,
     LxTryStep,
     LxEventType,
-    LxNodeType,
-    LxNodeCloseType,
+    LxTryStepData,
 } from "./types";
 import { REX_SPACE } from "./var";
 
-export const createLxError = (msg: LxMessage, cursor: LxCursorPosition) => {
+export const createLxError = (
+    msg: LxMessage,
+    cursor: LxCursorPosition
+): LxWrong => {
     const err = (new Error(msg.message) as unknown) as LxWrong;
     err.code = msg.code;
     Object.assign(err, cursor);
@@ -29,34 +30,37 @@ export const createLxError = (msg: LxMessage, cursor: LxCursorPosition) => {
 export const isFunc = (obj) =>
     typeof obj === "function" || obj instanceof Function;
 
-export const pushStep = <T = LxTryStep["data"] | LxWrong>(
+export const pushStep = (
     steps: LxTryStep[],
     step: LxEventType,
     cursor: LxCursorPosition,
-    data?: T
+    data?: LxTryStepData | LxMessage
 ): LxTryStep[] => {
     steps.push(createStep(step, cursor, data));
     return steps;
 };
-export const createStep = <T = LxTryStep["data"] | LxWrong>(
+export const createStep = (
     step: LxEventType,
     cursor: LxCursorPosition,
-    data?: T
+    data?: LxTryStepData | LxMessage
 ): LxTryStep => {
     let wrong: LxWrong;
     if (data) {
         let tsData = (data as unknown) as LxWrong;
         if (tsData.code && tsData.message && !tsData.stack) {
-            wrong = createLxError((data as unknown) as LxMessage, cursor);
+            wrong = createLxError(tsData, cursor);
         }
     }
-    return ({
+    const result: LxTryStep = {
         step,
         cursor: {
             ...cursor,
         },
-        data: wrong || data,
-    } as unknown) as LxTryStep;
+    };
+    if (typeof data !== "undefined") {
+        result.data = wrong || (data as LxTryStepData);
+    }
+    return result;
 };
 
 export const moveCursor = (
@@ -126,7 +130,7 @@ export const nodeToJSON = (
 ): LxNodeJSON => {
     const res = {} as LxNodeJSON;
     for (let prop in node) {
-        if (prop !== "parent") {
+        if (prop !== "parent" && prop !== "parser") {
             if (prop === "steps") {
                 if (options && options.steps) {
                     res[prop] = node[prop];
@@ -166,33 +170,6 @@ export const currentIsLineBreak = (
     }
     return -1;
 };
-
-// export const execEndTag = (context: LxParseContext, node: LxNode) => {
-//     node.locationInfo.endTag = {
-//         startCol: context.col,
-//         startOffset: context.index,
-//         startLine: context.line,
-//     };
-//     fireEvent(LxEventType.endTagStart, context, node);
-//     if (node.type === LxNodeType.cdata) {
-//         plusArgNumber(context, CDATA_END.length - 1, 0, CDATA_END.length - 1);
-//     } else if (node.type === LxNodeType.processingInstruction) {
-//         plusArgNumber(context, PI_END.length - 1, 0, PI_END.length - 1);
-//     } else if (node.type === LxNodeType.comment) {
-//         plusArgNumber(
-//             context,
-//             COMMENT_END.length - 1,
-//             0,
-//             COMMENT_END.length - 1
-//         );
-//     }
-//     node.locationInfo.endTag.endCol = node.locationInfo.endCol = context.col;
-//     node.locationInfo.endTag.endLine = node.locationInfo.endLine = context.line;
-//     node.locationInfo.endTag.endOffset = node.locationInfo.endOffset =
-//         context.index;
-//     fireEvent(LxEventType.endTagEnd, context, node);
-//     fireEvent(LxEventType.nodeEnd, context, node);
-// };
 
 export const equalSubStr = (
     fullStr: string,
@@ -243,6 +220,29 @@ export const equalCursor = (
     );
 };
 
+export const notSpaceCharCursor = (xml: string, cursor: LxCursorPosition) => {
+    const xmlLength = xml.length;
+    const resultCursor = {
+        ...cursor,
+    };
+    for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
+        const char = xml[resultCursor.offset];
+        if (REX_SPACE.test(char)) {
+            const brType = currentIsLineBreak(xml, resultCursor.offset);
+            if (brType !== -1) {
+                moveCursor(
+                    resultCursor,
+                    1,
+                    -resultCursor.column,
+                    !brType ? 0 : 1
+                );
+            }
+            continue;
+        }
+        return resultCursor;
+    }
+};
+
 export const getEndCharCursor = (
     xml: string,
     cursor: LxCursorPosition,
@@ -273,20 +273,42 @@ export const getEndCharCursor = (
     }
 };
 
-export const checkElementEndTagStart = (
+export const checkTagStart = (
     xml: string,
-    cursor: LxCursorPosition
+    cursor: LxCursorPosition,
+    char1: string,
+    char2: string
 ): LxCursorPosition => {
-    if (xml[cursor.offset] === "<") {
+    if (xml[cursor.offset] === char1) {
         let resultCursor: LxCursorPosition = {
             ...cursor,
         };
         moveCursor(resultCursor, 0, 1, 1);
-        resultCursor = getEndCharCursor(xml, resultCursor, "/");
+        resultCursor = getEndCharCursor(xml, resultCursor, char2);
         if (resultCursor) {
             return resultCursor;
         }
     }
+};
+
+export const checkElementEndTagStart = (
+    xml: string,
+    cursor: LxCursorPosition
+): LxCursorPosition => {
+    return checkTagStart(xml, cursor, "<", "/");
+};
+
+export const checkPIStartTagStart = (
+    xml: string,
+    cursor: LxCursorPosition
+): LxCursorPosition => {
+    return checkTagStart(xml, cursor, "<", "?");
+};
+export const checkPIEndTagStart = (
+    xml: string,
+    cursor: LxCursorPosition
+): LxCursorPosition => {
+    return checkTagStart(xml, cursor, "?", ">");
 };
 
 export const findNodeParser = (
@@ -324,14 +346,16 @@ export const findNodeSerializer = (
     currentNode: LxNodeJSON,
     brotherNodes: LxNodeJSON[],
     rootNodes: LxNodeJSON[],
-    options: LxSerializeOptions
+    options: LxSerializeOptions,
+    parentNode?: LxNodeJSON
 ): LxNodeParser => {
     return options.nodeParser.find((parser) => {
         return parser.serializeMatch(
             currentNode,
             brotherNodes,
             rootNodes,
-            options
+            options,
+            parentNode
         );
     });
 };

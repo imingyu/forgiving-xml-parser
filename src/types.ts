@@ -85,16 +85,17 @@ export interface LxCursorPosition {
     column: number;
     offset: number;
 }
+export type LxTryStepData =
+    | LxNode
+    | string
+    | LxWrong
+    | LxNodeType
+    | [LxNodeType, LxNodeCloseType]
+    | [LxNodeType, LxNodeParser];
 export interface LxTryStep {
     step: LxEventType;
     cursor: LxCursorPosition;
-    data?:
-        | LxNode
-        | string
-        | LxWrong
-        | LxNodeType
-        | [LxNodeType, LxNodeCloseType]
-        | [LxNodeType, LxNodeNature];
+    data?: LxTryStepData;
 }
 export enum AttrMoreEqualDisposal {
     throwError = "throwError",
@@ -115,7 +116,7 @@ export interface LxLoopHookHandler {
     (context: LxParseContext): number;
 }
 export interface LxOptionChecker {
-    (cursor: LxCursorPosition): boolean;
+    (xml: string, cursor: LxCursorPosition, parser: LxNodeParser): boolean;
 }
 export interface LxEqualNameChecker {
     (
@@ -126,7 +127,7 @@ export interface LxEqualNameChecker {
     ): boolean;
 }
 export interface LxOptionDisposal<T> {
-    (node: LxNode, cursor: LxCursorPosition): T;
+    (xml: string, cursor: LxCursorPosition, parser: LxNodeParser): T;
 }
 export interface LxParseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
@@ -137,9 +138,11 @@ export interface LxParseOptions {
     allowEndTagNameNearSpace?: boolean | RegExp | LxOptionChecker;
     // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     ignoreTagNameCaseEqual?: boolean | RegExp | LxEqualNameChecker;
+    // 是否允许节点名称为空；
+    allowNodeNameEmpty?: boolean | LxOptionChecker;
     // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     allowNodeNotClose?: boolean | RegExp | LxOptionChecker;
-    // 是否允许属性名为空；函数会将当前节点传入，返回true规则才生效
+    // TODO:待删除 是否允许属性名为空；函数会将当前节点传入，返回true规则才生效
     allowAttrNameEmpty?: boolean | LxOptionChecker;
     // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
     allowAttrContentHasBr?: boolean | LxOptionChecker;
@@ -161,23 +164,38 @@ export interface LxNodeSerializeMatcher {
         currentNode: LxNodeJSON,
         brotherNodes: LxNodeJSON[],
         rootNodes: LxNodeJSON[],
-        options: LxSerializeOptions
+        options: LxSerializeOptions,
+        parentNode?: LxNodeJSON
     ): boolean;
 }
 export interface LxNodeSerializer {
-    (nodes: LxNodeJSON[], options: LxSerializeOptions): string;
+    (
+        nodes: LxNodeJSON[],
+        options: LxSerializeOptions,
+        parentNode?: LxNodeJSON
+    ): string;
 }
 export interface LxNodeParser {
+    nodeType: LxNodeType;
     nodeNature: LxNodeNature;
+    attrLeftBoundaryChar?: string | RegExp;
+    attrRightBoundaryChar?: string | RegExp;
+    attrBoundaryCharNeedEqual?: boolean;
     parseMatch: string | RegExp | LxNodeParserMatcher;
-    parse(context: LxParseContext);
+    parse(context: LxParseContext, parentNodeParser?: LxNodeParser);
+    checkAttrsEnd?(
+        xml: string,
+        cursor: LxCursorPosition,
+        options: LxSerializeOptions
+    ): LxCursorPosition;
     serializeMatch: LxNodeSerializeMatcher;
     serialize(
         currentNode: LxNodeJSON,
         brotherNodes: LxNodeJSON[],
         rootNodes: LxNodeJSON[],
         rootSerializer: LxNodeSerializer,
-        options: LxSerializeOptions
+        options: LxSerializeOptions,
+        parentNode?: LxNodeJSON
     ): string;
 }
 export interface LxNodeParserMatcher {
@@ -231,11 +249,12 @@ export interface LxNodeJSON {
     children?: LxNodeJSON[];
     attrs?: LxNodeJSON[];
     locationInfo?: LxNodeLocationInfo;
-    boundaryChar?: string;
+    boundaryChar?: string[];
     equalCount?: number;
     nature?: LxNodeNature;
 }
 export interface LxNode extends LxNodeJSON {
+    parser: LxNodeParser;
     locationInfo: LxNodeLocationInfo;
     children?: LxNode[];
     attrs?: LxNode[];

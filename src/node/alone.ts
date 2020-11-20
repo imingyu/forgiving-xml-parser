@@ -2,7 +2,7 @@ import {
     LxCursorPosition,
     LxEventType,
     LxNodeCloseType,
-    LxNodeNature,
+    LxNodeParser,
     LxNodeType,
     LxParseContext,
     LxParseOptions,
@@ -19,14 +19,12 @@ export const tryParseAloneNode = (
     cursor: LxCursorPosition,
     nodeType: LxNodeType,
     startTagText: string,
-    endTagText: string
+    endTagText: string,
+    parser: LxNodeParser
 ): LxTryStep[] => {
     const steps: LxTryStep[] = [];
     const xmlLength = xml.length;
-    pushStep(steps, LxEventType.nodeStart, cursor, [
-        nodeType,
-        LxNodeNature.alone,
-    ]);
+    pushStep(steps, LxEventType.nodeStart, cursor, [nodeType, parser]);
     pushStep(steps, LxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, startTagText.length - 1, startTagText.length - 1);
     pushStep(steps, LxEventType.startTagEnd, cursor, [
@@ -87,7 +85,8 @@ export const parseAloneNode = (
     context: LxParseContext,
     nodeType: LxNodeType,
     startTagText: string,
-    endTagText: string
+    endTagText: string,
+    parser: LxNodeParser
 ) => {
     const steps = tryParseAloneNode(
         context.xml,
@@ -99,7 +98,8 @@ export const parseAloneNode = (
         },
         nodeType,
         startTagText,
-        endTagText
+        endTagText,
+        parser
     );
     boundStepsToContext(steps, context);
 };
