@@ -304,8 +304,74 @@
                     },
                 });
                 window.jsonEditor = jsonEditor;
+                let isPush;
                 $("#btnParse").bind("click", (e) => {
                     const options = getOptions();
+                    if (!isPush) {
+                        options.nodeParser =
+                            LooseXmlParser.DEFAULT_PARSE_OPTIONS.nodeParser;
+                        options.nodeParser.push({
+                            nodeCustomType: "var",
+                            nodeType: LooseXmlParser.LxNodeType.custom,
+                            nodeNature: LooseXmlParser.LxNodeNature.alone,
+                            parseMatch: "{{",
+                            parse: (context) => {
+                                if (!context.currentNode.children) {
+                                    context.currentNode.children = [];
+                                }
+                                LooseXmlParser.moveCursor(context, 0, 2, 2);
+                                const start = {
+                                    lineNumber: context.lineNumber,
+                                    column: context.column,
+                                    offset: context.offset,
+                                };
+                                const node = {
+                                    type: LooseXmlParser.LxNodeType.custom,
+                                    customType: "var",
+                                };
+                                const end = LooseXmlParser.findStrCursor(
+                                    xml,
+                                    context,
+                                    "}}"
+                                );
+
+                                if (end[0]) {
+                                    node.content = xml.substring(
+                                        start.offset,
+                                        end[1].offset
+                                    );
+                                    Object.assign(context, end[1]);
+                                    LooseXmlParser.moveCursor(context, 0, 1, 1);
+                                } else {
+                                    node.content = xml.substr(start.offset);
+                                    const endCursor = LooseXmlParser.getEndCursor(
+                                        xml,
+                                        context
+                                    );
+                                    Object.assign(context, endCursor);
+                                }
+                                context.currentNode.children.push(node);
+                            },
+                            serializeMatch(currentNode) {
+                                return (
+                                    currentNode.type ===
+                                        LooseXmlParser.LxNodeType.custom &&
+                                    currentNode.customType === "var"
+                                );
+                            },
+                            serialize(currentNode) {
+                                return `{{${currentNode.content || ""}${
+                                    !currentNode.closeType ||
+                                    currentNode.closeType ===
+                                        LooseXmlParser.LxNodeCloseType
+                                            .fullClosed
+                                        ? "}}"
+                                        : ""
+                                }`;
+                            },
+                        });
+                        isPush = true;
+                    }
                     const xml = xmlEditor.getValue();
                     localStorage.setItem("Lx.Xml", xml);
                     const startTime = (performance || Date).now();
@@ -318,7 +384,6 @@
                         locationInfo: $("#chkLocation").prop("checked"),
                         steps: $("#chkSteps").prop("checked"),
                     });
-                    console.log(parseResult);
                     if (parseResult.error && parseResult.error.stack) {
                         console.log(parseResult.error.stack);
                     }

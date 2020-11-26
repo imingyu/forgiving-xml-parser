@@ -216,6 +216,7 @@ export interface LxAllowNodeNotCloseChecker {
 export interface LxNodeParser {
     nodeType: LxNodeType;
     nodeNature: LxNodeNature;
+    nodeCustomType?: string;
     attrLeftBoundaryChar?: string | RegExp;
     attrRightBoundaryChar?: string | RegExp;
     attrBoundaryCharNeedEqual?: boolean;
@@ -284,6 +285,7 @@ export enum LxNodeCloseType {
 }
 export interface LxNodeJSON {
     type: LxNodeType;
+    customType?: string;
     closeType?: LxNodeCloseType;
     name?: string;
     content?: string;

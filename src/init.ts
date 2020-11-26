@@ -13,7 +13,10 @@ import {
     LxNodeParser,
 } from "./types";
 
-const setMaxCursor = (context: LxParseContext, cursor: LxCursorPosition) => {
+export const setContextMaxCursor = (
+    context: LxParseContext,
+    cursor: LxCursorPosition
+) => {
     if (context.maxLineNumber < cursor.lineNumber) {
         context.maxLineNumber = cursor.lineNumber;
     }
@@ -54,7 +57,7 @@ export const boundStepsToContext = (
         if (step === LxEventType.nodeStart) {
             const [nodeType] = data as [LxNodeType, LxNodeParser];
             const node = createNodeByNodeStartStep(currentStepItem);
-            setMaxCursor(context, currentStepItem.cursor);
+            setContextMaxCursor(context, currentStepItem.cursor);
             node.steps.push(currentStepItem);
             if (context.currentNode) {
                 node.parent = context.currentNode;
@@ -151,7 +154,7 @@ export const boundStepsToContext = (
                 );
             }
         } else if (step === LxEventType.nodeEnd) {
-            setMaxCursor(context, cursor);
+            setContextMaxCursor(context, cursor);
             if (context.currentNode) {
                 setNodeLocationByCursor(
                     context.currentNode.locationInfo,
@@ -194,7 +197,7 @@ export const boundStepsToContext = (
             }
         }
         if (index === len - 1) {
-            setMaxCursor(context, cursor);
+            setContextMaxCursor(context, cursor);
         }
         if (loopCallback && loopCallback(currentStepItem, index)) {
             break;

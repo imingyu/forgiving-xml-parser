@@ -15,6 +15,7 @@ import {
     LxEventType,
     LxTryStepData,
     LxNodeCloseType,
+    LxParseContext,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -247,6 +248,68 @@ export const getEndCharCursor = (
         }
         return;
     }
+};
+
+export const toCursor = (like: LxCursorPosition): LxCursorPosition => {
+    return {
+        lineNumber: like.lineNumber,
+        column: like.column,
+        offset: like.offset,
+    } as LxCursorPosition;
+};
+
+export const getEndCursor = (
+    xml: string,
+    cursor: LxCursorPosition
+): LxCursorPosition => {
+    const xmlLength = xml.length;
+    const resultCursor = toCursor(cursor);
+    for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
+        const brType = currentIsLineBreak(xml, resultCursor.offset);
+        if (brType !== -1) {
+            moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
+        }
+    }
+    return resultCursor;
+};
+
+export const findStrCursor = (
+    xml: string,
+    cursor: LxCursorPosition,
+    targetStr: string
+): [boolean, LxCursorPosition, LxCursorPosition?] => {
+    const xmlLength = xml.length;
+    const resultCursor = toCursor(cursor);
+    for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
+        const char = xml[resultCursor.offset];
+        if (char === targetStr[0]) {
+            const substr = xml.substr(resultCursor.offset, targetStr.length);
+            if (substr === targetStr) {
+                const start = toCursor(resultCursor);
+                for (
+                    let index = 0, len = substr.length;
+                    index < len;
+                    index++ && moveCursor(resultCursor, 0, 1, 1)
+                ) {
+                    const brType = currentIsLineBreak(xml, resultCursor.offset);
+                    if (brType !== -1) {
+                        moveCursor(
+                            resultCursor,
+                            1,
+                            -resultCursor.column,
+                            !brType ? 0 : 1
+                        );
+                    }
+                }
+                return [true, start, resultCursor];
+            }
+        }
+        const brType = currentIsLineBreak(xml, resultCursor.offset);
+        if (brType !== -1) {
+            moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
+        }
+    }
+    return [false, resultCursor];
 };
 
 export const checkTagStart = (
