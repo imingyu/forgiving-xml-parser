@@ -84,37 +84,6 @@ export const moveCursor = (
     }
     return cursor;
 };
-
-// export const plusArgNumber = (
-//     context: LxParseContext,
-//     index?: number,
-//     linePlus?: number,
-//     colPlus?: number
-// ) => {
-//     if (index) {
-//         context.index += index;
-//     }
-//     if (linePlus) {
-//         context.line += linePlus;
-//     }
-//     if (colPlus) {
-//         context.col += colPlus;
-//         context.col = Math.abs(context.col);
-//     }
-//     if (linePlus || colPlus) {
-//         setArgMaxNumber(context);
-//     }
-// };
-
-// export const setArgMaxNumber = (context: LxParseContext) => {
-//     if (context.line > context.maxLine) {
-//         context.maxLine = context.line;
-//     }
-//     if (context.maxCol < context.col) {
-//         context.maxCol = context.col;
-//     }
-// };
-
 export const pick = (
     prop: string,
     res: LxParseResultJSON,

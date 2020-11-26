@@ -13,6 +13,15 @@ import {
     LxNodeParser,
 } from "./types";
 
+const setMaxCursor = (context: LxParseContext, cursor: LxCursorPosition) => {
+    if (context.maxLineNumber < cursor.lineNumber) {
+        context.maxLineNumber = cursor.lineNumber;
+    }
+    if (context.maxColumn < cursor.column) {
+        context.maxColumn = cursor.column;
+    }
+};
+
 export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
     const [nodeType, nodeParser] = step.data as [LxNodeType, LxNodeParser];
     return {
@@ -45,6 +54,7 @@ export const boundStepsToContext = (
         if (step === LxEventType.nodeStart) {
             const [nodeType] = data as [LxNodeType, LxNodeParser];
             const node = createNodeByNodeStartStep(currentStepItem);
+            setMaxCursor(context, currentStepItem.cursor);
             node.steps.push(currentStepItem);
             if (context.currentNode) {
                 node.parent = context.currentNode;
@@ -141,6 +151,7 @@ export const boundStepsToContext = (
                 );
             }
         } else if (step === LxEventType.nodeEnd) {
+            setMaxCursor(context, cursor);
             if (context.currentNode) {
                 setNodeLocationByCursor(
                     context.currentNode.locationInfo,
@@ -181,6 +192,9 @@ export const boundStepsToContext = (
             } else {
                 fireEvent(step, context, context.currentNode);
             }
+        }
+        if (index === len - 1) {
+            setMaxCursor(context, cursor);
         }
         if (loopCallback && loopCallback(currentStepItem, index)) {
             break;
