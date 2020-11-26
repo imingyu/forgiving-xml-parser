@@ -128,21 +128,43 @@ export interface LxEqualNameChecker {
 export interface LxOptionDisposal<T> {
     (xml: string, cursor: LxCursorPosition, parser: LxNodeParser): T;
 }
+export enum LxTagType {
+    startTag = "startTag",
+    endTag = "endTag",
+}
+export interface LxAllowNearTagBoundarySpace {
+    (
+        xml: string,
+        cursor: LxCursorPosition,
+        parser: LxNodeParser,
+        tagName?: string
+    ): boolean;
+}
+export interface LxAllowTagNameHasSpace {
+    (
+        xml: string,
+        cursor: LxCursorPosition,
+        tagName: string,
+        tagType: LxTagType
+    ): boolean;
+}
 export interface LxParseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
-    allowStartTagLeftBoundarySpace?: boolean | RegExp | LxOptionChecker;
-    // 是否允许结束标签的左边界符附近存在空白字符；函数会将当前光标位置传入，返回true规则才生效
-    allowEndTagLeftBoundarySpace?: boolean | LxOptionChecker;
-    // 是否允许结束标签中名称附近存在空白字符；正则会匹配endTagName，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
-    allowEndTagNameNearSpace?: boolean | RegExp | LxOptionChecker;
+    allowStartTagBoundaryNearSpace?:
+        | boolean
+        | RegExp
+        | LxAllowNearTagBoundarySpace;
+    allowEndTagBoundaryNearSpace?:
+        | boolean
+        | RegExp
+        | LxAllowNearTagBoundarySpace;
+    allowTagNameHasSpace?: boolean | RegExp | LxAllowTagNameHasSpace;
     // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     ignoreTagNameCaseEqual?: boolean | RegExp | LxEqualNameChecker;
     // 是否允许节点名称为空；
     allowNodeNameEmpty?: boolean | LxOptionChecker;
     // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     allowNodeNotClose?: boolean | RegExp | LxAllowNodeNotCloseChecker;
-    // TODO:待删除 是否允许属性名为空；函数会将当前节点传入，返回true规则才生效
-    allowAttrNameEmpty?: boolean | LxOptionChecker;
     // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
     allowAttrContentHasBr?: boolean | LxOptionChecker;
     // 是否允许属性等号附近存在空白字符
@@ -157,6 +179,10 @@ export interface LxParseOptions {
 export enum LxNodeNature {
     alone = "alone",
     children = "children",
+}
+
+export interface LxAttrParseCallback {
+    (attrSteps: LxTryStep[], readyAttrsSteps: LxTryStep[]): boolean;
 }
 export interface LxNodeSerializeMatcher {
     (

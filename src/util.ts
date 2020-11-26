@@ -14,6 +14,7 @@ import {
     LxTryStep,
     LxEventType,
     LxTryStepData,
+    LxNodeCloseType,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -133,6 +134,12 @@ export const nodeToJSON = (
         if (prop !== "parent" && prop !== "parser") {
             if (prop === "steps") {
                 if (options && options.steps) {
+                    res[prop] = node[prop];
+                }
+            } else if (prop === "closeType") {
+                if (
+                    !(!node[prop] || node[prop] === LxNodeCloseType.fullClosed)
+                ) {
                     res[prop] = node[prop];
                 }
             } else if (prop !== "locationInfo") {

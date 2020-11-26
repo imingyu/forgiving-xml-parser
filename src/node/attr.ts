@@ -8,6 +8,7 @@ import {
 import { checkOptionAllow, computeOption, isTrueOption } from "../option";
 import {
     AttrMoreEqualDisposal,
+    LxAttrParseCallback,
     LxCursorPosition,
     LxEventType,
     LxNodeCloseType,
@@ -83,14 +84,24 @@ export const tryParseAttrs = (
     xml: string,
     cursor: LxCursorPosition,
     parentNodeParser: LxNodeParser,
-    options?: LxParseOptions
+    options?: LxParseOptions,
+    attrCallback?: LxAttrParseCallback
 ): LxTryStep[] => {
-    const steps: LxTryStep[] = [];
+    let steps: LxTryStep[] = [];
     const xmlLength = xml.length;
     for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
+        const currentAttrSteps: LxTryStep[] = [];
+        const res = tryParseAttr(
+            xml,
+            cursor,
+            parentNodeParser,
+            options,
+            currentAttrSteps
+        );
+        steps = steps.concat(currentAttrSteps);
         if (
-            tryParseAttr(xml, cursor, parentNodeParser, options, steps) ===
-            "break"
+            res === "break" ||
+            (attrCallback && attrCallback(currentAttrSteps, steps))
         ) {
             return steps;
         }
@@ -434,10 +445,11 @@ export const tryParseAttr = (
         if (boundaryValue) {
             if (!findTarget) {
                 if (
-                    !computeOption(
+                    !checkOptionAllow(
                         options,
-                        "allowAttrNameEmpty",
-                        DEFAULT_PARSE_OPTIONS.allowAttrNameEmpty,
+                        "allowNodeNameEmpty",
+                        DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
+                        null,
                         xml,
                         cursor,
                         AttrParser

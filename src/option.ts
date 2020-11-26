@@ -33,43 +33,6 @@ export const fireEvent = (
         typeof context.options.onEvent === "function" &&
         context.options.onEvent(type, context, data);
 };
-
-// export const equalTagName = (
-//     context: LxParseContext,
-//     node: LxNode,
-//     endTagName: string
-// ) => {
-//     if (node.type === LxNodeType.element) {
-//         const startTagName = node.name;
-//         const lowerStartTagName = startTagName.toLowerCase();
-//         if (endTagName !== startTagName) {
-//             if (
-//                 !isTrueOption(context, "ignoreTagNameCaseEqual") ||
-//                 endTagName.toLowerCase() !== lowerStartTagName
-//             ) {
-//                 return false;
-//             }
-//         }
-//     }
-//     return true;
-// };
-
-// export const allowNodeNotClose = (
-//     context: LxParseContext,
-//     node: LxNode
-// ): boolean => {
-//     if (isTrueOption(context, "allowNodeNotClose")) {
-//         if (context.options.allowNodeNotClose instanceof RegExp) {
-//             return context.options.allowNodeNotClose.test(node.name);
-//         }
-//         if (typeof context.options.allowNodeNotClose === "function") {
-//             return context.options.allowNodeNotClose(node, context);
-//         }
-//         return context.options.allowNodeNotClose === true;
-//     }
-//     return false;
-// };
-
 export function isTrueOption(
     prop: LxParseOptionsKeys,
     options?: LxParseOptions
