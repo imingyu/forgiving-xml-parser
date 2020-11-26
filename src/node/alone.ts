@@ -9,10 +9,7 @@ import {
     LxTryStep,
 } from "../types";
 import { currentIsLineBreak, moveCursor, pushStep } from "../util";
-import { TAG_NOT_CLOSE } from "../message";
 import { boundStepsToContext } from "../init";
-import { checkOptionAllow } from "src/option";
-import { DEFAULT_PARSE_OPTIONS } from "src/var";
 export const tryParseAloneNode = (
     xml: string,
     options: LxParseOptions,
@@ -34,7 +31,6 @@ export const tryParseAloneNode = (
     moveCursor(cursor, 0, 1, 1);
     pushStep(steps, LxEventType.nodeContentStart, cursor);
     let content = "";
-    let closeRight;
     for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
         const char = xml[cursor.offset];
         const nextEnd =
@@ -52,7 +48,6 @@ export const tryParseAloneNode = (
                 LxNodeCloseType.fullClosed,
             ]);
             moveCursor(cursor, 0, 1, 1);
-            closeRight = true;
             break;
         }
         content += char;
@@ -60,24 +55,6 @@ export const tryParseAloneNode = (
         if (brType != -1) {
             moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
         }
-    }
-    if (!closeRight) {
-        if (
-            !checkOptionAllow(
-                options,
-                "allowNodeNotClose",
-                DEFAULT_PARSE_OPTIONS.allowNodeNotClose,
-                content,
-                cursor
-            )
-        ) {
-            return pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
-        }
-        pushStep(steps, LxEventType.nodeContentEnd, cursor, content);
-        pushStep(steps, LxEventType.nodeEnd, cursor, [
-            nodeType,
-            LxNodeCloseType.startTagClosed,
-        ]);
     }
     return steps;
 };

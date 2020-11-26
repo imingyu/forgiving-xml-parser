@@ -26,63 +26,6 @@ DEFAULT_PARSE_OPTIONS.nodeParser = [
     DtdParser,
     ElementParser,
 ];
-// import { closeNode, parseEndTag, parseStartTag } from "./node";
-// const loopClose = (context: LxParseContext) => {
-//     const node = context.currentNode;
-//     if (node.type !== LxNodeType.text && !node.locationInfo.endTag) {
-//         closeNode(node, context);
-//     }
-//     if (node.parent) {
-//         context.currentNode = node.parent;
-//         return loopClose(context);
-//     }
-// };
-
-// const loopParse = (context: LxParseContext): LxParseContext => {
-//     const { xml, xmlLength } = context;
-//     for (; context.index < xmlLength; plusArgNumber(context, 1, 0, 1)) {
-//         if (!context.maxLine) {
-//             context.maxLine = 1;
-//         }
-//         const char = xml[context.index];
-//         if (char === "<") {
-//             if (!context.currentNode) {
-//                 const nodeType = getNodeType(context);
-//                 if (ALONE_NODE_MAP[nodeType]) {
-//                     parseAloneNode(nodeType, context);
-//                     continue;
-//                 }
-//                 parseStartTag(context);
-//                 continue;
-//             }
-//             if (checkElementEnd(context)) {
-//                 parseEndTag(context);
-//                 continue;
-//             }
-//         }
-//         if (checkDtdEnd(context) || checkPIEnd(context)) {
-//             parseEndTag(context);
-//             continue;
-//         }
-//         if (!context.currentNode) {
-//             pushNode(initNode(LxNodeType.text, context), context);
-//         }
-//         if (context.currentNode.type !== LxNodeType.text) {
-//             const node = initNode(LxNodeType.text, context);
-//             node.content = char;
-//             pushNode(node, context);
-//             checkLineBreak(context);
-//             continue;
-//         }
-//         context.currentNode.content += char;
-//         checkLineBreak(context);
-//     }
-//     if (context.currentNode) {
-//         loopClose(context);
-//         delete context.currentNode;
-//     }
-//     return context;
-// };
 
 export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
     options = typeof options !== "object" ? {} : options;

@@ -2,6 +2,8 @@ import {
     LxEventType,
     LxMessage,
     LxNode,
+    LxNodeParser,
+    LxNodeParserAllowNodeNotCloseOption,
     LxParseContext,
     LxParseOptions,
     LxParseOptionsKeys,
@@ -131,4 +133,39 @@ export const computeOption = <
         return (options[optionName] as Function).apply(null, args);
     }
     return (options[optionName] as unknown) as CV;
+};
+
+export const checkAllowNodeNotClose = (
+    onlyAnteriorNode: LxNode,
+    context: LxParseContext,
+    parser: LxNodeParser
+) => {
+    if (
+        parser.allowNodeNotClose === LxNodeParserAllowNodeNotCloseOption.allow
+    ) {
+        return true;
+    }
+    if (
+        parser.allowNodeNotClose ===
+        LxNodeParserAllowNodeNotCloseOption.notAllow
+    ) {
+        return false;
+    }
+    if (typeof parser.allowNodeNotClose === "function") {
+        return parser.allowNodeNotClose(onlyAnteriorNode, context, parser);
+    }
+    if (!context.options || !context.options.allowNodeNotClose) {
+        return false;
+    }
+    if (context.options.allowNodeNotClose instanceof RegExp) {
+        return context.options.allowNodeNotClose.test(onlyAnteriorNode.name);
+    }
+    if (typeof context.options.allowNodeNotClose === "function") {
+        return context.options.allowNodeNotClose(
+            onlyAnteriorNode,
+            context,
+            parser
+        );
+    }
+    return false;
 };

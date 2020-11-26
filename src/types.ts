@@ -120,9 +120,8 @@ export interface LxOptionChecker {
 }
 export interface LxEqualNameChecker {
     (
-        startTagNeme: string,
         endTagName: string,
-        node: LxNode,
+        nodeAnterior: LxNode,
         context: LxParseContext
     ): boolean;
 }
@@ -141,7 +140,7 @@ export interface LxParseOptions {
     // 是否允许节点名称为空；
     allowNodeNameEmpty?: boolean | LxOptionChecker;
     // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
-    allowNodeNotClose?: boolean | RegExp | LxOptionChecker;
+    allowNodeNotClose?: boolean | RegExp | LxAllowNodeNotCloseChecker;
     // TODO:待删除 是否允许属性名为空；函数会将当前节点传入，返回true规则才生效
     allowAttrNameEmpty?: boolean | LxOptionChecker;
     // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
@@ -175,12 +174,28 @@ export interface LxNodeSerializer {
         parentNode?: LxNodeJSON
     ): string;
 }
+
+export enum LxNodeParserAllowNodeNotCloseOption {
+    allow = "allow",
+    notAllow = "notAllow",
+    followParserOptions = "followParserOptions",
+}
+export interface LxAllowNodeNotCloseChecker {
+    (
+        onlyAnteriorNode: LxNode,
+        context: LxParseContext,
+        parser: LxNodeParser
+    ): boolean;
+}
 export interface LxNodeParser {
     nodeType: LxNodeType;
     nodeNature: LxNodeNature;
     attrLeftBoundaryChar?: string | RegExp;
     attrRightBoundaryChar?: string | RegExp;
     attrBoundaryCharNeedEqual?: boolean;
+    allowNodeNotClose?:
+        | LxNodeParserAllowNodeNotCloseOption
+        | LxAllowNodeNotCloseChecker;
     parseMatch: string | RegExp | LxNodeParserMatcher;
     parse(context: LxParseContext, parentNodeParser?: LxNodeParser);
     checkAttrsEnd?(

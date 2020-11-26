@@ -52,3 +52,7 @@ export const TAG_NAME_NEAR_SPACE: LxMessage = {
     code: 13,
     message: "标签名称附近存在空白字符",
 };
+export const END_TAG_NOT_MATCH_START: LxMessage = {
+    code: 14,
+    message: "无法找到与之匹配的开始标签",
+};

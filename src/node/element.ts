@@ -1,10 +1,12 @@
 import {
     LxCursorPosition,
     LxEventType,
+    LxNode,
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
     LxNodeParser,
+    LxNodeParserAllowNodeNotCloseOption,
     LxNodeSerializer,
     LxNodeType,
     LxParseContext,
@@ -23,6 +25,7 @@ import {
 } from "../util";
 import {
     BOUNDARY_HAS_SPACE,
+    END_TAG_NOT_MATCH_START,
     TAG_HAS_MORE_BOUNDARY_CHAR,
     TAG_NAME_IS_EMPTY,
     TAG_NAME_NEAR_SPACE,
@@ -31,7 +34,7 @@ import {
 import { AttrParser, tryParseAttrs } from "./attr";
 import { boundStepsToContext } from "../init";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
-import { checkOptionAllow } from "../option";
+import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
 const tryParseStartTag = (
     xml: string,
     cursor: LxCursorPosition,
@@ -356,19 +359,17 @@ const tryParseEndTag = (
         }
         tagName += char;
         const nextChar = xml[cursor.offset + 1];
-        if (REX_SPACE.test(nextChar) || nextChar === ">") {
-            const endCursor = getEndCharCursor(
-                xml,
+        if (nextChar === ">") {
+            const endCursor = moveCursor(
                 {
-                    lineNumber: cursor.lineNumber,
-                    column: cursor.column + 1,
-                    offset: cursor.offset + 1,
+                    ...cursor,
                 },
-                ">"
+                0,
+                1,
+                1
             );
             if (endCursor) {
                 tagName = tagName.trim();
-                // TODO: tagName equal
                 Object.assign(cursor, endCursor);
                 endTagEndCursorStep = {
                     step: LxEventType.endTagEnd,
@@ -382,32 +383,65 @@ const tryParseEndTag = (
             }
         }
     }
-    // TODO:查抄匹配的startTag并对比tagName
     if (closeRight) {
         steps.push(endTagEndCursorStep);
         pushStep(steps, LxEventType.nodeEnd, cursor, [
             LxNodeType.element,
             LxNodeCloseType.fullClosed,
         ]);
-    } else {
-        if (
-            !checkOptionAllow(
-                options,
-                "allowNodeNotClose",
-                DEFAULT_PARSE_OPTIONS.allowNodeNotClose,
-                tagName,
-                cursor
-            )
-        ) {
-            return pushStep(steps, LxEventType.error, cursor, TAG_NOT_CLOSE);
-        }
-        pushStep(steps, LxEventType.endTagEnd, cursor, tagName);
-        pushStep(steps, LxEventType.nodeEnd, cursor, [
-            LxNodeType.element,
-            LxNodeCloseType.notClosed,
-        ]);
     }
     return steps;
+};
+
+const equalTagName = (
+    endTagName: string,
+    nodeAnterior: LxNode,
+    context: LxParseContext
+): boolean => {
+    if (nodeAnterior.name === endTagName) {
+        return true;
+    }
+    if (
+        (nodeAnterior.name || "").toLowerCase() ===
+            (endTagName || "").toLowerCase() &&
+        checkOptionAllow(
+            context.options,
+            "ignoreTagNameCaseEqual",
+            DEFAULT_PARSE_OPTIONS.ignoreTagNameCaseEqual,
+            nodeAnterior.name,
+            endTagName,
+            nodeAnterior,
+            context
+        )
+    ) {
+        return true;
+    }
+    return false;
+};
+
+// 在context.nodes中查找与endTag匹配的startTag的层级，找不到就返回-1，0代表currentNode，1代表currentNode.parent，2代表currentNode.parent.parent，以此类推...
+const findStartTagLevel = (
+    endTagSteps: LxTryStep[],
+    context: LxParseContext
+): number => {
+    const endTagEndStep = endTagSteps.find(
+        (item) => item.step === LxEventType.endTagEnd
+    );
+    const endTagName = endTagEndStep.data as string;
+    let level = 0;
+    let node: LxNode = context.currentNode;
+    if (equalTagName(endTagName, node, context)) {
+        return level;
+    }
+    if (node.parent) {
+        while ((node = node.parent)) {
+            level++;
+            if (equalTagName(endTagName, node, context)) {
+                return level;
+            }
+        }
+    }
+    return -1;
 };
 
 export const ElementParser: LxNodeParser = {
@@ -416,6 +450,7 @@ export const ElementParser: LxNodeParser = {
     attrLeftBoundaryChar: /^'|^"/,
     attrRightBoundaryChar: /^'|^"/,
     attrBoundaryCharNeedEqual: true,
+    allowNodeNotClose: LxNodeParserAllowNodeNotCloseOption.followParserOptions,
     parseMatch: /^<\s*\/|^</,
     checkAttrsEnd(xml: string, cursor: LxCursorPosition) {
         const char = xml[cursor.offset];
@@ -453,6 +488,53 @@ export const ElementParser: LxNodeParser = {
                 context.options,
                 endTagStartCursor
             );
+            const lastStep = steps[steps.length - 1];
+            if (lastStep.step !== LxEventType.error) {
+                const matchStartTagLevel = findStartTagLevel(steps, context);
+                if (matchStartTagLevel === -1) {
+                    const cursor = steps[0].cursor;
+                    steps = [];
+                    pushStep(
+                        steps,
+                        LxEventType.error,
+                        cursor,
+                        END_TAG_NOT_MATCH_START
+                    );
+                } else if (matchStartTagLevel > 0) {
+                    const firstStep = steps[0];
+                    let node: LxNode;
+                    for (let level = 0; level <= matchStartTagLevel; level++) {
+                        node = node ? node.parent : context.currentNode;
+                        const nodeLastStep = node.children
+                            ? node.children[node.children.length - 1].steps[
+                                  node.children[node.children.length - 1].steps
+                                      .length - 1
+                              ]
+                            : node.steps[node.steps.length - 1];
+                        const nodeFirstStep = node.steps[0];
+                        if (
+                            !checkAllowNodeNotClose(node, context, node.parser)
+                        ) {
+                            pushStep(
+                                steps,
+                                LxEventType.error,
+                                firstStep.cursor,
+                                TAG_NOT_CLOSE
+                            );
+                            break;
+                        }
+                        pushStep(
+                            node.steps,
+                            LxEventType.nodeEnd,
+                            nodeLastStep.cursor,
+                            [
+                                nodeFirstStep.data[0],
+                                LxNodeCloseType.startTagClosed,
+                            ]
+                        );
+                    }
+                }
+            }
         } else {
             steps = tryParseStartTag(
                 context.xml,

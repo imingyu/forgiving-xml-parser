@@ -1,6 +1,7 @@
 import { getEndCharCursor, moveCursor } from "../util";
 import {
     LxCursorPosition,
+    LxNode,
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
@@ -18,6 +19,15 @@ export const DtdParser: LxNodeParser = {
     attrLeftBoundaryChar: /^'|^"|^\(/,
     attrRightBoundaryChar: /^'|^"|^\)/,
     parseMatch: "<!",
+    allowNodeNotClose: (
+        node: LxNode,
+        context: LxParseContext,
+        parser: LxNodeParser
+    ): boolean => {
+        if (node.type === LxNodeType.dtd && !node.parent) {
+        }
+        return true;
+    },
     checkAttrsEnd(xml: string, cursor: LxCursorPosition) {
         const char = xml[cursor.offset];
         if (char === ">" || char === "[") {
