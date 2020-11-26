@@ -330,22 +330,24 @@
                                     customType: "var",
                                 };
                                 const end = LooseXmlParser.findStrCursor(
-                                    xml,
+                                    context.xml,
                                     context,
                                     "}}"
                                 );
 
                                 if (end[0]) {
-                                    node.content = xml.substring(
+                                    node.content = context.xml.substring(
                                         start.offset,
                                         end[1].offset
                                     );
                                     Object.assign(context, end[1]);
                                     LooseXmlParser.moveCursor(context, 0, 1, 1);
                                 } else {
-                                    node.content = xml.substr(start.offset);
+                                    node.content = context.xml.substr(
+                                        start.offset
+                                    );
                                     const endCursor = LooseXmlParser.getEndCursor(
-                                        xml,
+                                        context.xml,
                                         context
                                     );
                                     Object.assign(context, endCursor);
