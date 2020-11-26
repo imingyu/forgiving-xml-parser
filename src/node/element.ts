@@ -42,10 +42,7 @@ const tryParseStartTag = (
 ) => {
     let steps: LxTryStep[] = [];
     const xmlLength = xml.length;
-    pushStep(steps, LxEventType.nodeStart, cursor, [
-        LxNodeType.element,
-        ElementParser,
-    ]);
+    pushStep(steps, LxEventType.nodeStart, cursor, ElementParser);
     pushStep(steps, LxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, 1, 1);
     const elementNodeNameStartStep: LxTryStep = createStep(
@@ -80,7 +77,7 @@ const tryParseStartTag = (
         pushStep(steps, LxEventType.startTagEnd, cursor);
         selfClose &&
             pushStep(steps, LxEventType.nodeEnd, cursor, [
-                LxNodeType.element,
+                ElementParser,
                 LxNodeCloseType.selfCloseing,
             ]);
     };
@@ -362,7 +359,7 @@ const tryParseEndTag = (
     if (closeRight) {
         steps.push(endTagEndCursorStep);
         pushStep(steps, LxEventType.nodeEnd, cursor, [
-            LxNodeType.element,
+            ElementParser,
             LxNodeCloseType.fullClosed,
         ]);
     }

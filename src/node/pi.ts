@@ -34,10 +34,7 @@ export const tryParsePI = (
     options: LxParseOptions
 ): LxTryStep[] => {
     let steps: LxTryStep[] = [];
-    pushStep(steps, LxEventType.nodeStart, cursor, [
-        LxNodeType.processingInstruction,
-        ProcessingInstructionParser,
-    ]);
+    pushStep(steps, LxEventType.nodeStart, cursor, ProcessingInstructionParser);
     pushStep(steps, LxEventType.startTagStart, cursor);
     const startTagEndCursor = checkPIStartTagStart(xml, cursor);
     const expectStartTagEndCursor = moveCursor(
@@ -169,7 +166,7 @@ export const tryParsePI = (
             if (char === ">") {
                 pushStep(steps, LxEventType.endTagEnd, cursor);
                 pushStep(steps, LxEventType.nodeEnd, cursor, [
-                    LxNodeType.processingInstruction,
+                    ProcessingInstructionParser,
                     LxNodeCloseType.fullClosed,
                 ]);
                 moveCursor(cursor, 0, 1, 1);

@@ -26,9 +26,9 @@ export const setContextMaxCursor = (
 };
 
 export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
-    const [nodeType, nodeParser] = step.data as [LxNodeType, LxNodeParser];
+    const nodeParser = step.data as LxNodeParser;
     return {
-        type: nodeType,
+        type: nodeParser.nodeType,
         parser: nodeParser,
         locationInfo: {
             startLineNumber: step.cursor.lineNumber,
@@ -55,7 +55,7 @@ export const boundStepsToContext = (
         const currentStepItem = steps[index];
         const { step, cursor, data } = currentStepItem;
         if (step === LxEventType.nodeStart) {
-            const [nodeType] = data as [LxNodeType, LxNodeParser];
+            const { nodeType } = data as LxNodeParser;
             const node = createNodeByNodeStartStep(currentStepItem);
             setContextMaxCursor(context, currentStepItem.cursor);
             node.steps.push(currentStepItem);

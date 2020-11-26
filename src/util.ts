@@ -159,22 +159,6 @@ export const equalSubStr = (
     return false;
 };
 
-// export const getNodeType = (context: LxParseContext): LxNodeType => {
-//     if (equalSubStr(context.xml, context.index, CDATA_START)) {
-//         return LxNodeType.cdata;
-//     }
-//     if (equalSubStr(context.xml, context.index, COMMENT_START)) {
-//         return LxNodeType.comment;
-//     }
-//     if (equalSubStr(context.xml, context.index, PI_START)) {
-//         return LxNodeType.processingInstruction;
-//     }
-//     if (equalSubStr(context.xml, context.index, DTD_START)) {
-//         return LxNodeType.dtd;
-//     }
-//     return LxNodeType.element;
-// };
-
 export const repeatString = (str: string, repeatCount: number): string => {
     let res = "";
     if (!str || !repeatCount) {

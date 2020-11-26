@@ -187,7 +187,7 @@ export const tryParseAttr = (
             }
         }
         pushStep(steps, LxEventType.nodeEnd, cursor, [
-            LxNodeType.attr,
+            AttrParser,
             findTarget === LxParseAttrTarget.name ||
             findTarget === LxParseAttrTarget.content
                 ? LxNodeCloseType.fullClosed
@@ -382,10 +382,7 @@ export const tryParseAttr = (
                 ) {
                     throw createLxError(ATTR_NAME_IS_EMPTY, cursor);
                 }
-                pushStep(steps, LxEventType.nodeStart, cursor, [
-                    LxNodeType.attr,
-                    AttrParser,
-                ]);
+                pushStep(steps, LxEventType.nodeStart, cursor, AttrParser);
                 pushStep(steps, LxEventType.attrEqual, cursor);
                 findTarget = LxParseAttrTarget.leftBoundary;
                 checkEqualNextSpace();
@@ -457,10 +454,7 @@ export const tryParseAttr = (
                 ) {
                     throw createLxError(ATTR_NAME_IS_EMPTY, cursor);
                 }
-                pushStep(steps, LxEventType.nodeStart, cursor, [
-                    LxNodeType.attr,
-                    AttrParser,
-                ]);
+                pushStep(steps, LxEventType.nodeStart, cursor, AttrParser);
                 leftBoundaryValue = boundaryValue;
                 pushStep(
                     steps,
@@ -521,7 +515,7 @@ export const tryParseAttr = (
                     boundaryValue.length - 1
                 );
                 pushStep(steps, LxEventType.nodeEnd, cursor, [
-                    LxNodeType.attr,
+                    AttrParser,
                     LxNodeCloseType.fullClosed,
                 ]);
                 clear();
@@ -561,10 +555,7 @@ export const tryParseAttr = (
                 return returnEnd();
             }
             findTarget = LxParseAttrTarget.name;
-            pushStep(steps, LxEventType.nodeStart, cursor, [
-                LxNodeType.attr,
-                AttrParser,
-            ]);
+            pushStep(steps, LxEventType.nodeStart, cursor, AttrParser);
             plusContent(char);
             if (checkAttrEnd()) {
                 return returnEnd();
@@ -575,7 +566,7 @@ export const tryParseAttr = (
         if (findTarget === LxParseAttrTarget.name) {
             pushStep(steps, LxEventType.nodeNameEnd, cursor, content);
             pushStep(steps, LxEventType.nodeEnd, cursor, [
-                LxNodeType.attr,
+                AttrParser,
                 LxNodeCloseType.fullClosed,
             ]);
         } else if (findTarget === LxParseAttrTarget.equal) {
@@ -583,11 +574,11 @@ export const tryParseAttr = (
                 steps,
                 LxEventType.nodeEnd,
                 steps[steps.length - 1].cursor,
-                [LxNodeType.attr, LxNodeCloseType.fullClosed]
+                [AttrParser, LxNodeCloseType.fullClosed]
             );
         } else if (findTarget === LxParseAttrTarget.leftBoundary) {
             pushStep(steps, LxEventType.nodeEnd, cursor, [
-                LxNodeType.attr,
+                AttrParser,
                 LxNodeCloseType.notClosed,
             ]);
         } else if (findTarget === LxParseAttrTarget.content) {
@@ -597,7 +588,7 @@ export const tryParseAttr = (
                 LxEventType.nodeEnd,
                 steps[steps.length - 1].cursor,
                 [
-                    LxNodeType.attr,
+                    AttrParser,
                     leftBoundaryValue
                         ? LxNodeCloseType.notClosed
                         : LxNodeCloseType.fullClosed,

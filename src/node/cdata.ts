@@ -13,13 +13,7 @@ export const CDATAParser: LxNodeParser = {
     nodeNature: LxNodeNature.alone,
     parseMatch: CDATA_START,
     parse: (context: LxParseContext) => {
-        parseAloneNode(
-            context,
-            LxNodeType.cdata,
-            CDATA_START,
-            CDATA_END,
-            CDATAParser
-        );
+        parseAloneNode(context, CDATA_START, CDATA_END, CDATAParser);
     },
     serializeMatch(currentNode: LxNodeJSON): boolean {
         return currentNode.type === LxNodeType.cdata;

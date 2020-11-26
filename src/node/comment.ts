@@ -14,13 +14,7 @@ export const CommentParser: LxNodeParser = {
     nodeNature: LxNodeNature.alone,
     parseMatch: COMMENT_START,
     parse: (context: LxParseContext) => {
-        parseAloneNode(
-            context,
-            LxNodeType.comment,
-            COMMENT_START,
-            COMMENT_END,
-            CommentParser
-        );
+        parseAloneNode(context, COMMENT_START, COMMENT_END, CommentParser);
     },
     serializeMatch(currentNode: LxNodeJSON): boolean {
         return currentNode.type === LxNodeType.comment;

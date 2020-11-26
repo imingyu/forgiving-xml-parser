@@ -25,7 +25,7 @@ export const tryParseText = (
         cursor: {
             ...cursor,
         },
-        data: [LxNodeType.text, TextParser],
+        data: TextParser,
     });
     steps.push({
         step: LxEventType.nodeContentStart,
@@ -62,7 +62,7 @@ export const tryParseText = (
                 cursor: {
                     ...cursor,
                 },
-                data: [LxNodeType.text, LxNodeCloseType.fullClosed],
+                data: [TextParser, LxNodeCloseType.fullClosed],
             });
             break;
         }

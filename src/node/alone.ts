@@ -14,18 +14,17 @@ export const tryParseAloneNode = (
     xml: string,
     options: LxParseOptions,
     cursor: LxCursorPosition,
-    nodeType: LxNodeType,
     startTagText: string,
     endTagText: string,
     parser: LxNodeParser
 ): LxTryStep[] => {
     const steps: LxTryStep[] = [];
     const xmlLength = xml.length;
-    pushStep(steps, LxEventType.nodeStart, cursor, [nodeType, parser]);
+    pushStep(steps, LxEventType.nodeStart, cursor, parser);
     pushStep(steps, LxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, startTagText.length - 1, startTagText.length - 1);
     pushStep(steps, LxEventType.startTagEnd, cursor, [
-        nodeType,
+        parser,
         LxNodeCloseType.startTagClosed,
     ]);
     moveCursor(cursor, 0, 1, 1);
@@ -44,7 +43,7 @@ export const tryParseAloneNode = (
             moveCursor(cursor, 0, endTagText.length - 1, endTagText.length - 1);
             pushStep(steps, LxEventType.endTagEnd, cursor);
             pushStep(steps, LxEventType.nodeEnd, cursor, [
-                nodeType,
+                parser,
                 LxNodeCloseType.fullClosed,
             ]);
             moveCursor(cursor, 0, 1, 1);
@@ -60,7 +59,6 @@ export const tryParseAloneNode = (
 };
 export const parseAloneNode = (
     context: LxParseContext,
-    nodeType: LxNodeType,
     startTagText: string,
     endTagText: string,
     parser: LxNodeParser
@@ -73,7 +71,6 @@ export const parseAloneNode = (
             column: context.column,
             offset: context.offset,
         },
-        nodeType,
         startTagText,
         endTagText,
         parser

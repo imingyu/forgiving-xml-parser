@@ -13,12 +13,14 @@ import {
 } from "../types";
 import { AttrParser } from "./attr";
 
+export const traParseDtdStartTag = () => {};
+
 export const DtdParser: LxNodeParser = {
     nodeNature: LxNodeNature.children,
     nodeType: LxNodeType.dtd,
     attrLeftBoundaryChar: /^'|^"|^\(/,
     attrRightBoundaryChar: /^'|^"|^\)/,
-    parseMatch: "<!",
+    parseMatch: /^<\s*\!|^>|^\]\s*>/,
     allowNodeNotClose: (
         node: LxNode,
         context: LxParseContext,
@@ -30,7 +32,7 @@ export const DtdParser: LxNodeParser = {
     },
     checkAttrsEnd(xml: string, cursor: LxCursorPosition) {
         const char = xml[cursor.offset];
-        if (char === ">" || char === "[") {
+        if (char === ">" || char === "]") {
             return cursor;
         }
     },
