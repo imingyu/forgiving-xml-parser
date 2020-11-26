@@ -208,7 +208,7 @@
                 </button>
             </div>
             <div class="text-container">
-                <h3>JSON</h3>
+                <h3>JSON <small id="jsonTime"></small></h3>
                 <div class="text-editor" id="txtJSON"></div>
                 <!-- <button class="btn-action" type="button" id="btnCopy">
                     复制结果
@@ -308,7 +308,12 @@
                     const options = getOptions();
                     const xml = xmlEditor.getValue();
                     localStorage.setItem("Lx.Xml", xml);
+                    const startTime = (performance || Date).now();
                     const json = LooseXmlParser.parse(xml, options);
+                    const endTime = (performance || Date).now();
+                    $("#jsonTime").text(
+                        `本次解析耗时：${endTime - startTime}ms`
+                    );
                     const parseResult = LooseXmlParser.parseResultToJSON(json, {
                         locationInfo: $("#chkLocation").prop("checked"),
                         steps: $("#chkSteps").prop("checked"),

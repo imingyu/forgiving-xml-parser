@@ -274,7 +274,12 @@ export const tryParseAttr = (
                     parentNodeParser.attrRightBoundaryChar,
                     nextValidCharCursor
                 );
-                if (boundaryValue) {
+                if (
+                    boundaryValue &&
+                    (parentNodeParser.attrBoundaryCharNeedEqual
+                        ? leftBoundaryValue === boundaryValue
+                        : true)
+                ) {
                     pushStep(
                         steps,
                         LxEventType.nodeContentEnd,
@@ -497,6 +502,12 @@ export const tryParseAttr = (
                     cursor,
                     boundaryValue
                 );
+                moveCursor(
+                    cursor,
+                    0,
+                    boundaryValue.length - 1,
+                    boundaryValue.length - 1
+                );
                 pushStep(steps, LxEventType.nodeEnd, cursor, [
                     LxNodeType.attr,
                     LxNodeCloseType.fullClosed,
@@ -505,6 +516,13 @@ export const tryParseAttr = (
                 checkAttrEnd();
                 return returnEnd();
             }
+            moveCursor(
+                cursor,
+                0,
+                boundaryValue.length - 1,
+                boundaryValue.length - 1
+            );
+            plusContent(boundaryValue);
             continue;
         }
         if (
