@@ -1,5 +1,8 @@
 # loose-xml-parser
 
+![image](https://img.shields.io/npm/l/loose-xml-parser.svg)
+[![image](https://img.shields.io/npm/v/loose-xml-parser.svg)](https://www.npmjs.com/package/loose-xml-parser)
+
 Enligsh | [简体中文](./README.zh-CN.md)
 
 An XML/HTML parser and serializer for JavaScript. [Playground](https://imingyu.github.io/loose-xml-parser/)
