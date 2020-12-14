@@ -317,28 +317,28 @@
                 txtXml = $("#txtXml");
                 txtJSON = $("#txtJSON");
                 var localOptions =
-                    JSON.parse(localStorage.getItem("Lx.Options") || "null") ||
-                    LooseXmlParser.DEFAULT_PARSE_OPTIONS;
+                    JSON.parse(localStorage.getItem("Fx.Options") || "null") ||
+                    ForgivingXmlParser.DEFAULT_PARSE_OPTIONS;
                 setOptions(localOptions);
 
                 $("#btnParse").bind("click", function (e) {
                     var options = getOptions();
                     var xml = getXml();
-                    localStorage.setItem("Lx.Xml", xml);
+                    localStorage.setItem("Fx.Xml", xml);
                     var startTime = (performance || Date).now();
-                    var json = LooseXmlParser.parse(xml, options);
+                    var json = ForgivingXmlParser.parse(xml, options);
                     var endTime = (performance || Date).now();
                     $("#jsonTime").text(
                         `本次解析耗时：${(endTime - startTime).toFixed(2)}ms`
                     );
-                    var parseResult = LooseXmlParser.parseResultToJSON(json, {
+                    var parseResult = ForgivingXmlParser.parseResultToJSON(json, {
                         locationInfo: $("#chkLocation").prop("checked"),
                         steps: $("#chkSteps").prop("checked"),
                     });
                     if (parseResult.error && parseResult.error.stack) {
                         console.error(parseResult.error);
                     }
-                    localStorage.setItem("Lx.Options", JSON.stringify(options));
+                    localStorage.setItem("Fx.Options", JSON.stringify(options));
                     setJSON(JSON.stringify(parseResult, null, 4));
                     if (
                         parseResult.error &&
@@ -363,7 +363,7 @@
                 $("#btnSerialize").click(function () {
                     var json = JSON.parse(getJSON() || "null");
                     if (json && json.nodes && json.nodes.length) {
-                        setXml(LooseXmlParser.serialize(json.nodes));
+                        setXml(ForgivingXmlParser.serialize(json.nodes));
                     } else {
                         alert("请输入JSON后尝试序列化");
                     }
@@ -373,7 +373,7 @@
             function editorInit() {
                 xmlEditor = monaco.editor.create(txtXml[0], {
                     value: (
-                        localStorage.getItem("Lx.Xml") ||
+                        localStorage.getItem("Fx.Xml") ||
                         "<?xml version=\"1.0\"?>\n<!DOCTYPE note [\n    <!-- this is comment -->\n    <!ELEMENT note (to,from,heading,body,script)>\n    <!ELEMENT to (#PCDATA)>\n    <!ELEMENT from (#PCDATA)>\n    <!ELEMENT heading (#PCDATA)>\n    <!ELEMENT body (#PCDATA)>\n    <!ELEMENT script (#PCDATA)>\n]>\n<note>\n    <to>Tove</to>\n    <from>Jani</from>\n    <heading>Reminder</heading>\n    <body>Don't forget me this weekend</body>\n    <script>console.log('hi Tove');<\/script>\n</note>\n<![CDATA[ function sayHi() {console.log('say hi.')} ]]>"
                     ).trim(),
                     language: "xml",
