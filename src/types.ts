@@ -149,7 +149,11 @@ export interface LxAllowTagNameHasSpace {
         tagType: LxTagType
     ): boolean;
 }
-export interface LxParseOptions {
+export interface LxParseOptions extends LxParseBaseOptions {
+    onEvent?: LxEventHandler;
+    nodeParsers?: LxNodeParser[];
+}
+export interface LxParseBaseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
     allowStartTagBoundaryNearSpace?:
         | boolean
@@ -174,8 +178,6 @@ export interface LxParseOptions {
     encounterAttrMoreEqual?:
         | AttrMoreEqualDisposal
         | LxOptionDisposal<AttrMoreEqualDisposal>;
-    onEvent?: LxEventHandler;
-    nodeParsers?: LxNodeParser[];
 }
 export enum LxNodeNature {
     alone = "alone",
@@ -334,5 +336,5 @@ export interface LxStartTagCompare {
 
 export interface LxParserOptions {
     nodeParsers?: LxNodeParser[];
-    parseOptions?: LxParseOptions;
+    parseOptions?: LxParseBaseOptions;
 }

@@ -4,6 +4,8 @@ import { ElementParser } from "./node/element";
 import { DtdParser } from "./node/dtd";
 import { ProcessingInstructionParser } from "./node/pi";
 import {
+    LxEventHandler,
+    LxEventType,
     LxNodeJSON,
     LxParseOptions,
     LxParseResult,
@@ -25,6 +27,9 @@ DEFAULT_PARSE_OPTIONS.nodeParsers = [...DEFAULT_NODE_PARSERS];
 
 export class LxParser {
     options: LxParserOptions;
+    events: {
+        [p: string]: LxEventHandler[];
+    };
     constructor(options?: LxParserOptions) {
         options = typeof options !== "object" || !options ? {} : options;
         if (!options.nodeParsers) {
@@ -39,14 +44,32 @@ export class LxParser {
                 options.parseOptions
             );
         }
-        options.parseOptions.nodeParsers = [...options.nodeParsers];
         this.options = options;
+        this.events = {};
+        this._eventHandler=this._eventHandler.bind(this),
+    }
+    _eventHandler(type: LxEventType) {
+        if (this.events[type]) {
+            const args = Array.from(arguments);
+            this.events[type].forEach((item) => {
+                item && item.apply(null, args);
+            });
+        }
+    }
+    on(eventName: LxEventType, handler: LxEventHandler) {
+        if (!this.events[eventName]) {
+            this.events[eventName] = [];
+        }
+        this.events[eventName].push(handler);
     }
     parse(xml: string, parseOptions?: LxParseOptions): LxParseResult {
         return parse(
             xml,
             Object.assign(
-                {},
+                {
+                    nodeParsers: [...this.options.nodeParsers],
+                    onEvent: this._eventHandler,
+                },
                 this.options.parseOptions,
                 typeof parseOptions === "object" && parseOptions
                     ? parseOptions
