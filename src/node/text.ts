@@ -7,40 +7,40 @@ import {
 } from "../util";
 import { boundStepsToContext } from "../option";
 import {
-    LxCursorPosition,
-    LxEventType,
-    LxNode,
-    LxNodeCloseType,
-    LxNodeJSON,
-    LxNodeNature,
-    LxNodeAdapter,
-    LxNodeType,
-    LxParseContext,
-    LxParseOptions,
-    LxTryStep,
+    FxCursorPosition,
+    FxEventType,
+    FxNode,
+    FxNodeCloseType,
+    FxNodeJSON,
+    FxNodeNature,
+    FxNodeAdapter,
+    FxNodeType,
+    FxParseContext,
+    FxParseOptions,
+    FxTryStep,
 } from "../types";
 
 export const tryParseText = (
     xml: string,
-    cursor: LxCursorPosition,
-    options: LxParseOptions,
-    parentNode?: LxNode
-): LxTryStep[] => {
-    const steps: LxTryStep[] = [];
+    cursor: FxCursorPosition,
+    options: FxParseOptions,
+    parentNode?: FxNode
+): FxTryStep[] => {
+    const steps: FxTryStep[] = [];
     const xmlLength = xml.length;
     const parentIsScriptElement =
         parentNode &&
-        parentNode.type === LxNodeType.element &&
+        parentNode.type === FxNodeType.element &&
         parentNode.name === "script";
     steps.push({
-        step: LxEventType.nodeStart,
+        step: FxEventType.nodeStart,
         cursor: {
             ...cursor,
         },
         data: TextParser,
     });
     steps.push({
-        step: LxEventType.nodeContentStart,
+        step: FxEventType.nodeContentStart,
         cursor: {
             ...cursor,
         },
@@ -53,7 +53,7 @@ export const tryParseText = (
         if (brType !== -1) {
             moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
         }
-        const nextCharCousor: LxCursorPosition = {
+        const nextCharCousor: FxCursorPosition = {
             lineNumber: cursor.lineNumber,
             offset: cursor.offset + 1,
             column: cursor.column + 1,
@@ -74,18 +74,18 @@ export const tryParseText = (
 
         if (cursor.offset >= xmlLength - 1 || nextNewNodeParse) {
             steps.push({
-                step: LxEventType.nodeContentEnd,
+                step: FxEventType.nodeContentEnd,
                 cursor: {
                     ...cursor,
                 },
                 data: content,
             });
             steps.push({
-                step: LxEventType.nodeEnd,
+                step: FxEventType.nodeEnd,
                 cursor: {
                     ...cursor,
                 },
-                data: [TextParser, LxNodeCloseType.fullClosed],
+                data: [TextParser, FxNodeCloseType.fullClosed],
             });
             break;
         }
@@ -93,13 +93,13 @@ export const tryParseText = (
     return steps;
 };
 
-export const TextParser: LxNodeAdapter = {
-    nodeNature: LxNodeNature.alone,
-    nodeType: LxNodeType.text,
+export const TextParser: FxNodeAdapter = {
+    nodeNature: FxNodeNature.alone,
+    nodeType: FxNodeType.text,
     parseMatch() {
         return true;
     },
-    parse(context: LxParseContext) {
+    parse(context: FxParseContext) {
         const steps = tryParseText(
             context.xml,
             {
@@ -115,7 +115,7 @@ export const TextParser: LxNodeAdapter = {
     serializeMatch(): boolean {
         return true;
     },
-    serialize(currentNode: LxNodeJSON): string {
+    serialize(currentNode: FxNodeJSON): string {
         return currentNode.content || "";
     },
 };

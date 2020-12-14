@@ -1,17 +1,17 @@
 import {
-    LxBoundStepsLoopCallback,
-    LxEventType,
-    LxMessage,
-    LxNode,
-    LxNodeCloseType,
-    LxNodeAdapter,
-    LxNodeParserAllowNodeNotCloseOption,
-    LxNodeType,
-    LxParseContext,
-    LxParseOptions,
-    LxParseOptionsKeys,
-    LxTryStep,
-    LxWrong,
+    FxBoundStepsLoopCallback,
+    FxEventType,
+    FxMessage,
+    FxNode,
+    FxNodeCloseType,
+    FxNodeAdapter,
+    FxNodeParserAllowNodeNotCloseOption,
+    FxNodeType,
+    FxParseContext,
+    FxParseOptions,
+    FxParseOptionsKeys,
+    FxTryStep,
+    FxWrong,
 } from "./types";
 import {
     createNodeByNodeStartStep,
@@ -20,28 +20,28 @@ import {
     setNodeLocationByCursor,
 } from "./util";
 export const boundStepsToContext = (
-    steps: LxTryStep[],
-    context?: LxParseContext,
-    loopCallback?: LxBoundStepsLoopCallback
-): LxNode[] => {
+    steps: FxTryStep[],
+    context?: FxParseContext,
+    loopCallback?: FxBoundStepsLoopCallback
+): FxNode[] => {
     console.log(steps);
     let noContext;
     if (!context) {
         noContext = true;
-        context = {} as LxParseContext;
+        context = {} as FxParseContext;
     }
-    const nodes: LxNode[] = [];
+    const nodes: FxNode[] = [];
     for (let index = 0, len = steps.length; index < len; index++) {
         const currentStepItem = steps[index];
         const { step, cursor, data } = currentStepItem;
-        if (step === LxEventType.nodeStart) {
-            const { nodeType } = data as LxNodeAdapter;
+        if (step === FxEventType.nodeStart) {
+            const { nodeType } = data as FxNodeAdapter;
             const node = createNodeByNodeStartStep(currentStepItem);
             setContextMaxCursor(context, currentStepItem.cursor);
             node.steps.push(currentStepItem);
             if (context.currentNode) {
                 node.parent = context.currentNode;
-                if (nodeType === LxNodeType.attr) {
+                if (nodeType === FxNodeType.attr) {
                     if (!context.currentNode.attrs) {
                         context.currentNode.attrs = [];
                     }
@@ -63,7 +63,7 @@ export const boundStepsToContext = (
                 context.nodes && context.nodes.push(node);
             }
             context.currentNode = node;
-        } else if (step === LxEventType.startTagStart) {
+        } else if (step === FxEventType.startTagStart) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.locationInfo.startTag = {
@@ -72,12 +72,12 @@ export const boundStepsToContext = (
                     startOffset: cursor.offset,
                 };
             }
-        } else if (step === LxEventType.nodeNameEnd) {
+        } else if (step === FxEventType.nodeNameEnd) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.name = data as string;
             }
-        } else if (step === LxEventType.attrEqual) {
+        } else if (step === FxEventType.attrEqual) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 if (!context.currentNode.equalCount) {
@@ -85,23 +85,23 @@ export const boundStepsToContext = (
                 }
                 context.currentNode.equalCount++;
             }
-        } else if (step === LxEventType.attrLeftBoundary) {
+        } else if (step === FxEventType.attrLeftBoundary) {
             if (data && context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.boundaryChar = [data as string];
             }
-        } else if (step === LxEventType.attrRightBoundary) {
+        } else if (step === FxEventType.attrRightBoundary) {
             if (data && context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.boundaryChar.push(data as string);
             }
-        } else if (step === LxEventType.startTagEnd) {
+        } else if (step === FxEventType.startTagEnd) {
             if (context.currentNode) {
                 if (
                     Array.isArray(data) &&
-                    (data[1] as LxNodeCloseType) in LxNodeCloseType
+                    (data[1] as FxNodeCloseType) in FxNodeCloseType
                 ) {
-                    context.currentNode.closeType = data[1] as LxNodeCloseType;
+                    context.currentNode.closeType = data[1] as FxNodeCloseType;
                 }
                 context.currentNode.steps.push(currentStepItem);
                 setNodeLocationByCursor(
@@ -110,12 +110,12 @@ export const boundStepsToContext = (
                     "startTag"
                 );
             }
-        } else if (step === LxEventType.nodeContentEnd) {
+        } else if (step === FxEventType.nodeContentEnd) {
             if (data && context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.content = data as string;
             }
-        } else if (step === LxEventType.endTagStart) {
+        } else if (step === FxEventType.endTagStart) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.locationInfo.endTag = {
@@ -124,7 +124,7 @@ export const boundStepsToContext = (
                     startOffset: cursor.offset,
                 };
             }
-        } else if (step === LxEventType.endTagEnd) {
+        } else if (step === FxEventType.endTagEnd) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 setNodeLocationByCursor(
@@ -133,7 +133,7 @@ export const boundStepsToContext = (
                     "endTag"
                 );
             }
-        } else if (step === LxEventType.nodeEnd) {
+        } else if (step === FxEventType.nodeEnd) {
             setContextMaxCursor(context, cursor);
             if (context.currentNode) {
                 setNodeLocationByCursor(
@@ -143,17 +143,17 @@ export const boundStepsToContext = (
                 if (
                     Array.isArray(data) &&
                     data[1] &&
-                    (data[1] as LxNodeCloseType) in LxNodeCloseType
+                    (data[1] as FxNodeCloseType) in FxNodeCloseType
                 ) {
                     if (
                         !(
                             context.currentNode.closeType ===
-                                LxNodeCloseType.startTagClosed &&
-                            (data[1] as LxNodeCloseType) ===
-                                LxNodeCloseType.notClosed
+                                FxNodeCloseType.startTagClosed &&
+                            (data[1] as FxNodeCloseType) ===
+                                FxNodeCloseType.notClosed
                         )
                     ) {
-                        context.currentNode.closeType = data[1] as LxNodeCloseType;
+                        context.currentNode.closeType = data[1] as FxNodeCloseType;
                     }
                 }
                 context.currentNode.steps.push(currentStepItem);
@@ -169,8 +169,8 @@ export const boundStepsToContext = (
         }
         if (!noContext) {
             Object.assign(context, cursor);
-            if (step === LxEventType.error) {
-                fireEvent(step, context, data as LxWrong);
+            if (step === FxEventType.error) {
+                fireEvent(step, context, data as FxWrong);
                 throw data;
             } else {
                 fireEvent(step, context, context.currentNode);
@@ -185,7 +185,7 @@ export const boundStepsToContext = (
     }
     return nodes;
 };
-export const addWarn = (context: LxParseContext, warn: LxWrong | LxMessage) => {
+export const addWarn = (context: FxParseContext, warn: FxWrong | FxMessage) => {
     if (!context.warnings) {
         context.warnings = [];
     }
@@ -193,33 +193,33 @@ export const addWarn = (context: LxParseContext, warn: LxWrong | LxMessage) => {
         context.warnings.push(warn);
         return;
     }
-    const tsWarn = warn as LxWrong;
+    const tsWarn = warn as FxWrong;
     tsWarn.lineNumber = context.lineNumber;
     tsWarn.column = context.column;
     context.warnings.push(tsWarn);
 };
 
 export const fireEvent = (
-    type: LxEventType,
-    context: LxParseContext,
-    data: LxNode | LxWrong
+    type: FxEventType,
+    context: FxParseContext,
+    data: FxNode | FxWrong
 ) => {
     context.options &&
         typeof context.options.onEvent === "function" &&
         context.options.onEvent(type, context, data);
 };
 export function isTrueOption(
-    prop: LxParseOptionsKeys,
-    options?: LxParseOptions
+    prop: FxParseOptionsKeys,
+    options?: FxParseOptions
 ): boolean {
     return !!(options && options[prop]);
 }
 
-export function equalOption<P extends keyof LxParseOptions>(
+export function equalOption<P extends keyof FxParseOptions>(
     prop: P,
-    value: LxParseOptions[P],
-    options?: LxParseOptions,
-    defaultValue?: LxParseOptions[P]
+    value: FxParseOptions[P],
+    options?: FxParseOptions,
+    defaultValue?: FxParseOptions[P]
 ): boolean {
     if (options) {
         if (options[prop]) {
@@ -231,10 +231,10 @@ export function equalOption<P extends keyof LxParseOptions>(
 }
 
 export const checkOptionAllow = <
-    T extends keyof LxParseOptions,
-    CV = LxParseOptions[T] extends Function ? never : LxParseOptions[T]
+    T extends keyof FxParseOptions,
+    CV = FxParseOptions[T] extends Function ? never : FxParseOptions[T]
 >(
-    options: LxParseOptions,
+    options: FxParseOptions,
     optionName: T,
     defaultOptionValue: CV,
     testValue: string,
@@ -256,10 +256,10 @@ export const checkOptionAllow = <
 };
 
 export const computeOption = <
-    T extends keyof LxParseOptions,
-    CV = LxParseOptions[T] extends Function ? never : LxParseOptions[T]
+    T extends keyof FxParseOptions,
+    CV = FxParseOptions[T] extends Function ? never : FxParseOptions[T]
 >(
-    options: LxParseOptions,
+    options: FxParseOptions,
     optionName: T,
     defaultOptionValue: CV,
     ...args: any[]
@@ -274,18 +274,18 @@ export const computeOption = <
 };
 
 export const checkAllowNodeNotClose = (
-    onlyAnteriorNode: LxNode,
-    context: LxParseContext,
-    parser: LxNodeAdapter
+    onlyAnteriorNode: FxNode,
+    context: FxParseContext,
+    parser: FxNodeAdapter
 ) => {
     if (
-        parser.allowNodeNotClose === LxNodeParserAllowNodeNotCloseOption.allow
+        parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.allow
     ) {
         return true;
     }
     if (
         parser.allowNodeNotClose ===
-        LxNodeParserAllowNodeNotCloseOption.notAllow
+        FxNodeParserAllowNodeNotCloseOption.notAllow
     ) {
         return false;
     }

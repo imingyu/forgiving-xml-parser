@@ -1,31 +1,31 @@
 import {
-    LxNode,
-    LxParseResult,
-    LxParseResultJSON,
-    LxToJSONOptions,
-    LxNodeJSON,
-    LxMessage,
-    LxWrong,
-    LxCursorPosition,
-    LxNodeAdapter,
-    LxNodeParserMatcher,
-    LxParseOptions,
-    LxSerializeOptions,
-    LxTryStep,
-    LxEventType,
-    LxTryStepData,
-    LxNodeCloseType,
-    LxParseContext,
-    LxStartTagCompare,
-    LxNodeLocationInfo,
+    FxNode,
+    FxParseResult,
+    FxParseResultJSON,
+    FxToJSONOptions,
+    FxNodeJSON,
+    FxMessage,
+    FxWrong,
+    FxCursorPosition,
+    FxNodeAdapter,
+    FxNodeParserMatcher,
+    FxParseOptions,
+    FxSerializeOptions,
+    FxTryStep,
+    FxEventType,
+    FxTryStepData,
+    FxNodeCloseType,
+    FxParseContext,
+    FxStartTagCompare,
+    FxNodeLocationInfo,
 } from "./types";
 import { REX_SPACE } from "./var";
 
-export const createLxError = (
-    msg: LxMessage,
-    cursor: LxCursorPosition
-): LxWrong => {
-    const err = (new Error(msg.message) as unknown) as LxWrong;
+export const createFxError = (
+    msg: FxMessage,
+    cursor: FxCursorPosition
+): FxWrong => {
+    const err = (new Error(msg.message) as unknown) as FxWrong;
     err.code = msg.code;
     Object.assign(err, cursor);
     return err;
@@ -33,8 +33,8 @@ export const createLxError = (
 
 export const isElementEndTagBegin = (
     xml: string,
-    cursor: LxCursorPosition
-): LxCursorPosition => {
+    cursor: FxCursorPosition
+): FxCursorPosition => {
     return ignoreSpaceIsHeadTail(xml, toCursor(cursor), "<", "/");
 };
 
@@ -55,40 +55,40 @@ export const isFunc = (obj) =>
     typeof obj === "function" || obj instanceof Function;
 
 export const pushStep = (
-    steps: LxTryStep[],
-    step: LxEventType,
-    cursor: LxCursorPosition,
-    data?: LxTryStepData | LxMessage
-): LxTryStep[] => {
+    steps: FxTryStep[],
+    step: FxEventType,
+    cursor: FxCursorPosition,
+    data?: FxTryStepData | FxMessage
+): FxTryStep[] => {
     steps.push(createStep(step, cursor, data));
     return steps;
 };
 export const createStep = (
-    step: LxEventType,
-    cursor: LxCursorPosition,
-    data?: LxTryStepData | LxMessage
-): LxTryStep => {
-    let wrong: LxWrong;
+    step: FxEventType,
+    cursor: FxCursorPosition,
+    data?: FxTryStepData | FxMessage
+): FxTryStep => {
+    let wrong: FxWrong;
     if (data) {
-        let tsData = (data as unknown) as LxWrong;
+        let tsData = (data as unknown) as FxWrong;
         if (tsData.code && tsData.message && !tsData.stack) {
-            wrong = createLxError(tsData, cursor);
+            wrong = createFxError(tsData, cursor);
         }
     }
-    const result: LxTryStep = {
+    const result: FxTryStep = {
         step,
         cursor: {
             ...cursor,
         },
     };
     if (typeof data !== "undefined") {
-        result.data = wrong || (data as LxTryStepData);
+        result.data = wrong || (data as FxTryStepData);
     }
     return result;
 };
 
 export const moveCursor = (
-    cursor: LxCursorPosition,
+    cursor: FxCursorPosition,
     lineNumber?: number,
     column?: number,
     offset?: number
@@ -109,19 +109,19 @@ export const moveCursor = (
 };
 export const pick = (
     prop: string,
-    res: LxParseResultJSON,
-    parseResult: LxParseResult,
-    options?: LxToJSONOptions
+    res: FxParseResultJSON,
+    parseResult: FxParseResult,
+    options?: FxToJSONOptions
 ) => {
     if (options && options[prop]) {
         res[prop] = parseResult[prop];
     }
 };
 export const nodeToJSON = (
-    node: LxNode,
-    options?: LxToJSONOptions
-): LxNodeJSON => {
-    const res = {} as LxNodeJSON;
+    node: FxNode,
+    options?: FxToJSONOptions
+): FxNodeJSON => {
+    const res = {} as FxNodeJSON;
     for (let prop in node) {
         if (prop !== "parent" && prop !== "parser") {
             if (prop === "steps") {
@@ -133,19 +133,20 @@ export const nodeToJSON = (
                         if (Array.isArray(res.data)) {
                             let [nodeType, closeType, customType] = res.data;
                             if (typeof nodeType === "object") {
-                                const np = nodeType as LxNodeAdapter;
+                                const np = nodeType as FxNodeAdapter;
                                 customType = customType || np.nodeCustomType;
                                 nodeType = np.nodeType;
                             }
-                            res.data = [nodeType, closeType, customType];
-                            if (!res.data[2]) {
-                                res.data.splice(2, 1);
+                            const data = [nodeType, closeType, customType];
+                            if (!data[2]) {
+                                data.splice(2, 1);
                             }
+                            res.data = data as FxTryStepData;
                         } else if (typeof res.data === "object") {
-                            const np = res.data as LxNodeAdapter;
+                            const np = res.data as FxNodeAdapter;
                             res.data = [
                                 np.nodeType,
-                                LxNodeCloseType.fullClosed,
+                                FxNodeCloseType.fullClosed,
                                 np.nodeCustomType,
                             ];
                             if (!res.data[2]) {
@@ -157,7 +158,7 @@ export const nodeToJSON = (
                 }
             } else if (prop === "closeType") {
                 if (
-                    !(!node[prop] || node[prop] === LxNodeCloseType.fullClosed)
+                    !(!node[prop] || node[prop] === FxNodeCloseType.fullClosed)
                 ) {
                     res[prop] = node[prop];
                 }
@@ -177,7 +178,7 @@ export const nodeToJSON = (
     return res;
 };
 
-export const lxWrongToJSON = (wrong: LxWrong): LxWrong => {
+export const lxWrongToJSON = (wrong: FxWrong): FxWrong => {
     const json = JSON.parse(JSON.stringify(wrong));
     json.message = wrong.message;
     json.stack = wrong.stack;
@@ -220,8 +221,8 @@ export const repeatString = (str: string, repeatCount: number): string => {
 };
 
 export const equalCursor = (
-    cursor1: LxCursorPosition,
-    cursor2: LxCursorPosition
+    cursor1: FxCursorPosition,
+    cursor2: FxCursorPosition
 ): boolean => {
     return (
         cursor1.lineNumber === cursor2.lineNumber &&
@@ -230,7 +231,7 @@ export const equalCursor = (
     );
 };
 
-export const notSpaceCharCursor = (xml: string, cursor: LxCursorPosition) => {
+export const notSpaceCharCursor = (xml: string, cursor: FxCursorPosition) => {
     const xmlLength = xml.length;
     const resultCursor = {
         ...cursor,
@@ -255,7 +256,7 @@ export const notSpaceCharCursor = (xml: string, cursor: LxCursorPosition) => {
 
 export const ignoreSpaceFindCharCursor = (
     xml: string,
-    cursor: LxCursorPosition,
+    cursor: FxCursorPosition,
     targetChar: string
 ) => {
     const xmlLength = xml.length;
@@ -283,18 +284,18 @@ export const ignoreSpaceFindCharCursor = (
     }
 };
 
-export const toCursor = (like: LxCursorPosition): LxCursorPosition => {
+export const toCursor = (like: FxCursorPosition): FxCursorPosition => {
     return {
         lineNumber: like.lineNumber,
         column: like.column,
         offset: like.offset,
-    } as LxCursorPosition;
+    } as FxCursorPosition;
 };
 
 export const getEndCursor = (
     xml: string,
-    cursor: LxCursorPosition
-): LxCursorPosition => {
+    cursor: FxCursorPosition
+): FxCursorPosition => {
     const xmlLength = xml.length;
     const resultCursor = toCursor(cursor);
     for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
@@ -308,9 +309,9 @@ export const getEndCursor = (
 
 export const findStrCursor = (
     xml: string,
-    cursor: LxCursorPosition,
+    cursor: FxCursorPosition,
     targetStr: string
-): [boolean, LxCursorPosition, LxCursorPosition?] => {
+): [boolean, FxCursorPosition, FxCursorPosition?] => {
     const xmlLength = xml.length;
     const resultCursor = toCursor(cursor);
     for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
@@ -347,12 +348,12 @@ export const findStrCursor = (
 
 export const ignoreSpaceIsHeadTail = (
     xml: string,
-    cursor: LxCursorPosition,
+    cursor: FxCursorPosition,
     headChar: string,
     tailChar: string
-): LxCursorPosition => {
+): FxCursorPosition => {
     if (xml[cursor.offset] === headChar) {
-        let resultCursor: LxCursorPosition = {
+        let resultCursor: FxCursorPosition = {
             ...cursor,
         };
         moveCursor(resultCursor, 0, 1, 1);
@@ -364,9 +365,9 @@ export const ignoreSpaceIsHeadTail = (
 };
 export const findNodeParser = (
     xml: string,
-    cursor: LxCursorPosition,
-    options: LxParseOptions
-): LxNodeAdapter => {
+    cursor: FxCursorPosition,
+    options: FxParseOptions
+): FxNodeAdapter => {
     return options.nodeAdapters.find((parser) => {
         const matchType = typeof parser.parseMatch;
         if (matchType === "string") {
@@ -381,7 +382,7 @@ export const findNodeParser = (
             return false;
         }
         if (matchType === "function") {
-            return (parser.parseMatch as LxNodeParserMatcher)(
+            return (parser.parseMatch as FxNodeParserMatcher)(
                 xml,
                 cursor,
                 options
@@ -394,12 +395,12 @@ export const findNodeParser = (
 };
 
 export const findNodeSerializer = (
-    currentNode: LxNodeJSON,
-    brotherNodes: LxNodeJSON[],
-    rootNodes: LxNodeJSON[],
-    options: LxSerializeOptions,
-    parentNode?: LxNodeJSON
-): LxNodeAdapter => {
+    currentNode: FxNodeJSON,
+    brotherNodes: FxNodeJSON[],
+    rootNodes: FxNodeJSON[],
+    options: FxSerializeOptions,
+    parentNode?: FxNodeJSON
+): FxNodeAdapter => {
     return options.nodeAdapters.find((parser) => {
         return parser.serializeMatch(
             currentNode,
@@ -413,12 +414,12 @@ export const findNodeSerializer = (
 
 // 在context.nodes中查找与endTag匹配的startTag的层级，找不到就返回-1，0代表currentNode，1代表currentNode.parent，2代表currentNode.parent.parent，以此类推...
 export const findStartTagLevel = (
-    endTagSteps: LxTryStep[],
-    context: LxParseContext,
-    compare: LxStartTagCompare
+    endTagSteps: FxTryStep[],
+    context: FxParseContext,
+    compare: FxStartTagCompare
 ): number => {
     let level = 0;
-    let node: LxNode = context.currentNode;
+    let node: FxNode = context.currentNode;
     if (compare(node, context, endTagSteps)) {
         return level;
     }
@@ -434,8 +435,8 @@ export const findStartTagLevel = (
 };
 
 export const setContextMaxCursor = (
-    context: LxParseContext,
-    cursor: LxCursorPosition
+    context: FxParseContext,
+    cursor: FxCursorPosition
 ) => {
     if (context.maxLineNumber < cursor.lineNumber) {
         context.maxLineNumber = cursor.lineNumber;
@@ -445,8 +446,8 @@ export const setContextMaxCursor = (
     }
 };
 
-export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
-    const nodeAdapter = step.data as LxNodeAdapter;
+export const createNodeByNodeStartStep = (step: FxTryStep): FxNode => {
+    const nodeAdapter = step.data as FxNodeAdapter;
     return {
         type: nodeAdapter.nodeType,
         parser: nodeAdapter,
@@ -460,8 +461,8 @@ export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
 };
 
 export const setNodeLocationByCursor = (
-    locationInfo: LxNodeLocationInfo,
-    cursor: LxCursorPosition,
+    locationInfo: FxNodeLocationInfo,
+    cursor: FxCursorPosition,
     prop?: "startTag" | "endTag"
 ) => {
     const loc = prop ? locationInfo[prop] : locationInfo;

@@ -8,20 +8,20 @@ import {
 } from "../util";
 import { boundStepsToContext } from "../option";
 import {
-    LxCursorPosition,
-    LxEventType,
-    LxNodeCloseType,
-    LxNodeJSON,
-    LxNodeNature,
-    LxNodeAdapter,
-    LxNodeParserAllowNodeNotCloseOption,
-    LxNodeSerializer,
-    LxNodeType,
-    LxParseContext,
-    LxParseOptions,
-    LxSerializeOptions,
-    LxTagType,
-    LxTryStep,
+    FxCursorPosition,
+    FxEventType,
+    FxNodeCloseType,
+    FxNodeJSON,
+    FxNodeNature,
+    FxNodeAdapter,
+    FxNodeParserAllowNodeNotCloseOption,
+    FxNodeSerializer,
+    FxNodeType,
+    FxParseContext,
+    FxParseOptions,
+    FxSerializeOptions,
+    FxTagType,
+    FxTryStep,
 } from "../types";
 import { AttrParser, tryParseAttrs } from "./attr";
 import { DEFAULT_PARSE_OPTIONS } from "src/var";
@@ -30,12 +30,12 @@ import { BOUNDARY_HAS_SPACE, TAG_NAME_IS_EMPTY } from "src/message";
 
 export const tryParsePI = (
     xml: string,
-    cursor: LxCursorPosition,
-    options: LxParseOptions
-): LxTryStep[] => {
-    let steps: LxTryStep[] = [];
-    pushStep(steps, LxEventType.nodeStart, cursor, ProcessingInstructionParser);
-    pushStep(steps, LxEventType.startTagStart, cursor);
+    cursor: FxCursorPosition,
+    options: FxParseOptions
+): FxTryStep[] => {
+    let steps: FxTryStep[] = [];
+    pushStep(steps, FxEventType.nodeStart, cursor, ProcessingInstructionParser);
+    pushStep(steps, FxEventType.startTagStart, cursor);
     const startTagEndCursor = ignoreSpaceIsHeadTail(xml, cursor, "<", "?");
     const expectStartTagEndCursor = moveCursor(toCursor(cursor), 0, 1, 1);
     const mockCursor = toCursor(startTagEndCursor);
@@ -45,7 +45,7 @@ export const tryParsePI = (
         mockCursor,
         ProcessingInstructionParser,
         options,
-        (currentAttrSteps: LxTryStep[]): boolean => {
+        (currentAttrSteps: FxTryStep[]): boolean => {
             return true;
         }
     );
@@ -72,7 +72,7 @@ export const tryParsePI = (
         ) {
             return pushStep(
                 steps,
-                LxEventType.error,
+                FxEventType.error,
                 expectStartTagEndCursor,
                 BOUNDARY_HAS_SPACE
             );
@@ -96,25 +96,25 @@ export const tryParsePI = (
                     cursor,
                     ProcessingInstructionParser,
                     fullNodeName,
-                    LxTagType.startTag
+                    FxTagType.startTag
                 )
             ) {
                 return pushStep(
                     steps,
-                    LxEventType.error,
+                    FxEventType.error,
                     cursor,
                     BOUNDARY_HAS_SPACE
                 );
             }
-            pushStep(steps, LxEventType.nodeNameStart, cursor);
-            pushStep(steps, LxEventType.nodeNameEnd, mockCursor, fullNodeName);
+            pushStep(steps, FxEventType.nodeNameStart, cursor);
+            pushStep(steps, FxEventType.nodeNameEnd, mockCursor, fullNodeName);
         } else {
             pushStep(
                 steps,
-                LxEventType.nodeNameStart,
+                FxEventType.nodeNameStart,
                 firstAttrSteps[0].cursor
             );
-            pushStep(steps, LxEventType.nodeNameEnd, mockCursor, nodeName);
+            pushStep(steps, FxEventType.nodeNameEnd, mockCursor, nodeName);
         }
         Object.assign(cursor, mockCursor);
         moveCursor(cursor, 0, 1, 1);
@@ -131,14 +131,14 @@ export const tryParsePI = (
     ) {
         return pushStep(
             steps,
-            LxEventType.error,
+            FxEventType.error,
             startTagEndCursor,
             TAG_NAME_IS_EMPTY
         );
     }
 
     // 开始解析属性
-    pushStep(steps, LxEventType.attrsStart, cursor);
+    pushStep(steps, FxEventType.attrsStart, cursor);
     const attrSteps = tryParseAttrs(
         xml,
         cursor,
@@ -147,20 +147,20 @@ export const tryParsePI = (
     );
     steps = steps.concat(attrSteps);
 
-    pushStep(steps, LxEventType.attrsEnd, cursor);
+    pushStep(steps, FxEventType.attrsEnd, cursor);
     const xmlLength = xml.length;
     if (cursor.offset < xmlLength - 1) {
         for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
             const char = xml[cursor.offset];
             if (char === "?") {
-                pushStep(steps, LxEventType.endTagStart, cursor);
+                pushStep(steps, FxEventType.endTagStart, cursor);
                 continue;
             }
             if (char === ">") {
-                pushStep(steps, LxEventType.endTagEnd, cursor);
-                pushStep(steps, LxEventType.nodeEnd, cursor, [
+                pushStep(steps, FxEventType.endTagEnd, cursor);
+                pushStep(steps, FxEventType.nodeEnd, cursor, [
                     ProcessingInstructionParser,
-                    LxNodeCloseType.fullClosed,
+                    FxNodeCloseType.fullClosed,
                 ]);
                 moveCursor(cursor, 0, 1, 1);
                 break;
@@ -174,18 +174,18 @@ export const tryParsePI = (
     return steps;
 };
 
-export const ProcessingInstructionParser: LxNodeAdapter = {
-    nodeNature: LxNodeNature.alone,
-    nodeType: LxNodeType.processingInstruction,
+export const ProcessingInstructionParser: FxNodeAdapter = {
+    nodeNature: FxNodeNature.alone,
+    nodeType: FxNodeType.processingInstruction,
     parseMatch: /^<\s*\?/,
     attrLeftBoundaryChar: /^'|^"/,
     attrRightBoundaryChar: /^'|^"/,
     attrBoundaryCharNeedEqual: true,
-    allowNodeNotClose: LxNodeParserAllowNodeNotCloseOption.allow,
-    checkAttrsEnd(xml: string, cursor: LxCursorPosition) {
+    allowNodeNotClose: FxNodeParserAllowNodeNotCloseOption.allow,
+    checkAttrsEnd(xml: string, cursor: FxCursorPosition) {
         return ignoreSpaceIsHeadTail(xml, cursor, "?", ">");
     },
-    parse(context: LxParseContext) {
+    parse(context: FxParseContext) {
         boundStepsToContext(
             tryParsePI(
                 context.xml,
@@ -199,15 +199,15 @@ export const ProcessingInstructionParser: LxNodeAdapter = {
             context
         );
     },
-    serializeMatch(node: LxNodeJSON): boolean {
-        return node.type === LxNodeType.processingInstruction;
+    serializeMatch(node: FxNodeJSON): boolean {
+        return node.type === FxNodeType.processingInstruction;
     },
     serialize(
-        node: LxNodeJSON,
-        brotherNodes: LxNodeJSON[],
-        rootNodes: LxNodeJSON[],
-        rootSerializer: LxNodeSerializer,
-        options: LxSerializeOptions
+        node: FxNodeJSON,
+        brotherNodes: FxNodeJSON[],
+        rootNodes: FxNodeJSON[],
+        rootSerializer: FxNodeSerializer,
+        options: FxSerializeOptions
     ): string {
         let res = "<?";
         if (node.name) {
@@ -227,7 +227,7 @@ export const ProcessingInstructionParser: LxNodeAdapter = {
                     );
             });
         }
-        if (!node.closeType || node.closeType === LxNodeCloseType.fullClosed) {
+        if (!node.closeType || node.closeType === FxNodeCloseType.fullClosed) {
             res += `?>`;
         }
         return res;

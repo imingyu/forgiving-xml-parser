@@ -1,19 +1,19 @@
 import {
-    LxCursorPosition,
-    LxEventType,
-    LxNode,
-    LxNodeCloseType,
-    LxNodeJSON,
-    LxNodeNature,
-    LxNodeAdapter,
-    LxNodeParserAllowNodeNotCloseOption,
-    LxNodeSerializer,
-    LxNodeType,
-    LxParseContext,
-    LxParseOptions,
-    LxSerializeOptions,
-    LxTagType,
-    LxTryStep,
+    FxCursorPosition,
+    FxEventType,
+    FxNode,
+    FxNodeCloseType,
+    FxNodeJSON,
+    FxNodeNature,
+    FxNodeAdapter,
+    FxNodeParserAllowNodeNotCloseOption,
+    FxNodeSerializer,
+    FxNodeType,
+    FxParseContext,
+    FxParseOptions,
+    FxSerializeOptions,
+    FxTagType,
+    FxTryStep,
 } from "../types";
 import {
     createStep,
@@ -40,12 +40,12 @@ import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
 export const tryParseDtdStartTag = (
     xml: string,
-    cursor: LxCursorPosition,
-    options: LxParseOptions
+    cursor: FxCursorPosition,
+    options: FxParseOptions
 ) => {
-    let steps: LxTryStep[] = [];
-    pushStep(steps, LxEventType.nodeStart, cursor, DtdParser);
-    pushStep(steps, LxEventType.startTagStart, cursor);
+    let steps: FxTryStep[] = [];
+    pushStep(steps, FxEventType.nodeStart, cursor, DtdParser);
+    pushStep(steps, FxEventType.startTagStart, cursor);
     const startTagEndCursor = ignoreSpaceIsHeadTail(xml, cursor, "<", "!");
     const expectStartTagEndCursor = moveCursor(toCursor(cursor), 0, 1, 1);
     const mockCursor = toCursor(startTagEndCursor);
@@ -55,7 +55,7 @@ export const tryParseDtdStartTag = (
         mockCursor,
         DtdParser,
         options,
-        (currentAttrSteps: LxTryStep[]): boolean => {
+        (currentAttrSteps: FxTryStep[]): boolean => {
             return true;
         }
     );
@@ -82,7 +82,7 @@ export const tryParseDtdStartTag = (
         ) {
             return pushStep(
                 steps,
-                LxEventType.error,
+                FxEventType.error,
                 expectStartTagEndCursor,
                 BOUNDARY_HAS_SPACE
             );
@@ -106,25 +106,25 @@ export const tryParseDtdStartTag = (
                     cursor,
                     DtdParser,
                     fullNodeName,
-                    LxTagType.startTag
+                    FxTagType.startTag
                 )
             ) {
                 return pushStep(
                     steps,
-                    LxEventType.error,
+                    FxEventType.error,
                     cursor,
                     BOUNDARY_HAS_SPACE
                 );
             }
-            pushStep(steps, LxEventType.nodeNameStart, cursor);
-            pushStep(steps, LxEventType.nodeNameEnd, mockCursor, fullNodeName);
+            pushStep(steps, FxEventType.nodeNameStart, cursor);
+            pushStep(steps, FxEventType.nodeNameEnd, mockCursor, fullNodeName);
         } else {
             pushStep(
                 steps,
-                LxEventType.nodeNameStart,
+                FxEventType.nodeNameStart,
                 firstAttrSteps[0].cursor
             );
-            pushStep(steps, LxEventType.nodeNameEnd, mockCursor, nodeName);
+            pushStep(steps, FxEventType.nodeNameEnd, mockCursor, nodeName);
         }
         Object.assign(cursor, mockCursor);
         moveCursor(cursor, 0, 1, 1);
@@ -141,18 +141,18 @@ export const tryParseDtdStartTag = (
     ) {
         return pushStep(
             steps,
-            LxEventType.error,
+            FxEventType.error,
             startTagEndCursor,
             TAG_NAME_IS_EMPTY
         );
     }
 
     // 开始解析属性
-    pushStep(steps, LxEventType.attrsStart, cursor);
+    pushStep(steps, FxEventType.attrsStart, cursor);
     const attrSteps = tryParseAttrs(xml, cursor, DtdParser, options);
     steps = steps.concat(attrSteps);
 
-    pushStep(steps, LxEventType.attrsEnd, cursor);
+    pushStep(steps, FxEventType.attrsEnd, cursor);
     const xmlLength = xml.length;
     if (cursor.offset < xmlLength - 1) {
         for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
@@ -163,9 +163,9 @@ export const tryParseDtdStartTag = (
             );
             if (startTagEndCursor) {
                 Object.assign(cursor, startTagEndCursor);
-                pushStep(steps, LxEventType.startTagEnd, cursor);
+                pushStep(steps, FxEventType.startTagEnd, cursor);
                 if (xml[cursor.offset] === ">") {
-                    pushStep(steps, LxEventType.nodeEnd, cursor, DtdParser);
+                    pushStep(steps, FxEventType.nodeEnd, cursor, DtdParser);
                 }
                 moveCursor(cursor, 0, 1, 1);
                 break;
@@ -181,15 +181,15 @@ export const tryParseDtdStartTag = (
 
 export const tryParseDtdEndTag = (
     xml: string,
-    cursor: LxCursorPosition,
-    options: LxParseOptions,
-    endTagStartCursor?: LxCursorPosition
-): LxTryStep[] => {
-    let steps: LxTryStep[] = [];
+    cursor: FxCursorPosition,
+    options: FxParseOptions,
+    endTagStartCursor?: FxCursorPosition
+): FxTryStep[] => {
+    let steps: FxTryStep[] = [];
     endTagStartCursor =
         endTagStartCursor || ignoreSpaceIsHeadTail(xml, cursor, "]", ">");
-    pushStep(steps, LxEventType.endTagStart, cursor);
-    const nextCursor: LxCursorPosition = {
+    pushStep(steps, FxEventType.endTagStart, cursor);
+    const nextCursor: FxCursorPosition = {
         lineNumber: cursor.lineNumber,
         column: cursor.column + 1,
         offset: cursor.offset + 1,
@@ -208,41 +208,41 @@ export const tryParseDtdEndTag = (
         ) {
             return pushStep(
                 steps,
-                LxEventType.error,
+                FxEventType.error,
                 cursor,
                 BOUNDARY_HAS_SPACE
             );
         }
     }
     Object.assign(cursor, endTagStartCursor);
-    pushStep(steps, LxEventType.endTagEnd, cursor);
-    pushStep(steps, LxEventType.nodeEnd, cursor, DtdParser);
+    pushStep(steps, FxEventType.endTagEnd, cursor);
+    pushStep(steps, FxEventType.nodeEnd, cursor, DtdParser);
     return steps;
 };
 
-export const DtdParser: LxNodeAdapter = {
-    nodeNature: LxNodeNature.children,
-    nodeType: LxNodeType.dtd,
+export const DtdParser: FxNodeAdapter = {
+    nodeNature: FxNodeNature.children,
+    nodeType: FxNodeType.dtd,
     attrLeftBoundaryChar: /^'|^"|^\(/,
     attrRightBoundaryChar: /^'|^"|^\)/,
     parseMatch: /^<\s*\!|^>|^\]\s*>/,
     allowNodeNotClose: (
-        node: LxNode,
-        context: LxParseContext,
-        parser: LxNodeAdapter
+        node: FxNode,
+        context: FxParseContext,
+        parser: FxNodeAdapter
     ): boolean => {
-        if (node.type === LxNodeType.dtd && !node.parent) {
+        if (node.type === FxNodeType.dtd && !node.parent) {
         }
         return true;
     },
-    checkAttrsEnd(xml: string, cursor: LxCursorPosition) {
+    checkAttrsEnd(xml: string, cursor: FxCursorPosition) {
         const char = xml[cursor.offset];
         if (char === ">" || char === "[") {
             return cursor;
         }
     },
-    parse(context: LxParseContext) {
-        let steps: LxTryStep[];
+    parse(context: FxParseContext) {
+        let steps: FxTryStep[];
         const endTagStartCursor = ignoreSpaceIsHeadTail(
             context.xml,
             toCursor(context),
@@ -262,13 +262,13 @@ export const DtdParser: LxNodeAdapter = {
                 endTagStartCursor
             );
             const lastStep = steps[steps.length - 1];
-            if (lastStep.step !== LxEventType.error) {
+            if (lastStep.step !== FxEventType.error) {
                 const matchStartTagLevel = findStartTagLevel(
                     steps,
                     context,
-                    (node: LxNode) => {
+                    (node: FxNode) => {
                         return !!(
-                            node.type === LxNodeType.dtd && node.children
+                            node.type === FxNodeType.dtd && node.children
                         );
                     }
                 );
@@ -277,13 +277,13 @@ export const DtdParser: LxNodeAdapter = {
                     steps = [];
                     pushStep(
                         steps,
-                        LxEventType.error,
+                        FxEventType.error,
                         cursor,
                         END_TAG_NOT_MATCH_START
                     );
                 } else if (matchStartTagLevel > 0) {
                     const firstStep = steps[0];
-                    let node: LxNode;
+                    let node: FxNode;
                     for (let level = 0; level <= matchStartTagLevel; level++) {
                         node = node ? node.parent : context.currentNode;
                         const nodeLastStep = node.children
@@ -298,7 +298,7 @@ export const DtdParser: LxNodeAdapter = {
                         ) {
                             pushStep(
                                 steps,
-                                LxEventType.error,
+                                FxEventType.error,
                                 firstStep.cursor,
                                 TAG_NOT_CLOSE
                             );
@@ -306,11 +306,11 @@ export const DtdParser: LxNodeAdapter = {
                         }
                         pushStep(
                             node.steps,
-                            LxEventType.nodeEnd,
+                            FxEventType.nodeEnd,
                             nodeLastStep.cursor,
                             [
                                 nodeFirstStep.data[0],
-                                LxNodeCloseType.startTagClosed,
+                                FxNodeCloseType.startTagClosed,
                             ]
                         );
                     }
@@ -329,16 +329,16 @@ export const DtdParser: LxNodeAdapter = {
         }
         boundStepsToContext(steps, context);
     },
-    serializeMatch(node: LxNodeJSON): boolean {
-        return node.type === LxNodeType.dtd;
+    serializeMatch(node: FxNodeJSON): boolean {
+        return node.type === FxNodeType.dtd;
     },
     serialize(
-        node: LxNodeJSON,
-        brotherNodes: LxNodeJSON[],
-        rootNodes: LxNodeJSON[],
-        rootSerializer: LxNodeSerializer,
-        options: LxSerializeOptions,
-        parentNode?: LxNodeJSON
+        node: FxNodeJSON,
+        brotherNodes: FxNodeJSON[],
+        rootNodes: FxNodeJSON[],
+        rootSerializer: FxNodeSerializer,
+        options: FxSerializeOptions,
+        parentNode?: FxNodeJSON
     ): string {
         let res = "<!";
         if (node.name) {
@@ -363,15 +363,15 @@ export const DtdParser: LxNodeAdapter = {
             res += rootSerializer(node.children, options, node);
             if (
                 !node.closeType ||
-                node.closeType === LxNodeCloseType.fullClosed
+                node.closeType === FxNodeCloseType.fullClosed
             ) {
                 res += `]>`;
             }
         } else {
             if (
                 !node.closeType ||
-                node.closeType === LxNodeCloseType.fullClosed ||
-                node.closeType === LxNodeCloseType.startTagClosed
+                node.closeType === FxNodeCloseType.fullClosed ||
+                node.closeType === FxNodeCloseType.startTagClosed
             ) {
                 res += ">";
             }

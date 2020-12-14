@@ -4,14 +4,14 @@ import { ElementParser } from "./node/element";
 import { DtdParser } from "./node/dtd";
 import { ProcessingInstructionParser } from "./node/pi";
 import {
-    LxEventHandler,
-    LxEventType,
-    LxNodeJSON,
-    LxParseOptions,
-    LxParseResult,
-    LxParserOptions,
-    LxSerializeOptions,
-    LxToJSONOptions,
+    FxEventHandler,
+    FxEventType,
+    FxNodeJSON,
+    FxParseOptions,
+    FxParseResult,
+    FxParserOptions,
+    FxSerializeOptions,
+    FxToJSONOptions,
 } from "./types";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 import { parse, parseResultToJSON } from "./parse";
@@ -25,12 +25,12 @@ const DEFAULT_NODE_PARSERS = [
 ];
 DEFAULT_PARSE_OPTIONS.nodeAdapters = [...DEFAULT_NODE_PARSERS];
 
-export class LxParser {
-    options: LxParserOptions;
+export class FxParser {
+    options: FxParserOptions;
     events: {
-        [p: string]: LxEventHandler[];
+        [p: string]: FxEventHandler[];
     };
-    constructor(options?: LxParserOptions) {
+    constructor(options?: FxParserOptions) {
         options = typeof options !== "object" || !options ? {} : options;
         if (!options.nodeAdapters) {
             options.nodeAdapters = Object.create(DEFAULT_NODE_PARSERS);
@@ -48,7 +48,7 @@ export class LxParser {
         this.events = {};
         this._eventHandler = this._eventHandler.bind(this);
     }
-    _eventHandler(type: LxEventType) {
+    _eventHandler(type: FxEventType) {
         if (this.events[type]) {
             const args = Array.from(arguments);
             this.events[type].forEach((item) => {
@@ -56,13 +56,13 @@ export class LxParser {
             });
         }
     }
-    on(eventName: LxEventType, handler: LxEventHandler) {
+    on(eventName: FxEventType, handler: FxEventHandler) {
         if (!this.events[eventName]) {
             this.events[eventName] = [];
         }
         this.events[eventName].push(handler);
     }
-    parse(xml: string, parseOptions?: LxParseOptions): LxParseResult {
+    parse(xml: string, parseOptions?: FxParseOptions): FxParseResult {
         return parse(
             xml,
             Object.assign(
@@ -77,12 +77,12 @@ export class LxParser {
             )
         );
     }
-    parseResultToJSON(parseResult: LxParseResult, options?: LxToJSONOptions) {
+    parseResultToJSON(parseResult: FxParseResult, options?: FxToJSONOptions) {
         return parseResultToJSON(parseResult, options);
     }
     serialize(
-        json: LxNodeJSON | LxNodeJSON[],
-        serializeOptions?: LxSerializeOptions
+        json: FxNodeJSON | FxNodeJSON[],
+        serializeOptions?: FxSerializeOptions
     ): string {
         return serialize(
             json,

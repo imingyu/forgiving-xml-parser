@@ -1,9 +1,9 @@
 import {
-    LxParseContext,
-    LxParseOptions,
-    LxParseResult,
-    LxParseResultJSON,
-    LxToJSONOptions,
+    FxParseContext,
+    FxParseOptions,
+    FxParseResult,
+    FxParseResultJSON,
+    FxToJSONOptions,
 } from "./types";
 import {
     pick,
@@ -15,13 +15,13 @@ import {
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 
-export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
+export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
     options = Object.assign(
         {},
         DEFAULT_PARSE_OPTIONS,
         typeof options === "object" && options ? options : {}
     );
-    const context: LxParseContext = {
+    const context: FxParseContext = {
         offset: 0,
         xmlLength: xml.length,
         xml,
@@ -58,20 +58,20 @@ export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
             maxLine: context.maxLineNumber,
             maxCol: context.maxColumn,
             nodes: context.nodes,
-        } as LxParseResult;
+        } as FxParseResult;
     } catch (error) {
         return {
             error,
             xml,
-        } as LxParseResult;
+        } as FxParseResult;
     }
 };
 
 export const parseResultToJSON = (
-    parseResult: LxParseResult,
-    options?: LxToJSONOptions
-): LxParseResultJSON => {
-    const res: LxParseResultJSON = {};
+    parseResult: FxParseResult,
+    options?: FxToJSONOptions
+): FxParseResultJSON => {
+    const res: FxParseResultJSON = {};
     if (parseResult.error) {
         res.error = lxWrongToJSON(parseResult.error);
     }

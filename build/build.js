@@ -48,21 +48,21 @@ oneByOne(['cjs', 'esm', 'umd', 'umd.mini'].map(format => {
             extends: path.resolve(__dirname, '../.babelrc')
         }));
         if (format === 'umd.mini') {
-            rollupConfig.output.name = 'LooseXmlParser';
+            rollupConfig.output.name = 'ForgivingXmlParser';
             rollupConfig.input.plugins.push(uglify({
                 sourcemap: true
             }));
         } else {
             if (format === 'umd') {
-                rollupConfig.output.name = 'LooseXmlParser';
+                rollupConfig.output.name = 'ForgivingXmlParser';
             }
             rollupConfig.output.sourcemap = true;
         }
         rollupConfig.output.banner = `/*!
-        * loose-xml-parser v${version}
+        * forgiving-xml-parser v${version}
         * (c) 2020-${new Date().getFullYear()} imingyu<mingyuhisoft@163.com>
         * Released under the BSD 3-Clause License.
-        * Github: https://github.com/imingyu/loose-xml-parser
+        * Github: https://github.com/imingyu/forgiving-xml-parser
         */`.split('\n').map(item => item.trim()).join('\n');
         return rollup.rollup(rollupConfig.input).then(res => {
             return res.write(rollupConfig.output);

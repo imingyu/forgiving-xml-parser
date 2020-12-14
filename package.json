@@ -1,11 +1,10 @@
 {
-    "name": "loose-xml-parser",
+    "name": "forgiving-xml-parser",
     "version": "1.0.0",
-    "description": "An XML/HTML parser and serializer for JavaScript.",
+    "description": "An forgiving XML/HTML parser and serializer for JavaScript.",
     "main": "dist/index.cjs.js",
     "module": "dist/index.esm.js",
     "types": "dist/index.d.ts",
-    "dependencies": {},
     "devDependencies": {
         "@babel/core": "^7.11.1",
         "@babel/preset-env": "^7.11.0",
@@ -17,7 +16,7 @@
         "fse": "^4.0.1",
         "mocha": "^8.1.1",
         "rollup": "^2.23.0",
-        "rollup-plugin-uglify": "^6.0.4",
+        "rollup-plugin-uglify": "^5.0.2",
         "tslib": "^2.0.1",
         "typescript": "^3.9.7"
     },
@@ -26,10 +25,10 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/imingyu/loose-xml-parser.git"
+        "url": "git+https://github.com/imingyu/forgiving-xml-parser.git"
     },
     "keywords": [
-        "loose-xml-parser",
+        "forgiving-xml-parser",
         "xml-parsing",
         "xml-parser",
         "html-parsing",
@@ -50,7 +49,7 @@
     "author": "imingyu <mingyuhisoft@163.com>",
     "license": "BSD-3-Clause",
     "bugs": {
-        "url": "https://github.com/imingyu/loose-xml-parser/issues"
+        "url": "https://github.com/imingyu/forgiving-xml-parser/issues"
     },
-    "homepage": "https://github.com/imingyu/loose-xml-parser#readme"
+    "homepage": "https://github.com/imingyu/forgiving-xml-parser#readme"
 }

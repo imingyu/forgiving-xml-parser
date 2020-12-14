@@ -1,10 +1,10 @@
-import { LxNodeJSON, LxSerializeOptions } from "./types";
+import { FxNodeJSON, FxSerializeOptions } from "./types";
 import { findNodeSerializer } from "./util";
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 export const serialize = (
-    nodes: LxNodeJSON | LxNodeJSON[],
-    options?: LxSerializeOptions
+    nodes: FxNodeJSON | FxNodeJSON[],
+    options?: FxSerializeOptions
 ): string => {
     if (!nodes || typeof nodes !== "object") {
         return;
@@ -20,9 +20,9 @@ export const serialize = (
     );
     const rootNodes = nodes;
     const rootSerialize = (
-        nodes: LxNodeJSON[],
-        options: LxSerializeOptions,
-        parentNode?: LxNodeJSON
+        nodes: FxNodeJSON[],
+        options: FxSerializeOptions,
+        parentNode?: FxNodeJSON
     ) => {
         let xml = "";
         nodes.forEach((node) => {

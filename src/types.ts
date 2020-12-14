@@ -1,4 +1,4 @@
-export enum LxNodeType {
+export enum FxNodeType {
     // <!-- -->
     comment = "comment",
     // <span>
@@ -14,13 +14,13 @@ export enum LxNodeType {
     // 自定义的
     custom = "custom",
 }
-export enum LxParseAttrTarget {
+export enum FxParseAttrTarget {
     name = "name",
     equal = "equal",
     leftBoundary = "leftBoundary",
     content = "content",
 }
-export enum LxEventType {
+export enum FxEventType {
     nodeStart = "nodeStart",
     nodeEnd = "nodeEnd",
     nodeNameStart = "nodeNameStart",
@@ -39,64 +39,64 @@ export enum LxEventType {
     error = "error",
     warn = "warn",
 }
-export declare type LxPick<T, K extends keyof T> = {
+export declare type FxPick<T, K extends keyof T> = {
     [P in K]: T[P];
 };
-export declare type LxExclude<T, U> = T extends U ? never : T;
-export declare type LxOmit<T, K extends keyof any> = LxPick<
+export declare type FxExclude<T, U> = T extends U ? never : T;
+export declare type FxOmit<T, K extends keyof any> = FxPick<
     T,
-    LxExclude<keyof T, K>
+    FxExclude<keyof T, K>
 >;
-export interface LxWrong extends LxMessage, LxCursorPosition {
+export interface FxWrong extends FxMessage, FxCursorPosition {
     fragment?: string;
     detail?: string;
     customIgnore?: any;
     stack?: string;
 }
-export interface LxMessage {
+export interface FxMessage {
     code: number;
     message: string;
 }
-export interface LxSerializeOptions {
-    nodeAdapters?: LxNodeAdapter[];
+export interface FxSerializeOptions {
+    nodeAdapters?: FxNodeAdapter[];
 }
-export interface LxParseContext extends LxCursorPosition {
+export interface FxParseContext extends FxCursorPosition {
     xmlLength: number;
     xml: string;
-    nodes: LxNode[];
+    nodes: FxNode[];
     maxLineNumber: number;
     maxColumn: number;
-    currentNode?: LxNode;
-    options?: LxParseOptions;
-    warnings?: LxWrong[];
+    currentNode?: FxNode;
+    options?: FxParseOptions;
+    warnings?: FxWrong[];
     // 是否终止本轮循环
     continueEach?: boolean;
     // 是否终止循环
     breakEach?: boolean;
 }
-export interface LxErrorChecker {
-    (err: LxWrong, context: LxParseContext): boolean;
+export interface FxErrorChecker {
+    (err: FxWrong, context: FxParseContext): boolean;
 }
-export interface LxEventHandler {
-    (type: LxEventType, context: LxParseContext, data: LxNode | LxWrong);
+export interface FxEventHandler {
+    (type: FxEventType, context: FxParseContext, data: FxNode | FxWrong);
 }
-export interface LxCursorPosition {
+export interface FxCursorPosition {
     lineNumber: number;
     column: number;
     offset: number;
 }
-export type LxTryStepData =
-    | LxNode
+export type FxTryStepData =
+    | FxNode
     | string
-    | LxWrong
-    | LxNodeType
-    | LxNodeAdapter
-    | [LxNodeAdapter, LxNodeCloseType]
-    | [LxNodeType, LxNodeCloseType, string?];
-export interface LxTryStep {
-    step: LxEventType;
-    cursor: LxCursorPosition;
-    data?: LxTryStepData;
+    | FxWrong
+    | FxNodeType
+    | FxNodeAdapter
+    | [FxNodeAdapter, FxNodeCloseType]
+    | [FxNodeType, FxNodeCloseType, string?];
+export interface FxTryStep {
+    step: FxEventType;
+    cursor: FxCursorPosition;
+    data?: FxTryStepData;
 }
 export enum AttrMoreEqualDisposal {
     throwError = "throwError",
@@ -113,199 +113,199 @@ export enum StartTagMoreLeftBoundaryCharDisposal {
     // 当做当前的子node处理
     childNode = "childNode",
 }
-export interface LxLoopHookHandler {
-    (context: LxParseContext): number;
+export interface FxLoopHookHandler {
+    (context: FxParseContext): number;
 }
-export interface LxOptionChecker {
-    (xml: string, cursor: LxCursorPosition, parser: LxNodeAdapter): boolean;
+export interface FxOptionChecker {
+    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): boolean;
 }
-export interface LxEqualNameChecker {
+export interface FxEqualNameChecker {
     (
         endTagName: string,
-        nodeAnterior: LxNode,
-        context: LxParseContext
+        nodeAnterior: FxNode,
+        context: FxParseContext
     ): boolean;
 }
-export interface LxOptionDisposal<T> {
-    (xml: string, cursor: LxCursorPosition, parser: LxNodeAdapter): T;
+export interface FxOptionDisposal<T> {
+    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): T;
 }
-export enum LxTagType {
+export enum FxTagType {
     startTag = "startTag",
     endTag = "endTag",
 }
-export interface LxAllowNearTagBoundarySpace {
+export interface FxAllowNearTagBoundarySpace {
     (
         xml: string,
-        cursor: LxCursorPosition,
-        parser: LxNodeAdapter,
+        cursor: FxCursorPosition,
+        parser: FxNodeAdapter,
         tagName?: string
     ): boolean;
 }
-export interface LxAllowTagNameHasSpace {
+export interface FxAllowTagNameHasSpace {
     (
         xml: string,
-        cursor: LxCursorPosition,
+        cursor: FxCursorPosition,
         tagName: string,
-        tagType: LxTagType
+        tagType: FxTagType
     ): boolean;
 }
-export interface LxParseBaseOptions {
+export interface FxParseBaseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
     allowStartTagBoundaryNearSpace?:
         | boolean
         | RegExp
-        | LxAllowNearTagBoundarySpace;
+        | FxAllowNearTagBoundarySpace;
     allowEndTagBoundaryNearSpace?:
         | boolean
         | RegExp
-        | LxAllowNearTagBoundarySpace;
-    allowTagNameHasSpace?: boolean | RegExp | LxAllowTagNameHasSpace;
+        | FxAllowNearTagBoundarySpace;
+    allowTagNameHasSpace?: boolean | RegExp | FxAllowTagNameHasSpace;
     // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
-    ignoreTagNameCaseEqual?: boolean | RegExp | LxEqualNameChecker;
+    ignoreTagNameCaseEqual?: boolean | RegExp | FxEqualNameChecker;
     // 是否允许节点名称为空；
-    allowNodeNameEmpty?: boolean | LxOptionChecker;
+    allowNodeNameEmpty?: boolean | FxOptionChecker;
     // 是否允许节点不关闭；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
-    allowNodeNotClose?: boolean | RegExp | LxAllowNodeNotCloseChecker;
+    allowNodeNotClose?: boolean | RegExp | FxAllowNodeNotCloseChecker;
     // 是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效
-    allowAttrContentHasBr?: boolean | LxOptionChecker;
+    allowAttrContentHasBr?: boolean | FxOptionChecker;
     // 是否允许属性等号附近存在空白字符
-    allowNearAttrEqualSpace?: boolean | LxOptionChecker;
+    allowNearAttrEqualSpace?: boolean | FxOptionChecker;
     // 当遇到属性中含有多个“=”时怎么处置？
     encounterAttrMoreEqual?:
         | AttrMoreEqualDisposal
-        | LxOptionDisposal<AttrMoreEqualDisposal>;
+        | FxOptionDisposal<AttrMoreEqualDisposal>;
 }
-export interface LxParseOptions extends LxParseBaseOptions {
-    onEvent?: LxEventHandler;
-    nodeAdapters?: LxNodeAdapter[];
+export interface FxParseOptions extends FxParseBaseOptions {
+    onEvent?: FxEventHandler;
+    nodeAdapters?: FxNodeAdapter[];
 }
 
-export enum LxNodeNature {
+export enum FxNodeNature {
     alone = "alone",
     children = "children",
 }
 
-export interface LxAttrParseCallback {
-    (attrSteps: LxTryStep[], readyAttrsSteps: LxTryStep[]): boolean;
+export interface FxAttrParseCallback {
+    (attrSteps: FxTryStep[], readyAttrsSteps: FxTryStep[]): boolean;
 }
-export interface LxNodeSerializeMatcher {
+export interface FxNodeSerializeMatcher {
     (
-        currentNode: LxNodeJSON,
-        brotherNodes: LxNodeJSON[],
-        rootNodes: LxNodeJSON[],
-        options: LxSerializeOptions,
-        parentNode?: LxNodeJSON
+        currentNode: FxNodeJSON,
+        brotherNodes: FxNodeJSON[],
+        rootNodes: FxNodeJSON[],
+        options: FxSerializeOptions,
+        parentNode?: FxNodeJSON
     ): boolean;
 }
-export interface LxNodeSerializer {
+export interface FxNodeSerializer {
     (
-        nodes: LxNodeJSON[],
-        options: LxSerializeOptions,
-        parentNode?: LxNodeJSON
+        nodes: FxNodeJSON[],
+        options: FxSerializeOptions,
+        parentNode?: FxNodeJSON
     ): string;
 }
 
-export enum LxNodeParserAllowNodeNotCloseOption {
+export enum FxNodeParserAllowNodeNotCloseOption {
     allow = "allow",
     notAllow = "notAllow",
     followParserOptions = "followParserOptions",
 }
-export interface LxAllowNodeNotCloseChecker {
+export interface FxAllowNodeNotCloseChecker {
     (
-        onlyAnteriorNode: LxNode,
-        context: LxParseContext,
-        parser: LxNodeAdapter
+        onlyAnteriorNode: FxNode,
+        context: FxParseContext,
+        parser: FxNodeAdapter
     ): boolean;
 }
-export interface LxNodeAdapter {
-    nodeType: LxNodeType;
-    nodeNature: LxNodeNature;
+export interface FxNodeAdapter {
+    nodeType: FxNodeType;
+    nodeNature: FxNodeNature;
     nodeCustomType?: string;
     attrLeftBoundaryChar?: string | RegExp;
     attrRightBoundaryChar?: string | RegExp;
     attrBoundaryCharNeedEqual?: boolean;
     allowNodeNotClose?:
-        | LxNodeParserAllowNodeNotCloseOption
-        | LxAllowNodeNotCloseChecker;
-    parseMatch: string | RegExp | LxNodeParserMatcher;
-    parse(context: LxParseContext, parentNodeParser?: LxNodeAdapter);
+        | FxNodeParserAllowNodeNotCloseOption
+        | FxAllowNodeNotCloseChecker;
+    parseMatch: string | RegExp | FxNodeParserMatcher;
+    parse(context: FxParseContext, parentNodeParser?: FxNodeAdapter);
     checkAttrsEnd?(
         xml: string,
-        cursor: LxCursorPosition,
-        options: LxSerializeOptions
-    ): LxCursorPosition;
-    serializeMatch: LxNodeSerializeMatcher;
+        cursor: FxCursorPosition,
+        options: FxSerializeOptions
+    ): FxCursorPosition;
+    serializeMatch: FxNodeSerializeMatcher;
     serialize(
-        currentNode: LxNodeJSON,
-        brotherNodes: LxNodeJSON[],
-        rootNodes: LxNodeJSON[],
-        rootSerializer: LxNodeSerializer,
-        options: LxSerializeOptions,
-        parentNode?: LxNodeJSON
+        currentNode: FxNodeJSON,
+        brotherNodes: FxNodeJSON[],
+        rootNodes: FxNodeJSON[],
+        rootSerializer: FxNodeSerializer,
+        options: FxSerializeOptions,
+        parentNode?: FxNodeJSON
     ): string;
 }
-export interface LxNodeParserMatcher {
-    (xml: string, cursor: LxCursorPosition, options: LxParseOptions): boolean;
+export interface FxNodeParserMatcher {
+    (xml: string, cursor: FxCursorPosition, options: FxParseOptions): boolean;
 }
-export type LxParseOptionsKeys = keyof LxParseOptions;
-export interface LxToJSONOptions {
+export type FxParseOptionsKeys = keyof FxParseOptions;
+export interface FxToJSONOptions {
     maxLine?: boolean;
     maxCol?: boolean;
     xml?: boolean;
     locationInfo?: boolean;
     steps?: boolean;
 }
-export interface LxParseResultJSON {
+export interface FxParseResultJSON {
     maxLine?: number;
     maxCol?: number;
     xml?: string;
-    nodes?: LxNodeJSON[];
-    error?: LxWrong;
-    warnings?: LxWrong[];
+    nodes?: FxNodeJSON[];
+    error?: FxWrong;
+    warnings?: FxWrong[];
 }
-export interface LxParseResult extends LxParseResultJSON {
+export interface FxParseResult extends FxParseResultJSON {
     maxLine: number;
     maxCol: number;
     xml: string;
-    nodes?: LxNode[];
+    nodes?: FxNode[];
 }
-export interface LxBoundStepsLoopCallback {
-    (stepItem: LxTryStep, stepItemIndex: number): boolean;
+export interface FxBoundStepsLoopCallback {
+    (stepItem: FxTryStep, stepItemIndex: number): boolean;
 }
 
-export interface LxNodeLocationInfo extends LxLocation {
-    startTag?: LxLocation;
-    endTag?: LxLocation;
-    attrs?: LxLocation[];
+export interface FxNodeLocationInfo extends FxLocation {
+    startTag?: FxLocation;
+    endTag?: FxLocation;
+    attrs?: FxLocation[];
 }
-export enum LxNodeCloseType {
+export enum FxNodeCloseType {
     notClosed = "notClosed",
     fullClosed = "fullClosed",
     selfCloseing = "selfCloseing",
     startTagClosed = "startTagClosed",
 }
-export interface LxNodeJSON {
-    type: LxNodeType;
+export interface FxNodeJSON {
+    type: FxNodeType;
     customType?: string;
-    closeType?: LxNodeCloseType;
+    closeType?: FxNodeCloseType;
     name?: string;
     content?: string;
-    children?: LxNodeJSON[];
-    attrs?: LxNodeJSON[];
-    locationInfo?: LxNodeLocationInfo;
+    children?: FxNodeJSON[];
+    attrs?: FxNodeJSON[];
+    locationInfo?: FxNodeLocationInfo;
     boundaryChar?: string[];
     equalCount?: number;
-    nature?: LxNodeNature;
+    nature?: FxNodeNature;
 }
-export interface LxNode extends LxNodeJSON {
-    parser: LxNodeAdapter;
-    locationInfo: LxNodeLocationInfo;
-    children?: LxNode[];
-    attrs?: LxNode[];
-    parent?: LxNode;
-    steps?: LxTryStep[];
+export interface FxNode extends FxNodeJSON {
+    parser: FxNodeAdapter;
+    locationInfo: FxNodeLocationInfo;
+    children?: FxNode[];
+    attrs?: FxNode[];
+    parent?: FxNode;
+    steps?: FxTryStep[];
 }
-export interface LxLocation {
+export interface FxLocation {
     startLineNumber: number;
     endLineNumber?: number;
     startColumn: number;
@@ -314,25 +314,25 @@ export interface LxLocation {
     endOffset?: number;
 }
 
-export interface LxElementEndTagInfo {
+export interface FxElementEndTagInfo {
     content: string;
     name: string;
     boundaryHasSpace?: boolean;
-    locationInfo: LxLocation;
-    wrongList?: LxWrong[];
+    locationInfo: FxLocation;
+    wrongList?: FxWrong[];
     closed: boolean;
     parentIndex: number;
 }
 
-export interface LxStartTagCompare {
+export interface FxStartTagCompare {
     (
-        targetNode: LxNode,
-        context: LxParseContext,
-        endTagSteps: LxTryStep[]
+        targetNode: FxNode,
+        context: FxParseContext,
+        endTagSteps: FxTryStep[]
     ): boolean;
 }
 
-export interface LxParserOptions {
-    nodeAdapters?: LxNodeAdapter[];
-    parseOptions?: LxParseBaseOptions;
+export interface FxParserOptions {
+    nodeAdapters?: FxNodeAdapter[];
+    parseOptions?: FxParseBaseOptions;
 }
