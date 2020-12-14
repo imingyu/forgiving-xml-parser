@@ -1,4 +1,4 @@
-import { boundStepsToContext } from "../init";
+import { boundStepsToContext } from "../option";
 import {
     ATTR_CONTENT_HAS_BR,
     ATTR_EQUAL_NEAR_SPACE,

@@ -18,4 +18,3 @@ export const DEFAULT_PARSE_OPTIONS: LxParseOptions = {
     ignoreTagNameCaseEqual: true,
     encounterAttrMoreEqual: AttrMoreEqualDisposal.merge,
 };
-export const DEFAULT_SERIALIZE_OPTIONS: LxParseOptions = {};

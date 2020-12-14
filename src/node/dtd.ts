@@ -35,7 +35,7 @@ import {
     TAG_NOT_CLOSE,
 } from "../message";
 import { AttrParser, tryParseAttrs } from "./attr";
-import { boundStepsToContext } from "../init";
+import { boundStepsToContext } from "../option";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
 export const tryParseDtdStartTag = (

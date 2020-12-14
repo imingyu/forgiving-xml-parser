@@ -58,7 +58,7 @@ export interface LxMessage {
     message: string;
 }
 export interface LxSerializeOptions {
-    nodeParser?: LxNodeParser[];
+    nodeParsers?: LxNodeParser[];
 }
 export interface LxParseContext extends LxCursorPosition {
     xmlLength: number;
@@ -175,7 +175,7 @@ export interface LxParseOptions {
         | AttrMoreEqualDisposal
         | LxOptionDisposal<AttrMoreEqualDisposal>;
     onEvent?: LxEventHandler;
-    nodeParser?: LxNodeParser[];
+    nodeParsers?: LxNodeParser[];
 }
 export enum LxNodeNature {
     alone = "alone",
@@ -330,4 +330,9 @@ export interface LxStartTagCompare {
         context: LxParseContext,
         endTagSteps: LxTryStep[]
     ): boolean;
+}
+
+export interface LxParserOptions {
+    nodeParsers?: LxNodeParser[];
+    parseOptions?: LxParseOptions;
 }

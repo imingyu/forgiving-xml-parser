@@ -12,24 +12,15 @@ import {
     moveCursor,
     findNodeParser,
 } from "./util";
-import { DEFAULT_PARSE_OPTIONS } from "./var";
-import { CommentParser } from "./node/comment";
-import { CDATAParser } from "./node/cdata";
-import { ElementParser } from "./node/element";
-import { DtdParser } from "./node/dtd";
-import { ProcessingInstructionParser } from "./node/pi";
 import { TextParser } from "./node/text";
-DEFAULT_PARSE_OPTIONS.nodeParser = [
-    CommentParser,
-    CDATAParser,
-    ProcessingInstructionParser,
-    DtdParser,
-    ElementParser,
-];
+import { DEFAULT_PARSE_OPTIONS } from "./var";
 
 export const parse = (xml: string, options?: LxParseOptions): LxParseResult => {
-    options = typeof options !== "object" ? {} : options;
-    options = Object.assign({}, DEFAULT_PARSE_OPTIONS, options);
+    options = Object.assign(
+        {},
+        DEFAULT_PARSE_OPTIONS,
+        typeof options === "object" && options ? options : {}
+    );
     const context: LxParseContext = {
         offset: 0,
         xmlLength: xml.length,

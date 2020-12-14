@@ -1,25 +1,23 @@
 import { LxNodeJSON, LxSerializeOptions } from "./types";
-import { DEFAULT_SERIALIZE_OPTIONS } from "./var";
 import { findNodeSerializer } from "./util";
-import { CommentParser } from "./node/comment";
-import { CDATAParser } from "./node/cdata";
-import { ElementParser } from "./node/element";
-import { DtdParser } from "./node/dtd";
-import { ProcessingInstructionParser } from "./node/pi";
 import { TextParser } from "./node/text";
-DEFAULT_SERIALIZE_OPTIONS.nodeParser = [
-    CommentParser,
-    CDATAParser,
-    ProcessingInstructionParser,
-    DtdParser,
-    ElementParser,
-];
+import { DEFAULT_PARSE_OPTIONS } from "./var";
 export const serialize = (
-    nodes: LxNodeJSON[],
+    nodes: LxNodeJSON | LxNodeJSON[],
     options?: LxSerializeOptions
 ): string => {
-    options = typeof options !== "object" ? {} : options;
-    options = Object.assign({}, DEFAULT_SERIALIZE_OPTIONS, options);
+    if (!nodes || typeof nodes !== "object") {
+        return;
+    }
+    if (!Array.isArray(nodes)) {
+        nodes = [nodes];
+    }
+    options = Object.assign(
+        {
+            nodeParsers: DEFAULT_PARSE_OPTIONS.nodeParsers,
+        },
+        typeof options === "object" && options ? options : {}
+    );
     const rootNodes = nodes;
     const rootSerialize = (
         nodes: LxNodeJSON[],

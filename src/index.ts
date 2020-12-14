@@ -12,3 +12,4 @@ export * from "./node/pi";
 export * from "./node/dtd";
 export * from "./parse";
 export * from "./serialize";
+export * from "./init";

@@ -5,7 +5,7 @@ import {
     moveCursor,
     startsWith,
 } from "../util";
-import { boundStepsToContext } from "../init";
+import { boundStepsToContext } from "../option";
 import {
     LxCursorPosition,
     LxEventType,

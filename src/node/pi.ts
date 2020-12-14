@@ -6,7 +6,7 @@ import {
     ignoreSpaceIsHeadTail,
     toCursor,
 } from "../util";
-import { boundStepsToContext } from "../init";
+import { boundStepsToContext } from "../option";
 import {
     LxCursorPosition,
     LxEventType,

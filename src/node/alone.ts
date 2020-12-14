@@ -3,13 +3,12 @@ import {
     LxEventType,
     LxNodeCloseType,
     LxNodeParser,
-    LxNodeType,
     LxParseContext,
     LxParseOptions,
     LxTryStep,
 } from "../types";
 import { currentIsLineBreak, moveCursor, pushStep } from "../util";
-import { boundStepsToContext } from "../init";
+import { boundStepsToContext } from "../option";
 export const tryParseAloneNode = (
     xml: string,
     options: LxParseOptions,

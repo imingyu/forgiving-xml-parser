@@ -17,7 +17,7 @@ import {
     LxNodeCloseType,
     LxParseContext,
     LxStartTagCompare,
-    LxNodeType,
+    LxNodeLocationInfo,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -367,7 +367,7 @@ export const findNodeParser = (
     cursor: LxCursorPosition,
     options: LxParseOptions
 ): LxNodeParser => {
-    return options.nodeParser.find((parser) => {
+    return options.nodeParsers.find((parser) => {
         const matchType = typeof parser.parseMatch;
         if (matchType === "string") {
             if (
@@ -400,7 +400,7 @@ export const findNodeSerializer = (
     options: LxSerializeOptions,
     parentNode?: LxNodeJSON
 ): LxNodeParser => {
-    return options.nodeParser.find((parser) => {
+    return options.nodeParsers.find((parser) => {
         return parser.serializeMatch(
             currentNode,
             brotherNodes,
@@ -431,4 +431,41 @@ export const findStartTagLevel = (
         }
     }
     return -1;
+};
+
+export const setContextMaxCursor = (
+    context: LxParseContext,
+    cursor: LxCursorPosition
+) => {
+    if (context.maxLineNumber < cursor.lineNumber) {
+        context.maxLineNumber = cursor.lineNumber;
+    }
+    if (context.maxColumn < cursor.column) {
+        context.maxColumn = cursor.column;
+    }
+};
+
+export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
+    const nodeParser = step.data as LxNodeParser;
+    return {
+        type: nodeParser.nodeType,
+        parser: nodeParser,
+        locationInfo: {
+            startLineNumber: step.cursor.lineNumber,
+            startColumn: step.cursor.column,
+            startOffset: step.cursor.offset,
+        },
+        steps: [],
+    };
+};
+
+export const setNodeLocationByCursor = (
+    locationInfo: LxNodeLocationInfo,
+    cursor: LxCursorPosition,
+    prop?: "startTag" | "endTag"
+) => {
+    const loc = prop ? locationInfo[prop] : locationInfo;
+    loc.endLineNumber = cursor.lineNumber;
+    loc.endColumn = cursor.column;
+    loc.endOffset = cursor.offset;
 };
