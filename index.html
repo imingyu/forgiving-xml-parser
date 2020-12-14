@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>loose-xml-parser</title>
+        <!-- <link
+            rel="stylesheet"
+            data-name="vs/editor/editor.main"
+            href="./node_modules/monaco-editor/min/vs/editor/editor.main.css"
+        /> -->
+        <style>
+            body {
+                padding: 0;
+            }
+            h3 {
+                margin-top: 0;
+            }
+            .container {
+                margin: 20px;
+                display: flex;
+            }
+            .container > .text-container:last-child {
+                margin-right: 0;
+            }
+            .text-container {
+                flex: 1;
+                margin-right: 20px;
+            }
+            .text-container.action-container {
+                flex: none;
+                width: 200px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .text-editor {
+                display: block;
+                box-sizing: border-box;
+                width: 100%;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
+                min-height: 400px;
+            }
+            .select-platform {
+                height: 50px;
+                line-height: 50px;
+                border: 1px solid #ccc;
+                border-radius: 10px;
+                margin-top: 15px;
+                padding: 0 20px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            .btn-action {
+                width: 160px;
+                height: 50px;
+                line-height: 50px;
+                background: none;
+                border: none;
+                border-radius: 8px;
+                background-image: linear-gradient(180deg, #5a52fd, #665ff3);
+                color: #fff;
+                font-size: 14px;
+                float: right;
+                margin-top: 15px;
+                align-self: center;
+            }
+            .btn-action:focus,
+            .btn-action:active {
+                outline: none;
+            }
+            .btn-action2 {
+                background-image: linear-gradient(180deg, #ea7004, #ea7004);
+            }
+            .chk-location {
+                margin-bottom: 20px;
+            }
+            .container-options {
+                position: relative;
+                flex-wrap: wrap;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #ededed;
+            }
+            .container-options:after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                bottom: -1px;
+                height: 1px;
+                background-color: #fff;
+                width: 30px;
+            }
+            .container-options > .option-item:nth-child(2n) {
+                padding-left: 30px;
+            }
+            .option-item {
+                width: 50%;
+                flex-shrink: 0;
+                box-sizing: border-box;
+            }
+            .option-item small {
+                color: #666;
+            }
+            .option-item > label {
+                display: block;
+            }
+            #reload {
+                position: fixed;
+                display: none;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10;
+                background-color: red;
+                color: #fff;
+                text-align: center;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                font-size: 200%;
+            }
+            #reload a {
+                display: block;
+                font-size: 50%;
+            }
+            #cursor {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="reload">
+            <b>静态资源加载失败！</b>
+            <a href="javascript:void(0)" onclick="location.reload()">
+                重新加载页面
+            </a>
+        </div>
+        <div class="container container-options">
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowStartTagLeftBoundarySpace</b>
+                <small>是否允许开始标签的左边界符附近存在空白字符</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>ignoreTagNameCaseEqual</b>
+                <small>忽略标签名称大小写对比</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowNodeNotClose</b>
+                <small>是否允许标签不关闭</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowNodeNameEmpty</b>
+                <small>是否允许节点名称为空</small>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowAttrContentHasBr</b>
+                <small
+                    >是否允许属性值中存在换行，仅在属性表达式中包含边界符（“"”,“'”）时生效</small
+                >
+            </label>
+            <label class="option-item">
+                <input type="checkbox" />
+                <b>allowNearAttrEqualSpace</b>
+                <small>是否允许属性等号附近存在空白字符</small>
+            </label>
+            <div class="option-item">
+                <b>encounterAttrMoreEqual</b>
+                <small>当遇到属性中含有多个“=”时怎么处置？</small>
+                <label>
+                    <input
+                        type="radio"
+                        name="encounterAttrMoreEqual"
+                        value="throwError"
+                    />
+                    <b>throwError</b>
+                    <small>报错</small>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="encounterAttrMoreEqual"
+                        value="merge"
+                    />
+                    <b>merge</b>
+                    <small>合并</small>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="encounterAttrMoreEqual"
+                        value="newAttr"
+                    />
+                    <b>newAttr</b>
+                    <small>新创建一个属性对象</small>
+                </label>
+            </div>
+        </div>
+        <div class="container">
+            <div class="text-container">
+                <h3>
+                    XML
+                    <span id="cursor"
+                        ><small
+                            >（光标位置 行：<span id="cusLine"></span> 列：<span
+                                id="cusCol"
+                            ></span
+                            >）</small
+                        ></span
+                    >
+                </h3>
+                <div class="editor-box">
+                    <div class="text-editor" id="txtXml"></div>
+                </div>
+            </div>
+            <div class="text-container action-container">
+                <label class="chk-location">
+                    <input type="checkbox" id="chkLocation" />
+                    显示节点位置信息
+                </label>
+                <label class="chk-location">
+                    <input type="checkbox" id="chkSteps" />
+                    显示节点解析步骤信息
+                </label>
+                <button class="btn-action" type="button" id="btnParse">
+                    解析&nbsp;&gt;&gt;
+                </button>
+                <button
+                    class="btn-action btn-action2"
+                    type="button"
+                    id="btnSerialize"
+                >
+                    &lt;&lt;&nbsp;序列化
+                </button>
+            </div>
+            <div class="text-container">
+                <h3>JSON <small id="jsonTime"></small></h3>
+                <div class="editor-box">
+                    <div class="text-editor" id="txtJSON"></div>
+                </div>
+            </div>
+        </div>
+        <script src="./loose-xml-parser.js"></script>
+        <script src="./jquery.min.js"></script>
+        <script>
+            var require = {
+                paths: { vs: "./monaco-editor/vs" },
+            };
+        </script>
+        <script src="./monaco-editor/vs/loader.js"></script>
+        <script src="./monaco-editor/vs/editor/editor.main.nls.js"></script>
+        <script src="./monaco-editor/vs/editor/editor.main.js"></script>
+
+        <script>
+            function getOptions(getEl = false) {
+                var options = {};
+                $(".option-item").each(function (index, el) {
+                    el = $(el);
+                    var name = el.children("b").html();
+                    var val = el
+                        .children("input[type='checkbox']")
+                        .prop("checked");
+                    if (name === "encounterAttrMoreEqual") {
+                        val = el.find('input[type="radio"]:checked').val();
+                    }
+                    options[name] = val;
+                    if (getEl) {
+                        if (!options.elMap) {
+                            options.elMap = {};
+                        }
+                        options.elMap[name] = el;
+                    }
+                });
+                return options;
+            }
+
+            function setOptions(options) {
+                var ops = getOptions(true);
+                for (var prop in ops.elMap) {
+                    if (options[prop]) {
+                        var el = ops.elMap[prop];
+                        if (prop !== "encounterAttrMoreEqual") {
+                            el.children("input[type='checkbox']").prop(
+                                "checked",
+                                true
+                            );
+                        } else {
+                            el.find(
+                                'input[type="radio"][name="' +
+                                    prop +
+                                    '"][value="' +
+                                    options[prop] +
+                                    '"]'
+                            ).prop("checked", true);
+                        }
+                    }
+                }
+            }
+
+            var txtXml;
+            var txtJSON;
+            var xmlEditor;
+            var jsonEditor;
+            function getXml() {
+                return xmlEditor ? xmlEditor.getValue() : txtXml.val();
+            }
+            function setXml(xml) {
+                return xmlEditor ? xmlEditor.setValue(xml) : txtXml.val(xml);
+            }
+            function getJSON() {
+                return jsonEditor ? jsonEditor.getValue() : txtJSON.val();
+            }
+            function setJSON(json) {
+                return jsonEditor
+                    ? jsonEditor.setValue(json)
+                    : txtJSON.val(json);
+            }
+            function pageInit() {
+                txtXml = $("#txtXml");
+                txtJSON = $("#txtJSON");
+                var localOptions =
+                    JSON.parse(localStorage.getItem("Lx.Options") || "null") ||
+                    LooseXmlParser.DEFAULT_PARSE_OPTIONS;
+                setOptions(localOptions);
+
+                $("#btnParse").bind("click", function (e) {
+                    var options = getOptions();
+                    var xml = getXml();
+                    localStorage.setItem("Lx.Xml", xml);
+                    var startTime = (performance || Date).now();
+                    var json = LooseXmlParser.parse(xml, options);
+                    var endTime = (performance || Date).now();
+                    $("#jsonTime").text(
+                        `本次解析耗时：${endTime - startTime}ms`
+                    );
+                    var parseResult = LooseXmlParser.parseResultToJSON(json, {
+                        locationInfo: $("#chkLocation").prop("checked"),
+                        steps: $("#chkSteps").prop("checked"),
+                    });
+                    if (parseResult.error && parseResult.error.stack) {
+                        console.error(parseResult.error);
+                    }
+                    localStorage.setItem("Lx.Options", JSON.stringify(options));
+                    setJSON(JSON.stringify(parseResult, null, 4));
+                    if (
+                        parseResult.error &&
+                        parseResult.error.line &&
+                        xmlEditor
+                    ) {
+                        var { line, col } = parseResult.error;
+                        xmlEditor.setPosition({
+                            lineNumber: line,
+                            column: col,
+                        });
+                        xmlEditor.setSelection({
+                            endColumn: col + 1,
+                            endLineNumber: line,
+                            startColumn: col,
+                            startLineNumber: line,
+                        });
+                        xmlEditor.focus();
+                    }
+                });
+
+                $("#btnSerialize").click(function () {
+                    var json = JSON.parse(getJSON() || "null");
+                    if (json && json.nodes && json.nodes.length) {
+                        setXml(LooseXmlParser.serialize(json.nodes));
+                    } else {
+                        alert("请输入JSON后尝试序列化");
+                    }
+                });
+            }
+
+            function editorInit() {
+                xmlEditor = monaco.editor.create(txtXml[0], {
+                    value: (
+                        localStorage.getItem("Lx.Xml") ||
+                        `<span name="Tom" man age=20 ></span>`
+                    ).trim(),
+                    language: "xml",
+                    minimap: {
+                        enabled: false,
+                    },
+                });
+                xmlEditor.onDidChangeCursorPosition(function (e) {
+                    var { lineNumber, column } = e.position;
+                    $("#cusLine").html(lineNumber);
+                    $("#cusCol").html(column);
+                    $("#cursor").show();
+                });
+                jsonEditor = monaco.editor.create(txtJSON[0], {
+                    value: "",
+                    language: "json",
+                    minimap: {
+                        enabled: false,
+                    },
+                });
+            }
+            pageInit();
+            editorInit();
+        </script>
+    </body>
+</html>
