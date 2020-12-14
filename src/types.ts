@@ -91,7 +91,8 @@ export type LxTryStepData =
     | LxWrong
     | LxNodeType
     | LxNodeParser
-    | [LxNodeParser, LxNodeCloseType];
+    | [LxNodeParser, LxNodeCloseType]
+    | [LxNodeType, LxNodeCloseType, string?];
 export interface LxTryStep {
     step: LxEventType;
     cursor: LxCursorPosition;

@@ -17,6 +17,7 @@ import {
     LxNodeCloseType,
     LxParseContext,
     LxStartTagCompare,
+    LxNodeType,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -118,7 +119,34 @@ export const nodeToJSON = (
         if (prop !== "parent" && prop !== "parser") {
             if (prop === "steps") {
                 if (options && options.steps) {
-                    res[prop] = node[prop];
+                    res[prop] = node[prop].map((step) => {
+                        const res = {
+                            ...step,
+                        };
+                        if (Array.isArray(res.data)) {
+                            let [nodeType, closeType, customType] = res.data;
+                            if (typeof nodeType === "object") {
+                                const np = nodeType as LxNodeParser;
+                                customType = customType || np.nodeCustomType;
+                                nodeType = np.nodeType;
+                            }
+                            res.data = [nodeType, closeType, customType];
+                            if (!res.data[2]) {
+                                res.data.splice(2, 1);
+                            }
+                        } else if (typeof res.data === "object") {
+                            const np = res.data as LxNodeParser;
+                            res.data = [
+                                np.nodeType,
+                                LxNodeCloseType.fullClosed,
+                                np.nodeCustomType,
+                            ];
+                            if (!res.data[2]) {
+                                res.data.splice(2, 1);
+                            }
+                        }
+                        return res;
+                    });
                 }
             } else if (prop === "closeType") {
                 if (
