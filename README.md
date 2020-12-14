@@ -2,7 +2,7 @@
 
 Enligsh | [简体中文](./README.zh-CN.md)
 
-An XML/HTML parser and serializer for JavaScript.
+An XML/HTML parser and serializer for JavaScript. [Playground](https://imingyu.github.io/loose-xml-parser/)
 
 # Features
 
