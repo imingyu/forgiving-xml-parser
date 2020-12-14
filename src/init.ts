@@ -23,7 +23,7 @@ const DEFAULT_NODE_PARSERS = [
     DtdParser,
     ElementParser,
 ];
-DEFAULT_PARSE_OPTIONS.nodeParsers = [...DEFAULT_NODE_PARSERS];
+DEFAULT_PARSE_OPTIONS.nodeAdapters = [...DEFAULT_NODE_PARSERS];
 
 export class LxParser {
     options: LxParserOptions;
@@ -32,8 +32,8 @@ export class LxParser {
     };
     constructor(options?: LxParserOptions) {
         options = typeof options !== "object" || !options ? {} : options;
-        if (!options.nodeParsers) {
-            options.nodeParsers = Object.create(DEFAULT_NODE_PARSERS);
+        if (!options.nodeAdapters) {
+            options.nodeAdapters = Object.create(DEFAULT_NODE_PARSERS);
         }
         if (typeof options.parseOptions !== "object" || !options.parseOptions) {
             options.parseOptions = Object.create(DEFAULT_PARSE_OPTIONS);
@@ -46,7 +46,7 @@ export class LxParser {
         }
         this.options = options;
         this.events = {};
-        this._eventHandler=this._eventHandler.bind(this),
+        this._eventHandler = this._eventHandler.bind(this);
     }
     _eventHandler(type: LxEventType) {
         if (this.events[type]) {
@@ -67,7 +67,7 @@ export class LxParser {
             xml,
             Object.assign(
                 {
-                    nodeParsers: [...this.options.nodeParsers],
+                    nodeAdapters: [...this.options.nodeAdapters],
                     onEvent: this._eventHandler,
                 },
                 this.options.parseOptions,
@@ -88,7 +88,7 @@ export class LxParser {
             json,
             Object.assign(
                 {
-                    nodeParsers: this.options.nodeParsers,
+                    nodeAdapters: this.options.nodeAdapters,
                 },
                 typeof serializeOptions === "object" && serializeOptions
                     ? serializeOptions

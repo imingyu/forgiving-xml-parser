@@ -14,7 +14,7 @@ export const serialize = (
     }
     options = Object.assign(
         {
-            nodeParsers: DEFAULT_PARSE_OPTIONS.nodeParsers,
+            nodeAdapters: DEFAULT_PARSE_OPTIONS.nodeAdapters,
         },
         typeof options === "object" && options ? options : {}
     );

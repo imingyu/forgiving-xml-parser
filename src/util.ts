@@ -7,7 +7,7 @@ import {
     LxMessage,
     LxWrong,
     LxCursorPosition,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeParserMatcher,
     LxParseOptions,
     LxSerializeOptions,
@@ -133,7 +133,7 @@ export const nodeToJSON = (
                         if (Array.isArray(res.data)) {
                             let [nodeType, closeType, customType] = res.data;
                             if (typeof nodeType === "object") {
-                                const np = nodeType as LxNodeParser;
+                                const np = nodeType as LxNodeAdapter;
                                 customType = customType || np.nodeCustomType;
                                 nodeType = np.nodeType;
                             }
@@ -142,7 +142,7 @@ export const nodeToJSON = (
                                 res.data.splice(2, 1);
                             }
                         } else if (typeof res.data === "object") {
-                            const np = res.data as LxNodeParser;
+                            const np = res.data as LxNodeAdapter;
                             res.data = [
                                 np.nodeType,
                                 LxNodeCloseType.fullClosed,
@@ -366,8 +366,8 @@ export const findNodeParser = (
     xml: string,
     cursor: LxCursorPosition,
     options: LxParseOptions
-): LxNodeParser => {
-    return options.nodeParsers.find((parser) => {
+): LxNodeAdapter => {
+    return options.nodeAdapters.find((parser) => {
         const matchType = typeof parser.parseMatch;
         if (matchType === "string") {
             if (
@@ -399,8 +399,8 @@ export const findNodeSerializer = (
     rootNodes: LxNodeJSON[],
     options: LxSerializeOptions,
     parentNode?: LxNodeJSON
-): LxNodeParser => {
-    return options.nodeParsers.find((parser) => {
+): LxNodeAdapter => {
+    return options.nodeAdapters.find((parser) => {
         return parser.serializeMatch(
             currentNode,
             brotherNodes,
@@ -446,10 +446,10 @@ export const setContextMaxCursor = (
 };
 
 export const createNodeByNodeStartStep = (step: LxTryStep): LxNode => {
-    const nodeParser = step.data as LxNodeParser;
+    const nodeAdapter = step.data as LxNodeAdapter;
     return {
-        type: nodeParser.nodeType,
-        parser: nodeParser,
+        type: nodeAdapter.nodeType,
+        parser: nodeAdapter,
         locationInfo: {
             startLineNumber: step.cursor.lineNumber,
             startColumn: step.cursor.column,

@@ -5,7 +5,7 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeParserAllowNodeNotCloseOption,
     LxNodeSerializer,
     LxNodeType,
@@ -220,7 +220,7 @@ export const tryParseDtdEndTag = (
     return steps;
 };
 
-export const DtdParser: LxNodeParser = {
+export const DtdParser: LxNodeAdapter = {
     nodeNature: LxNodeNature.children,
     nodeType: LxNodeType.dtd,
     attrLeftBoundaryChar: /^'|^"|^\(/,
@@ -229,7 +229,7 @@ export const DtdParser: LxNodeParser = {
     allowNodeNotClose: (
         node: LxNode,
         context: LxParseContext,
-        parser: LxNodeParser
+        parser: LxNodeAdapter
     ): boolean => {
         if (node.type === LxNodeType.dtd && !node.parent) {
         }

@@ -2,13 +2,13 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeType,
     LxParseContext,
 } from "../types";
 import { parseAloneNode } from "./alone";
 import { CDATA_START, CDATA_END } from "../var";
-export const CDATAParser: LxNodeParser = {
+export const CDATAParser: LxNodeAdapter = {
     nodeType: LxNodeType.cdata,
     nodeNature: LxNodeNature.alone,
     parseMatch: CDATA_START,

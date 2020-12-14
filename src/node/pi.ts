@@ -13,7 +13,7 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeParserAllowNodeNotCloseOption,
     LxNodeSerializer,
     LxNodeType,
@@ -174,7 +174,7 @@ export const tryParsePI = (
     return steps;
 };
 
-export const ProcessingInstructionParser: LxNodeParser = {
+export const ProcessingInstructionParser: LxNodeAdapter = {
     nodeNature: LxNodeNature.alone,
     nodeType: LxNodeType.processingInstruction,
     parseMatch: /^<\s*\?/,

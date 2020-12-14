@@ -13,7 +13,7 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeType,
     LxParseContext,
     LxParseOptions,
@@ -93,7 +93,7 @@ export const tryParseText = (
     return steps;
 };
 
-export const TextParser: LxNodeParser = {
+export const TextParser: LxNodeAdapter = {
     nodeNature: LxNodeNature.alone,
     nodeType: LxNodeType.text,
     parseMatch() {

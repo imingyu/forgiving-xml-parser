@@ -5,7 +5,7 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeParserAllowNodeNotCloseOption,
     LxNodeSerializer,
     LxNodeType,
@@ -392,7 +392,7 @@ const equalTagName = (
     return false;
 };
 
-export const ElementParser: LxNodeParser = {
+export const ElementParser: LxNodeAdapter = {
     nodeNature: LxNodeNature.children,
     nodeType: LxNodeType.element,
     attrLeftBoundaryChar: /^'|^"/,

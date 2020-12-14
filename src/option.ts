@@ -4,7 +4,7 @@ import {
     LxMessage,
     LxNode,
     LxNodeCloseType,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeParserAllowNodeNotCloseOption,
     LxNodeType,
     LxParseContext,
@@ -35,7 +35,7 @@ export const boundStepsToContext = (
         const currentStepItem = steps[index];
         const { step, cursor, data } = currentStepItem;
         if (step === LxEventType.nodeStart) {
-            const { nodeType } = data as LxNodeParser;
+            const { nodeType } = data as LxNodeAdapter;
             const node = createNodeByNodeStartStep(currentStepItem);
             setContextMaxCursor(context, currentStepItem.cursor);
             node.steps.push(currentStepItem);
@@ -276,7 +276,7 @@ export const computeOption = <
 export const checkAllowNodeNotClose = (
     onlyAnteriorNode: LxNode,
     context: LxParseContext,
-    parser: LxNodeParser
+    parser: LxNodeAdapter
 ) => {
     if (
         parser.allowNodeNotClose === LxNodeParserAllowNodeNotCloseOption.allow

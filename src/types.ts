@@ -58,7 +58,7 @@ export interface LxMessage {
     message: string;
 }
 export interface LxSerializeOptions {
-    nodeParsers?: LxNodeParser[];
+    nodeAdapters?: LxNodeAdapter[];
 }
 export interface LxParseContext extends LxCursorPosition {
     xmlLength: number;
@@ -90,8 +90,8 @@ export type LxTryStepData =
     | string
     | LxWrong
     | LxNodeType
-    | LxNodeParser
-    | [LxNodeParser, LxNodeCloseType]
+    | LxNodeAdapter
+    | [LxNodeAdapter, LxNodeCloseType]
     | [LxNodeType, LxNodeCloseType, string?];
 export interface LxTryStep {
     step: LxEventType;
@@ -117,7 +117,7 @@ export interface LxLoopHookHandler {
     (context: LxParseContext): number;
 }
 export interface LxOptionChecker {
-    (xml: string, cursor: LxCursorPosition, parser: LxNodeParser): boolean;
+    (xml: string, cursor: LxCursorPosition, parser: LxNodeAdapter): boolean;
 }
 export interface LxEqualNameChecker {
     (
@@ -127,7 +127,7 @@ export interface LxEqualNameChecker {
     ): boolean;
 }
 export interface LxOptionDisposal<T> {
-    (xml: string, cursor: LxCursorPosition, parser: LxNodeParser): T;
+    (xml: string, cursor: LxCursorPosition, parser: LxNodeAdapter): T;
 }
 export enum LxTagType {
     startTag = "startTag",
@@ -137,7 +137,7 @@ export interface LxAllowNearTagBoundarySpace {
     (
         xml: string,
         cursor: LxCursorPosition,
-        parser: LxNodeParser,
+        parser: LxNodeAdapter,
         tagName?: string
     ): boolean;
 }
@@ -148,10 +148,6 @@ export interface LxAllowTagNameHasSpace {
         tagName: string,
         tagType: LxTagType
     ): boolean;
-}
-export interface LxParseOptions extends LxParseBaseOptions {
-    onEvent?: LxEventHandler;
-    nodeParsers?: LxNodeParser[];
 }
 export interface LxParseBaseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
@@ -179,6 +175,11 @@ export interface LxParseBaseOptions {
         | AttrMoreEqualDisposal
         | LxOptionDisposal<AttrMoreEqualDisposal>;
 }
+export interface LxParseOptions extends LxParseBaseOptions {
+    onEvent?: LxEventHandler;
+    nodeAdapters?: LxNodeAdapter[];
+}
+
 export enum LxNodeNature {
     alone = "alone",
     children = "children",
@@ -213,10 +214,10 @@ export interface LxAllowNodeNotCloseChecker {
     (
         onlyAnteriorNode: LxNode,
         context: LxParseContext,
-        parser: LxNodeParser
+        parser: LxNodeAdapter
     ): boolean;
 }
-export interface LxNodeParser {
+export interface LxNodeAdapter {
     nodeType: LxNodeType;
     nodeNature: LxNodeNature;
     nodeCustomType?: string;
@@ -227,7 +228,7 @@ export interface LxNodeParser {
         | LxNodeParserAllowNodeNotCloseOption
         | LxAllowNodeNotCloseChecker;
     parseMatch: string | RegExp | LxNodeParserMatcher;
-    parse(context: LxParseContext, parentNodeParser?: LxNodeParser);
+    parse(context: LxParseContext, parentNodeParser?: LxNodeAdapter);
     checkAttrsEnd?(
         xml: string,
         cursor: LxCursorPosition,
@@ -254,14 +255,6 @@ export interface LxToJSONOptions {
     locationInfo?: boolean;
     steps?: boolean;
 }
-
-export interface LxParseResult extends LxParseResultJSON {
-    maxLine: number;
-    maxCol: number;
-    xml: string;
-    nodes?: LxNode[];
-}
-
 export interface LxParseResultJSON {
     maxLine?: number;
     maxCol?: number;
@@ -270,7 +263,12 @@ export interface LxParseResultJSON {
     error?: LxWrong;
     warnings?: LxWrong[];
 }
-
+export interface LxParseResult extends LxParseResultJSON {
+    maxLine: number;
+    maxCol: number;
+    xml: string;
+    nodes?: LxNode[];
+}
 export interface LxBoundStepsLoopCallback {
     (stepItem: LxTryStep, stepItemIndex: number): boolean;
 }
@@ -300,7 +298,7 @@ export interface LxNodeJSON {
     nature?: LxNodeNature;
 }
 export interface LxNode extends LxNodeJSON {
-    parser: LxNodeParser;
+    parser: LxNodeAdapter;
     locationInfo: LxNodeLocationInfo;
     children?: LxNode[];
     attrs?: LxNode[];
@@ -335,6 +333,6 @@ export interface LxStartTagCompare {
 }
 
 export interface LxParserOptions {
-    nodeParsers?: LxNodeParser[];
+    nodeAdapters?: LxNodeAdapter[];
     parseOptions?: LxParseBaseOptions;
 }

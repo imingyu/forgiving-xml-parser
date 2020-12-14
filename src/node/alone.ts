@@ -2,7 +2,7 @@ import {
     LxCursorPosition,
     LxEventType,
     LxNodeCloseType,
-    LxNodeParser,
+    LxNodeAdapter,
     LxParseContext,
     LxParseOptions,
     LxTryStep,
@@ -15,7 +15,7 @@ export const tryParseAloneNode = (
     cursor: LxCursorPosition,
     startTagText: string,
     endTagText: string,
-    parser: LxNodeParser
+    parser: LxNodeAdapter
 ): LxTryStep[] => {
     const steps: LxTryStep[] = [];
     const xmlLength = xml.length;
@@ -60,7 +60,7 @@ export const parseAloneNode = (
     context: LxParseContext,
     startTagText: string,
     endTagText: string,
-    parser: LxNodeParser
+    parser: LxNodeAdapter
 ) => {
     const steps = tryParseAloneNode(
         context.xml,

@@ -14,7 +14,7 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeType,
     LxParseAttrTarget,
     LxParseContext,
@@ -83,7 +83,7 @@ const checkAttrNameEnd = (xml: string, cursor: LxCursorPosition): number => {
 export const tryParseAttrs = (
     xml: string,
     cursor: LxCursorPosition,
-    parentNodeParser: LxNodeParser,
+    parentNodeParser: LxNodeAdapter,
     options?: LxParseOptions,
     attrCallback?: LxAttrParseCallback
 ): LxTryStep[] => {
@@ -150,7 +150,7 @@ const getAttrBoundaryChar = (
 export const tryParseAttr = (
     xml: string,
     cursor: LxCursorPosition,
-    parentNodeParser: LxNodeParser,
+    parentNodeParser: LxNodeAdapter,
     options: LxParseOptions,
     steps: LxTryStep[]
 ) => {
@@ -602,11 +602,11 @@ export const tryParseAttr = (
     }
 };
 
-export const AttrParser: LxNodeParser = {
+export const AttrParser: LxNodeAdapter = {
     nodeNature: LxNodeNature.alone,
     nodeType: LxNodeType.attr,
     parseMatch: "",
-    parse: (context: LxParseContext, parentNodeParser?: LxNodeParser) => {
+    parse: (context: LxParseContext, parentNodeParser?: LxNodeAdapter) => {
         const steps = tryParseAttrs(
             context.xml,
             context,

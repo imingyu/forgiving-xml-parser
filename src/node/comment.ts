@@ -2,14 +2,14 @@ import {
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
-    LxNodeParser,
+    LxNodeAdapter,
     LxNodeType,
     LxParseContext,
 } from "../types";
 import { parseAloneNode } from "./alone";
 import { COMMENT_START, COMMENT_END } from "../var";
 
-export const CommentParser: LxNodeParser = {
+export const CommentParser: LxNodeAdapter = {
     nodeType: LxNodeType.comment,
     nodeNature: LxNodeNature.alone,
     parseMatch: COMMENT_START,
