@@ -4,20 +4,28 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>loose-xml-parser</title>
-        <!-- <link
+        <link
             rel="stylesheet"
             data-name="vs/editor/editor.main"
-            href="./node_modules/monaco-editor/min/vs/editor/editor.main.css"
-        /> -->
+            href="./monaco-editor/min/vs/editor/editor.main.css"
+        />
         <style>
             body {
                 padding: 0;
+                margin: 0;
             }
             h3 {
                 margin-top: 0;
+                border-left: 10px solid #ea7004;
+                padding-left: 15px;
+                box-sizing: border-box;
+            }
+            h3 small {
+                color: #999;
+                font-size: 60%;
             }
             .container {
-                margin: 20px;
+                margin: 20px 0;
                 display: flex;
             }
             .container > .text-container:last-child {
@@ -25,7 +33,7 @@
             }
             .text-container {
                 flex: 1;
-                margin-right: 20px;
+                flex-shrink: 1;
             }
             .text-container.action-container {
                 flex: none;
@@ -33,25 +41,14 @@
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
+                padding: 0 20px;
+                box-sizing: border-box;
+                flex-shrink: 0;
             }
             .text-editor {
-                display: block;
-                box-sizing: border-box;
-                width: 100%;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 10px;
+                border: 1px solid #ededed;
+                padding: 20px 0;
                 min-height: 400px;
-            }
-            .select-platform {
-                height: 50px;
-                line-height: 50px;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                margin-top: 15px;
-                padding: 0 20px;
-                font-size: 16px;
-                font-weight: bold;
             }
             .btn-action {
                 width: 160px;
@@ -76,6 +73,9 @@
             }
             .chk-location {
                 margin-bottom: 20px;
+            }
+            .container-options h3 {
+                width: 100%;
             }
             .container-options {
                 position: relative;
@@ -105,40 +105,26 @@
             }
             .option-item > label {
                 display: block;
-            }
-            #reload {
-                position: fixed;
-                display: none;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 10;
-                background-color: red;
-                color: #fff;
-                text-align: center;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                font-size: 200%;
-            }
-            #reload a {
-                display: block;
-                font-size: 50%;
+                margin-left: 20px;
             }
             #cursor {
                 display: none;
             }
+            .legend {
+                display: block;
+                width: 100%;
+            }
+            .con-legend {
+                margin-top: 100px;
+                display: block;
+                border-top: 1px solid #ededed;
+                padding-top: 20px;
+            }
         </style>
     </head>
     <body>
-        <div id="reload">
-            <b>静态资源加载失败！</b>
-            <a href="javascript:void(0)" onclick="location.reload()">
-                重新加载页面
-            </a>
-        </div>
         <div class="container container-options">
+            <h3>可选配置</h3>
             <label class="option-item">
                 <input type="checkbox" />
                 <b>allowStartTagLeftBoundarySpace</b>
@@ -247,16 +233,21 @@
                 </div>
             </div>
         </div>
+
+        <div class="container con-legend">
+            <h3>名词术语&事件触发时机&JSON结构示例</h3>
+            <img class="legend" src="./legend.png" alt="" />
+        </div>
         <script src="./loose-xml-parser.js"></script>
         <script src="./jquery.min.js"></script>
         <script>
             var require = {
-                paths: { vs: "./monaco-editor/vs" },
+                paths: { vs: "./monaco-editor/min/vs" },
             };
         </script>
-        <script src="./monaco-editor/vs/loader.js"></script>
-        <script src="./monaco-editor/vs/editor/editor.main.nls.js"></script>
-        <script src="./monaco-editor/vs/editor/editor.main.js"></script>
+        <script src="./monaco-editor/min/vs/loader.js"></script>
+        <script src="./monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+        <script src="./monaco-editor/min/vs/editor/editor.main.js"></script>
 
         <script>
             function getOptions(getEl = false) {
@@ -338,7 +329,7 @@
                     var json = LooseXmlParser.parse(xml, options);
                     var endTime = (performance || Date).now();
                     $("#jsonTime").text(
-                        `本次解析耗时：${endTime - startTime}ms`
+                        `本次解析耗时：${(endTime - startTime).toFixed(2)}ms`
                     );
                     var parseResult = LooseXmlParser.parseResultToJSON(json, {
                         locationInfo: $("#chkLocation").prop("checked"),
@@ -383,7 +374,7 @@
                 xmlEditor = monaco.editor.create(txtXml[0], {
                     value: (
                         localStorage.getItem("Lx.Xml") ||
-                        `<span name="Tom" man age=20 ></span>`
+                        "<?xml version=\"1.0\"?>\n<!DOCTYPE note [\n    <!-- this is comment -->\n    <!ELEMENT note (to,from,heading,body,script)>\n    <!ELEMENT to (#PCDATA)>\n    <!ELEMENT from (#PCDATA)>\n    <!ELEMENT heading (#PCDATA)>\n    <!ELEMENT body (#PCDATA)>\n    <!ELEMENT script (#PCDATA)>\n]>\n<note>\n    <to>Tove</to>\n    <from>Jani</from>\n    <heading>Reminder</heading>\n    <body>Don't forget me this weekend</body>\n    <script>console.log('hi Tove');<\/script>\n</note>\n<![CDATA[ function sayHi() {console.log('say hi.')} ]]>"
                     ).trim(),
                     language: "xml",
                     minimap: {
