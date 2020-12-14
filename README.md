@@ -1,41 +1,13 @@
 # loose-xml-parser
 
-语法松散的 xml ast 解析器
+Enligsh | [简体中文](./README.zh-CN.md)
 
-## 功能列表
+An XML/HTML parser for JavaScript.
 
--   [ ] 验证 xml
+## Main Features
 
-    -   [ ] 标签边界符`<`
-        -   [ ] 边界符数量
-    -   [ ] 标签名称
-        -   [ ] 大小写
-        -   [ ] 不为空
-        -   [ ] 左右空白字符
-    -   [ ] 开始/开启标签
-        -   [ ] 正确闭合
-            -   [ ] <>
-            -   [ ] < />
-            -   [ ] <?>
-            -   [ ] <!-->
-            -   [ ] <!>
-    -   [ ] 结束/闭合标签
-    -   [ ] 属性
-        -   [ ] 不含等号`=`
-        -   [ ] 含等号`=`
-        -   [ ] 存在分号`"|'`边界符
-        -   [ ] 不存在分号`"|'`边界符
-        -   [ ] 属性名称
-            -   [ ] 不含特殊字符
-            -   [ ] 不为空
-        -   [ ] 属性值
-            -   [ ] 不含换行符
-
--   [ ] 将 xml 解析为 JS/JSON
-    -   [ ] 树结构构造节点对象
-    -   [ ] 区分节点类型`element/comment/attr/text`
-    -   [ ] 判断自关闭（`selfcloseing`）
-        -   [ ] 常规自关闭`<el />`
-        -   [ ] 异常自关闭`<el>xxx`
-        -   [ ] 通过`options.selfCloseingTags`配置判断自关闭
-    -   [ ] 获取节点位置信息
+-   Transform XML/HTML to JSON
+    -   包含
+-   Transform JSON back to XML
+-   Works with node packages, in browser(like browser such as Miniprogram)
+-   Various options are available to customize the transformation

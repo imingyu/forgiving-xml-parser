@@ -31,6 +31,13 @@ export const createLxError = (
     return err;
 };
 
+export const isElementEndTagBegin = (
+    xml: string,
+    cursor: LxCursorPosition
+): LxCursorPosition => {
+    return ignoreSpaceIsHeadTail(xml, toCursor(cursor), "<", "/");
+};
+
 export const startsWith = (
     fullStr: string,
     targetStr: string | RegExp,

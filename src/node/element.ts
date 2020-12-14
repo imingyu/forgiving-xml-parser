@@ -21,6 +21,7 @@ import {
     findStartTagLevel,
     ignoreSpaceFindCharCursor,
     ignoreSpaceIsHeadTail,
+    isElementEndTagBegin,
     moveCursor,
     pushStep,
     toCursor,
@@ -418,12 +419,7 @@ export const ElementParser: LxNodeParser = {
     },
     parse(context: LxParseContext) {
         let steps: LxTryStep[];
-        const endTagStartCursor = ignoreSpaceIsHeadTail(
-            context.xml,
-            toCursor(context),
-            "<",
-            "/"
-        );
+        const endTagStartCursor = isElementEndTagBegin(context.xml, context);
         if (endTagStartCursor) {
             // 解析endTag
             steps = tryParseElementEndTag(

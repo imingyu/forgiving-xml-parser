@@ -1,8 +1,15 @@
-import { currentIsLineBreak, findNodeParser, moveCursor } from "../util";
+import {
+    currentIsLineBreak,
+    findNodeParser,
+    isElementEndTagBegin,
+    moveCursor,
+    startsWith,
+} from "../util";
 import { boundStepsToContext } from "../init";
 import {
     LxCursorPosition,
     LxEventType,
+    LxNode,
     LxNodeCloseType,
     LxNodeJSON,
     LxNodeNature,
@@ -16,10 +23,15 @@ import {
 export const tryParseText = (
     xml: string,
     cursor: LxCursorPosition,
-    options: LxParseOptions
+    options: LxParseOptions,
+    parentNode?: LxNode
 ): LxTryStep[] => {
     const steps: LxTryStep[] = [];
     const xmlLength = xml.length;
+    const parentIsScriptElement =
+        parentNode &&
+        parentNode.type === LxNodeType.element &&
+        parentNode.name === "script";
     steps.push({
         step: LxEventType.nodeStart,
         cursor: {
@@ -46,10 +58,21 @@ export const tryParseText = (
             offset: cursor.offset + 1,
             column: cursor.column + 1,
         };
-        if (
-            cursor.offset >= xmlLength - 1 ||
-            findNodeParser(xml, nextCharCousor, options)
-        ) {
+        let nextNewNodeParse;
+        if (parentIsScriptElement) {
+            // 如果当前text的父元素是script标签，则一直找到</script>才能开始下一个Parser
+            const nextIsElementEndTag = isElementEndTagBegin(
+                xml,
+                nextCharCousor
+            );
+            nextNewNodeParse =
+                nextIsElementEndTag &&
+                /^<\s*\/\s*script/.test(xml.substr(nextCharCousor.offset));
+        } else {
+            nextNewNodeParse = !!findNodeParser(xml, nextCharCousor, options);
+        }
+
+        if (cursor.offset >= xmlLength - 1 || nextNewNodeParse) {
             steps.push({
                 step: LxEventType.nodeContentEnd,
                 cursor: {
@@ -84,7 +107,8 @@ export const TextParser: LxNodeParser = {
                 column: context.column,
                 offset: context.offset,
             },
-            context.options
+            context.options,
+            context.currentNode
         );
         boundStepsToContext(steps, context);
     },

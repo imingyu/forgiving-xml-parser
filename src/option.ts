@@ -130,5 +130,5 @@ export const checkAllowNodeNotClose = (
             parser
         );
     }
-    return false;
+    return !!context.options.allowNodeNotClose;
 };
