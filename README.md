@@ -78,10 +78,23 @@ console.log(lxParser.serialize(json2) === serialize(json)); // true
 
 -   **serialize**(json: [LxNodeJSON](src/types.ts#L287-L299) | [LxNodeJSON](src/types.ts#L287-L299)[], options?: [LxSerializeOptions](src/types.ts#L60-L62)): `String`
 
+-   **new LxParser**(options?: [LxParserOptions](src/types.ts#L335-L338))
+
+    -   **parse**(xml: `String`, options?: [LxParseOptions](src/types.ts#L178-L181)): [LxParseResult](src/types.ts#L266-L271)
+
+    -   **parseResultToJSON**(result: [LxParseResult](src/types.ts#L266-L271), options?: [LxToJSONOptions](src/types.ts#L251-L257)): [LxParseResultJSON](src/types.ts#L258-L265)
+
+    -   **serialize**(json: [LxNodeJSON](src/types.ts#L287-L299) | [LxNodeJSON](src/types.ts#L287-L299)[], options?: [LxSerializeOptions](src/types.ts#L60-L62)): `String`
+
 </details>
 
 <details>
 <summary>Options</summary>
+
+-   [LxParserOptions](src/types.ts#L335-L338)
+-   [LxParseOptions](src/types.ts#L178-L181)
+-   [LxToJSONOptions](src/types.ts#L251-L257)
+-   [LxSerializeOptions](src/types.ts#L60-L62)
 </details>
 
 <details>
