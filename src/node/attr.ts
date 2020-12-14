@@ -25,7 +25,7 @@ import {
     createLxError,
     currentIsLineBreak,
     equalCursor,
-    getEndCharCursor,
+    ignoreSpaceFindCharCursor,
     moveCursor,
     notSpaceCharCursor,
     pushStep,

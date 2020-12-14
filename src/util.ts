@@ -16,6 +16,7 @@ import {
     LxTryStepData,
     LxNodeCloseType,
     LxParseContext,
+    LxStartTagCompare,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -27,6 +28,19 @@ export const createLxError = (
     err.code = msg.code;
     Object.assign(err, cursor);
     return err;
+};
+
+export const startsWith = (
+    fullStr: string,
+    targetStr: string | RegExp,
+    position: number = 0
+) => {
+    const str = !position ? fullStr : fullStr.substr(position);
+    if (targetStr instanceof RegExp) {
+        const arr = str.match(targetStr);
+        return arr && arr[0] && str.indexOf(arr[0]) === 0;
+    }
+    return str.indexOf(targetStr) === 0;
 };
 
 export const isFunc = (obj) =>
@@ -204,7 +218,7 @@ export const notSpaceCharCursor = (xml: string, cursor: LxCursorPosition) => {
     }
 };
 
-export const getEndCharCursor = (
+export const ignoreSpaceFindCharCursor = (
     xml: string,
     cursor: LxCursorPosition,
     targetChar: string
@@ -296,44 +310,23 @@ export const findStrCursor = (
     return [false, resultCursor];
 };
 
-export const checkTagStart = (
+export const ignoreSpaceIsHeadTail = (
     xml: string,
     cursor: LxCursorPosition,
-    char1: string,
-    char2: string
+    headChar: string,
+    tailChar: string
 ): LxCursorPosition => {
-    if (xml[cursor.offset] === char1) {
+    if (xml[cursor.offset] === headChar) {
         let resultCursor: LxCursorPosition = {
             ...cursor,
         };
         moveCursor(resultCursor, 0, 1, 1);
-        resultCursor = getEndCharCursor(xml, resultCursor, char2);
+        resultCursor = ignoreSpaceFindCharCursor(xml, resultCursor, tailChar);
         if (resultCursor) {
             return resultCursor;
         }
     }
 };
-
-export const checkElementEndTagStart = (
-    xml: string,
-    cursor: LxCursorPosition
-): LxCursorPosition => {
-    return checkTagStart(xml, cursor, "<", "/");
-};
-
-export const checkPIStartTagStart = (
-    xml: string,
-    cursor: LxCursorPosition
-): LxCursorPosition => {
-    return checkTagStart(xml, cursor, "<", "?");
-};
-export const checkPIEndTagStart = (
-    xml: string,
-    cursor: LxCursorPosition
-): LxCursorPosition => {
-    return checkTagStart(xml, cursor, "?", ">");
-};
-
 export const findNodeParser = (
     xml: string,
     cursor: LxCursorPosition,
@@ -381,4 +374,26 @@ export const findNodeSerializer = (
             parentNode
         );
     });
+};
+
+// 在context.nodes中查找与endTag匹配的startTag的层级，找不到就返回-1，0代表currentNode，1代表currentNode.parent，2代表currentNode.parent.parent，以此类推...
+export const findStartTagLevel = (
+    endTagSteps: LxTryStep[],
+    context: LxParseContext,
+    compare: LxStartTagCompare
+): number => {
+    let level = 0;
+    let node: LxNode = context.currentNode;
+    if (compare(node, context, endTagSteps)) {
+        return level;
+    }
+    if (node.parent) {
+        while ((node = node.parent)) {
+            level++;
+            if (compare(node, context, endTagSteps)) {
+                return level;
+            }
+        }
+    }
+    return -1;
 };

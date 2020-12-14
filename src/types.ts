@@ -322,3 +322,11 @@ export interface LxElementEndTagInfo {
     closed: boolean;
     parentIndex: number;
 }
+
+export interface LxStartTagCompare {
+    (
+        targetNode: LxNode,
+        context: LxParseContext,
+        endTagSteps: LxTryStep[]
+    ): boolean;
+}

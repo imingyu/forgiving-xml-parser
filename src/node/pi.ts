@@ -1,10 +1,10 @@
 import {
-    checkPIStartTagStart,
     moveCursor,
     pushStep,
     equalCursor,
-    checkPIEndTagStart,
     currentIsLineBreak,
+    ignoreSpaceIsHeadTail,
+    toCursor,
 } from "../util";
 import { boundStepsToContext } from "../init";
 import {
@@ -36,16 +36,9 @@ export const tryParsePI = (
     let steps: LxTryStep[] = [];
     pushStep(steps, LxEventType.nodeStart, cursor, ProcessingInstructionParser);
     pushStep(steps, LxEventType.startTagStart, cursor);
-    const startTagEndCursor = checkPIStartTagStart(xml, cursor);
-    const expectStartTagEndCursor = moveCursor(
-        {
-            ...cursor,
-        },
-        0,
-        1,
-        1
-    );
-    const mockCursor = Object.assign({}, cursor, startTagEndCursor);
+    const startTagEndCursor = ignoreSpaceIsHeadTail(xml, cursor, "<", "?");
+    const expectStartTagEndCursor = moveCursor(toCursor(cursor), 0, 1, 1);
+    const mockCursor = toCursor(startTagEndCursor);
     moveCursor(mockCursor, 0, 1, 1);
     const firstAttrSteps = tryParseAttrs(
         xml,
@@ -190,7 +183,7 @@ export const ProcessingInstructionParser: LxNodeParser = {
     attrBoundaryCharNeedEqual: true,
     allowNodeNotClose: LxNodeParserAllowNodeNotCloseOption.allow,
     checkAttrsEnd(xml: string, cursor: LxCursorPosition) {
-        return checkPIEndTagStart(xml, cursor);
+        return ignoreSpaceIsHeadTail(xml, cursor, "?", ">");
     },
     parse(context: LxParseContext) {
         boundStepsToContext(

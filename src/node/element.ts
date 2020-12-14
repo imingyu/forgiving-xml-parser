@@ -15,13 +15,15 @@ import {
     LxTryStep,
 } from "../types";
 import {
-    checkElementEndTagStart,
     createStep,
     currentIsLineBreak,
     equalCursor,
-    getEndCharCursor,
+    findStartTagLevel,
+    ignoreSpaceFindCharCursor,
+    ignoreSpaceIsHeadTail,
     moveCursor,
     pushStep,
+    toCursor,
 } from "../util";
 import {
     BOUNDARY_HAS_SPACE,
@@ -35,7 +37,7 @@ import { AttrParser, tryParseAttrs } from "./attr";
 import { boundStepsToContext } from "../init";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
-const tryParseStartTag = (
+export const tryParseElementStartTag = (
     xml: string,
     cursor: LxCursorPosition,
     options: LxParseOptions
@@ -254,7 +256,7 @@ const tryParseStartTag = (
     return steps;
 };
 
-const tryParseEndTag = (
+export const tryParseElementEndTag = (
     xml: string,
     cursor: LxCursorPosition,
     options: LxParseOptions,
@@ -263,10 +265,7 @@ const tryParseEndTag = (
     let steps: LxTryStep[] = [];
     const xmlLength = xml.length;
     endTagStartCursor =
-        endTagStartCursor ||
-        checkElementEndTagStart(xml, {
-            ...cursor,
-        });
+        endTagStartCursor || ignoreSpaceIsHeadTail(xml, cursor, "<", "/");
     pushStep(steps, LxEventType.endTagStart, cursor);
     const nextCursor: LxCursorPosition = {
         lineNumber: cursor.lineNumber,
@@ -392,31 +391,6 @@ const equalTagName = (
     return false;
 };
 
-// 在context.nodes中查找与endTag匹配的startTag的层级，找不到就返回-1，0代表currentNode，1代表currentNode.parent，2代表currentNode.parent.parent，以此类推...
-const findStartTagLevel = (
-    endTagSteps: LxTryStep[],
-    context: LxParseContext
-): number => {
-    const endTagEndStep = endTagSteps.find(
-        (item) => item.step === LxEventType.endTagEnd
-    );
-    const endTagName = endTagEndStep.data as string;
-    let level = 0;
-    let node: LxNode = context.currentNode;
-    if (equalTagName(endTagName, node, context)) {
-        return level;
-    }
-    if (node.parent) {
-        while ((node = node.parent)) {
-            level++;
-            if (equalTagName(endTagName, node, context)) {
-                return level;
-            }
-        }
-    }
-    return -1;
-};
-
 export const ElementParser: LxNodeParser = {
     nodeNature: LxNodeNature.children,
     nodeType: LxNodeType.element,
@@ -439,19 +413,20 @@ export const ElementParser: LxNodeParser = {
                 1,
                 1
             );
-            return getEndCharCursor(xml, nextCursor, ">");
+            return ignoreSpaceFindCharCursor(xml, nextCursor, ">");
         }
     },
     parse(context: LxParseContext) {
         let steps: LxTryStep[];
-        const endTagStartCursor = checkElementEndTagStart(context.xml, {
-            lineNumber: context.lineNumber,
-            column: context.column,
-            offset: context.offset,
-        });
+        const endTagStartCursor = ignoreSpaceIsHeadTail(
+            context.xml,
+            toCursor(context),
+            "<",
+            "/"
+        );
         if (endTagStartCursor) {
             // 解析endTag
-            steps = tryParseEndTag(
+            steps = tryParseElementEndTag(
                 context.xml,
                 {
                     lineNumber: context.lineNumber,
@@ -463,7 +438,17 @@ export const ElementParser: LxNodeParser = {
             );
             const lastStep = steps[steps.length - 1];
             if (lastStep.step !== LxEventType.error) {
-                const matchStartTagLevel = findStartTagLevel(steps, context);
+                const endTagEndStep = steps.find(
+                    (item) => item.step === LxEventType.endTagEnd
+                );
+                const endTagName = endTagEndStep.data as string;
+                const matchStartTagLevel = findStartTagLevel(
+                    steps,
+                    context,
+                    (node: LxNode) => {
+                        return equalTagName(endTagName, node, context);
+                    }
+                );
                 if (matchStartTagLevel === -1) {
                     const cursor = steps[0].cursor;
                     steps = [];
@@ -509,7 +494,7 @@ export const ElementParser: LxNodeParser = {
                 }
             }
         } else {
-            steps = tryParseStartTag(
+            steps = tryParseElementStartTag(
                 context.xml,
                 {
                     lineNumber: context.lineNumber,
