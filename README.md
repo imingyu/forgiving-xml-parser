@@ -7,7 +7,7 @@ Enligsh | [简体中文](./README.zh-CN.md)
 
 An XML/HTML parser and serializer for JavaScript. [Playground](https://imingyu.github.io/forgiving-xml-parser/)
 
-![ad](./docs/img/ad.png)
+![spec](./docs/img/ad.png)
 
 # Features
 
