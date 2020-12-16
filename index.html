@@ -238,7 +238,8 @@
             <h3>名词术语&事件触发时机</h3>
             <img class="legend" src="./legend.png" alt="" />
         </div>
-        <script src="./parser.js"></script>
+        <!-- <script src="./parser.js"></script> -->
+        <script src="./dist/index.umd.js"></script>
         <script src="./jquery.min.js"></script>
         <script>
             var require = {
@@ -331,10 +332,13 @@
                     $("#jsonTime").text(
                         `本次解析耗时：${(endTime - startTime).toFixed(2)}ms`
                     );
-                    var parseResult = ForgivingXmlParser.parseResultToJSON(json, {
-                        locationInfo: $("#chkLocation").prop("checked"),
-                        steps: $("#chkSteps").prop("checked"),
-                    });
+                    var parseResult = ForgivingXmlParser.parseResultToJSON(
+                        json,
+                        {
+                            locationInfo: $("#chkLocation").prop("checked"),
+                            steps: $("#chkSteps").prop("checked"),
+                        }
+                    );
                     if (parseResult.error && parseResult.error.stack) {
                         console.error(parseResult.error);
                     }
@@ -363,7 +367,13 @@
                 $("#btnSerialize").click(function () {
                     var json = JSON.parse(getJSON() || "null");
                     if (json && json.nodes && json.nodes.length) {
-                        setXml(ForgivingXmlParser.serialize(json.nodes));
+                        setXml(
+                            ForgivingXmlParser.serialize(json.nodes, {
+                                nodeSerializeHandler(node, ad, str) {
+                                    return node.type === "attr" ? "333" : str;
+                                },
+                            })
+                        );
                     } else {
                         alert("请输入JSON后尝试序列化");
                     }
