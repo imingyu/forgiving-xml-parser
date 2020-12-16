@@ -44,6 +44,7 @@ export class FxParser {
         this.options = options;
         this.events = {};
         this._parseEventHandler = this._parseEventHandler.bind(this);
+        this._serializeEventHandler = this._serializeEventHandler.bind(this);
     }
     _parseEventHandler(type: FxEventType) {
         if (this.events[type]) {
