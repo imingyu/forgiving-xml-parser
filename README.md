@@ -54,17 +54,17 @@ const json = parse('...');
 -   3.use
 
 ```javascript
-const { parse, serialize, parseResultToJSON, LxParser } = require("forgiving-xml-parser");
+const { parse, serialize, parseResultToJSON, FxParser } = require("forgiving-xml-parser");
 
 const xml = `<p>hi xml</p>`;
 const json = parseResultToJSON(parse(xml)); // { "nodes": [{ "type": "element", "name": "p", "children": [{ "type": "text", "content": "hi xml" }] }] }
 
 serialize(json); // <p>hi xml</p>
 
-const lxParser = new LxParser();
-const json2 = parseResultToJSON(lxParser.parse(xml));
+const fxParser = new FxParser();
+const json2 = parseResultToJSON(fxParser.parse(xml));
 console.log(JSON.stringify(json2) === JSON.stringify(json)); // true
-console.log(lxParser.serialize(json2) === serialize(json)); // true
+console.log(fxParser.serialize(json2) === serialize(json)); // true
 ```
 
 # Api
@@ -78,7 +78,7 @@ console.log(lxParser.serialize(json2) === serialize(json)); // true
 
 -   **serialize**(json: [LxNodeJSON](src/types.ts#L287-L299) | [LxNodeJSON](src/types.ts#L287-L299)[], options?: [LxSerializeOptions](src/types.ts#L60-L62)): `String`
 
--   **new LxParser**(options?: [LxParserOptions](src/types.ts#L335-L338))
+-   **new FxParser**(options?: [LxParserOptions](src/types.ts#L335-L338))
 
     -   **parse**(xml: `String`, options?: [LxParseOptions](src/types.ts#L178-L181)): [LxParseResult](src/types.ts#L266-L271)
 
