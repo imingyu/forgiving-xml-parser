@@ -8,6 +8,7 @@ import {
     FxEventType,
     FxNodeJSON,
     FxNodeSerializeHandler,
+    FxParseBaseOptions,
     FxParseOptions,
     FxParseResult,
     FxParserOptions,
@@ -71,7 +72,7 @@ export class FxParser {
         }
         this.events[eventName].push(handler);
     }
-    parse(xml: string, parseOptions?: FxParseOptions): FxParseResult {
+    parse(xml: string, parseOptions?: FxParseBaseOptions): FxParseResult {
         return parse(
             xml,
             Object.assign(
