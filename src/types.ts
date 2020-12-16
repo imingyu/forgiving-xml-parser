@@ -98,7 +98,7 @@ export interface FxTryStep {
     cursor: FxCursorPosition;
     data?: FxTryStepData;
 }
-export enum AttrMoreEqualDisposal {
+export enum FxAttrMoreEqualDisposal {
     throwError = "throwError",
     merge = "merge",
     newAttr = "newAttr",
@@ -172,8 +172,8 @@ export interface FxParseBaseOptions {
     allowNearAttrEqualSpace?: boolean | FxOptionChecker;
     // 当遇到属性中含有多个“=”时怎么处置？
     encounterAttrMoreEqual?:
-        | AttrMoreEqualDisposal
-        | FxOptionDisposal<AttrMoreEqualDisposal>;
+        | FxAttrMoreEqualDisposal
+        | FxOptionDisposal<FxAttrMoreEqualDisposal>;
 }
 export interface FxParseOptions extends FxParseBaseOptions {
     onEvent?: FxEventHandler;

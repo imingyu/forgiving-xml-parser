@@ -1,4 +1,4 @@
-import { AttrMoreEqualDisposal, FxParseOptions } from "./types";
+import { FxAttrMoreEqualDisposal, FxParseOptions } from "./types";
 
 export const CDATA_START = "<![CDATA[";
 export const CDATA_END = "]]>";
@@ -16,5 +16,5 @@ export const DEFAULT_PARSE_OPTIONS: FxParseOptions = {
     allowTagNameHasSpace: true,
     allowNearAttrEqualSpace: true,
     ignoreTagNameCaseEqual: true,
-    encounterAttrMoreEqual: AttrMoreEqualDisposal.merge,
+    encounterAttrMoreEqual: FxAttrMoreEqualDisposal.merge,
 };

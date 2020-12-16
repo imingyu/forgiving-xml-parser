@@ -1,13 +1,12 @@
 {
     "name": "forgiving-xml-parser",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "An forgiving XML/HTML parser and serializer for JavaScript.",
     "main": "dist/index.cjs.js",
     "module": "dist/index.esm.js",
     "types": "dist/index.d.ts",
     "files": [
-        "dist",
-        "docs"
+        "dist"
     ],
     "devDependencies": {
         "@babel/core": "^7.11.1",

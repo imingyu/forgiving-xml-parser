@@ -57,7 +57,17 @@ const json = parse('...');
 const { parse, serialize, parseResultToJSON, FxParser } = require("forgiving-xml-parser");
 
 const xml = `<p>hi xml</p>`;
-const json = parseResultToJSON(parse(xml)); // { "nodes": [{ "type": "element", "name": "p", "children": [{ "type": "text", "content": "hi xml" }] }] }
+const json = parseResultToJSON(parse(xml), {
+    allowAttrContentHasBr: true,
+    allowNodeNameEmpty: true,
+    allowNodeNotClose: true,
+    allowStartTagBoundaryNearSpace: true,
+    allowEndTagBoundaryNearSpace: true,
+    allowTagNameHasSpace: true,
+    allowNearAttrEqualSpace: true,
+    ignoreTagNameCaseEqual: false,
+    onEvent(type, context, data) {},
+}); // { "nodes": [{ "type": "element", "name": "p", "children": [{ "type": "text", "content": "hi xml" }] }] }
 
 serialize(json); // <p>hi xml</p>
 
