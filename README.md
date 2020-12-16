@@ -7,6 +7,8 @@ Enligsh | [简体中文](./README.zh-CN.md)
 
 An XML/HTML parser and serializer for JavaScript. [Playground](https://imingyu.github.io/forgiving-xml-parser/)
 
+![ad](./docs/img/ad.png)
+
 # Features
 
 -   Transform XML/HTML to JSON(carry code locationInfo or parse steps)
@@ -52,12 +54,7 @@ const json = parse('...');
 -   3.use
 
 ```javascript
-const {
-    parse,
-    serialize,
-    parseResultToJSON,
-    LxParser,
-} = require("forgiving-xml-parser");
+const { parse, serialize, parseResultToJSON, LxParser } = require("forgiving-xml-parser");
 
 const xml = `<p>hi xml</p>`;
 const json = parseResultToJSON(parse(xml)); // { "nodes": [{ "type": "element", "name": "p", "children": [{ "type": "text", "content": "hi xml" }] }] }
