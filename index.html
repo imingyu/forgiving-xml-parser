@@ -238,8 +238,8 @@
             <h3>名词术语&事件触发时机</h3>
             <img class="legend" src="./legend.png" alt="" />
         </div>
-        <!-- <script src="./parser.js"></script> -->
-        <script src="./dist/index.umd.js"></script>
+        <script src="./parser.js"></script>
+        <!-- <script src="./dist/index.umd.js"></script> -->
         <script src="./jquery.min.js"></script>
         <script>
             var require = {
@@ -369,17 +369,17 @@
                     if (json && json.nodes && json.nodes.length) {
                         setXml(
                             ForgivingXmlParser.serialize(json.nodes, {
-                                nodeSerializeHandler(
-                                    node,
-                                    bs,
-                                    rs,
-                                    rs2,
-                                    parent,
-                                    ad,
-                                    str
-                                ) {
-                                    return node.type === "attr" ? "333" : str;
-                                },
+                                // nodeSerializeHandler(
+                                //     node,
+                                //     bs,
+                                //     rs,
+                                //     rs2,
+                                //     parent,
+                                //     ad,
+                                //     str
+                                // ) {
+                                //     return node.type === "attr" ? "333" : str;
+                                // },
                             })
                         );
                     } else {
