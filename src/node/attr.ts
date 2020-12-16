@@ -1,5 +1,10 @@
 import { boundStepsToContext } from "../option";
-import { ATTR_CONTENT_HAS_BR, ATTR_EQUAL_NEAR_SPACE, ATTR_HAS_MORE_EQUAL, ATTR_NAME_IS_EMPTY } from "../message";
+import {
+    ATTR_CONTENT_HAS_BR,
+    ATTR_EQUAL_NEAR_SPACE,
+    ATTR_HAS_MORE_EQUAL,
+    ATTR_NAME_IS_EMPTY,
+} from "../message";
 import { checkOptionAllow, computeOption, isTrueOption } from "../option";
 import {
     FxAttrMoreEqualDisposal,
@@ -15,8 +20,19 @@ import {
     FxParseContext,
     FxParseOptions,
     FxTryStep,
+    FxNodeSerializer,
+    FxSerializeOptions,
 } from "../types";
-import { createFxError, currentIsLineBreak, equalCursor, ignoreSpaceFindCharCursor, moveCursor, notSpaceCharCursor, pushStep, repeatString } from "../util";
+import {
+    createFxError,
+    currentIsLineBreak,
+    equalCursor,
+    ignoreSpaceFindCharCursor,
+    moveCursor,
+    notSpaceCharCursor,
+    pushStep,
+    repeatString,
+} from "../util";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 const checkAttrsEnd = (xml: string, cursor: FxCursorPosition): number => {
     const nextChar = xml[cursor.offset + 1];
@@ -86,7 +102,11 @@ export const tryParseAttrs = (
     return steps;
 };
 
-const equalAttrBoundaryChar = (xml: string, cursor: FxCursorPosition, boundaryChar: string | RegExp) => {
+const equalAttrBoundaryChar = (
+    xml: string,
+    cursor: FxCursorPosition,
+    boundaryChar: string | RegExp
+) => {
     if (!boundaryChar) {
         return false;
     }
@@ -98,7 +118,11 @@ const equalAttrBoundaryChar = (xml: string, cursor: FxCursorPosition, boundaryCh
     return str.substr(0, boundaryChar.length) === boundaryChar;
 };
 
-const getAttrBoundaryChar = (xml: string, boundaryCharMatch: string | RegExp, cursor: FxCursorPosition): string => {
+const getAttrBoundaryChar = (
+    xml: string,
+    boundaryCharMatch: string | RegExp,
+    cursor: FxCursorPosition
+): string => {
     let boundaryValue: string;
     const subXml = xml.substr(cursor.offset);
     if (boundaryCharMatch instanceof RegExp) {
@@ -113,7 +137,13 @@ const getAttrBoundaryChar = (xml: string, boundaryCharMatch: string | RegExp, cu
 };
 
 // 解析单个属性，如果在attrEnd后即将遇到attrsEnd，则返回“break”
-export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodeParser: FxNodeAdapter, options: FxParseOptions, steps: FxTryStep[]) => {
+export const tryParseAttr = (
+    xml: string,
+    cursor: FxCursorPosition,
+    parentNodeParser: FxNodeAdapter,
+    options: FxParseOptions,
+    steps: FxTryStep[]
+) => {
     const xmlLength = xml.length;
     let content: string;
     let findTarget: FxParseAttrTarget; // 表示正在寻找某目标，而不是当前已经是某目标
@@ -143,7 +173,9 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
         }
         pushStep(steps, FxEventType.nodeEnd, cursor, [
             AttrParser,
-            findTarget === FxParseAttrTarget.name || findTarget === FxParseAttrTarget.content ? FxNodeCloseType.fullClosed : FxNodeCloseType.notClosed,
+            findTarget === FxParseAttrTarget.name || findTarget === FxParseAttrTarget.content
+                ? FxNodeCloseType.fullClosed
+                : FxNodeCloseType.notClosed,
         ]);
         clear();
     };
@@ -168,7 +200,15 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
             if (nextValidChar === "=") {
                 if (
                     !equalCursor(nextCursor, nextValidCharCursor) &&
-                    !checkOptionAllow(options, "allowNearAttrEqualSpace", DEFAULT_PARSE_OPTIONS.allowNearAttrEqualSpace, null, xml, nextCursor, AttrParser)
+                    !checkOptionAllow(
+                        options,
+                        "allowNearAttrEqualSpace",
+                        DEFAULT_PARSE_OPTIONS.allowNearAttrEqualSpace,
+                        null,
+                        xml,
+                        nextCursor,
+                        AttrParser
+                    )
                 ) {
                     throw createFxError(ATTR_EQUAL_NEAR_SPACE, nextCursor);
                 }
@@ -177,7 +217,13 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
                 findTarget = FxParseAttrTarget.equal;
                 return false;
             }
-            if (equalAttrBoundaryChar(xml, nextValidCharCursor, parentNodeParser.attrLeftBoundaryChar)) {
+            if (
+                equalAttrBoundaryChar(
+                    xml,
+                    nextValidCharCursor,
+                    parentNodeParser.attrLeftBoundaryChar
+                )
+            ) {
                 fireAttrEnd(true);
                 return true;
             }
@@ -195,7 +241,14 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
         if (findTarget === FxParseAttrTarget.leftBoundary) {
             const nextValidChar = xml[nextValidCharCursor.offset];
             if (nextValidChar === "=") {
-                const encounterAttrMoreEqual = computeOption(options, "encounterAttrMoreEqual", DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual, xml, nextValidCharCursor, AttrParser);
+                const encounterAttrMoreEqual = computeOption(
+                    options,
+                    "encounterAttrMoreEqual",
+                    DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual,
+                    xml,
+                    nextValidCharCursor,
+                    AttrParser
+                );
                 if (encounterAttrMoreEqual === FxAttrMoreEqualDisposal.newAttr) {
                     fireAttrEnd();
                     return true;
@@ -205,8 +258,17 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
         }
         if (findTarget === FxParseAttrTarget.content) {
             if (leftBoundaryValue) {
-                const boundaryValue = getAttrBoundaryChar(xml, parentNodeParser.attrRightBoundaryChar, nextValidCharCursor);
-                if (boundaryValue && (parentNodeParser.attrBoundaryCharNeedEqual ? leftBoundaryValue === boundaryValue : true)) {
+                const boundaryValue = getAttrBoundaryChar(
+                    xml,
+                    parentNodeParser.attrRightBoundaryChar,
+                    nextValidCharCursor
+                );
+                if (
+                    boundaryValue &&
+                    (parentNodeParser.attrBoundaryCharNeedEqual
+                        ? leftBoundaryValue === boundaryValue
+                        : true)
+                ) {
                     pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
                 }
             } else {
@@ -232,7 +294,15 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
         );
         if (
             REX_SPACE.test(xml[nextCursor.offset]) &&
-            !checkOptionAllow(options, "allowNearAttrEqualSpace", DEFAULT_PARSE_OPTIONS.allowNearAttrEqualSpace, null, xml, nextCursor, AttrParser)
+            !checkOptionAllow(
+                options,
+                "allowNearAttrEqualSpace",
+                DEFAULT_PARSE_OPTIONS.allowNearAttrEqualSpace,
+                null,
+                xml,
+                nextCursor,
+                AttrParser
+            )
         ) {
             throw createFxError(ATTR_EQUAL_NEAR_SPACE, nextCursor);
         }
@@ -266,7 +336,17 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
         }
         if (char === "=") {
             if (!findTarget) {
-                if (!checkOptionAllow(options, "allowNodeNameEmpty", DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty, null, xml, cursor, AttrParser)) {
+                if (
+                    !checkOptionAllow(
+                        options,
+                        "allowNodeNameEmpty",
+                        DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
+                        null,
+                        xml,
+                        cursor,
+                        AttrParser
+                    )
+                ) {
                     throw createFxError(ATTR_NAME_IS_EMPTY, cursor);
                 }
                 pushStep(steps, FxEventType.nodeStart, cursor, AttrParser);
@@ -288,7 +368,14 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
                 continue;
             }
             if (findTarget === FxParseAttrTarget.leftBoundary) {
-                const encounterAttrMoreEqual = computeOption(options, "encounterAttrMoreEqual", DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual, xml, cursor, AttrParser);
+                const encounterAttrMoreEqual = computeOption(
+                    options,
+                    "encounterAttrMoreEqual",
+                    DEFAULT_PARSE_OPTIONS.encounterAttrMoreEqual,
+                    xml,
+                    cursor,
+                    AttrParser
+                );
                 if (encounterAttrMoreEqual === FxAttrMoreEqualDisposal.throwError) {
                     throw createFxError(ATTR_HAS_MORE_EQUAL, cursor);
                 }
@@ -308,11 +395,24 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
             }
             continue;
         }
-        const boundaryCharMatch = findTarget === FxParseAttrTarget.content ? parentNodeParser.attrRightBoundaryChar : parentNodeParser.attrLeftBoundaryChar;
+        const boundaryCharMatch =
+            findTarget === FxParseAttrTarget.content
+                ? parentNodeParser.attrRightBoundaryChar
+                : parentNodeParser.attrLeftBoundaryChar;
         const boundaryValue = getAttrBoundaryChar(xml, boundaryCharMatch, cursor);
         if (boundaryValue) {
             if (!findTarget) {
-                if (!checkOptionAllow(options, "allowNodeNameEmpty", DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty, null, xml, cursor, AttrParser)) {
+                if (
+                    !checkOptionAllow(
+                        options,
+                        "allowNodeNameEmpty",
+                        DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
+                        null,
+                        xml,
+                        cursor,
+                        AttrParser
+                    )
+                ) {
                     throw createFxError(ATTR_NAME_IS_EMPTY, cursor);
                 }
                 pushStep(steps, FxEventType.nodeStart, cursor, AttrParser);
@@ -337,10 +437,18 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
                 }
                 continue;
             }
-            if (findTarget === FxParseAttrTarget.content && (parentNodeParser.attrBoundaryCharNeedEqual ? leftBoundaryValue === boundaryValue : true)) {
+            if (
+                findTarget === FxParseAttrTarget.content &&
+                (parentNodeParser.attrBoundaryCharNeedEqual
+                    ? leftBoundaryValue === boundaryValue
+                    : true)
+            ) {
                 pushStep(steps, FxEventType.attrRightBoundary, cursor, boundaryValue);
                 moveCursor(cursor, 0, boundaryValue.length - 1, boundaryValue.length - 1);
-                pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, FxNodeCloseType.fullClosed]);
+                pushStep(steps, FxEventType.nodeEnd, cursor, [
+                    AttrParser,
+                    FxNodeCloseType.fullClosed,
+                ]);
                 clear();
                 checkAttrEnd();
                 return returnEnd();
@@ -382,12 +490,18 @@ export const tryParseAttr = (xml: string, cursor: FxCursorPosition, parentNodePa
             pushStep(steps, FxEventType.nodeNameEnd, cursor, content);
             pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, FxNodeCloseType.fullClosed]);
         } else if (findTarget === FxParseAttrTarget.equal) {
-            pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [AttrParser, FxNodeCloseType.fullClosed]);
+            pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [
+                AttrParser,
+                FxNodeCloseType.fullClosed,
+            ]);
         } else if (findTarget === FxParseAttrTarget.leftBoundary) {
             pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, FxNodeCloseType.notClosed]);
         } else if (findTarget === FxParseAttrTarget.content) {
             pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
-            pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [AttrParser, leftBoundaryValue ? FxNodeCloseType.notClosed : FxNodeCloseType.fullClosed]);
+            pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [
+                AttrParser,
+                leftBoundaryValue ? FxNodeCloseType.notClosed : FxNodeCloseType.fullClosed,
+            ]);
         }
         attrsEnd = true;
     }
@@ -408,10 +522,43 @@ export const AttrParser: FxNodeAdapter = {
         return currentNode.type === FxNodeType.attr;
     },
     serialize(attr: FxNodeJSON): string {
-        let [leftBoundary, rightBoundary] = Array.isArray(attr.boundaryChar) ? attr.boundaryChar : [attr.boundaryChar || "", attr.boundaryChar || ""];
+        let [leftBoundary, rightBoundary] = Array.isArray(attr.boundaryChar)
+            ? attr.boundaryChar
+            : [attr.boundaryChar || "", attr.boundaryChar || ""];
         rightBoundary = rightBoundary || leftBoundary;
-        return `${attr.name || ""}${repeatString("=", attr.equalCount)}${leftBoundary}${attr.content || ""}${
-            !attr.closeType || attr.closeType === FxNodeCloseType.fullClosed ? rightBoundary : ""
-        }`;
+        return `${attr.name || ""}${repeatString("=", attr.equalCount)}${leftBoundary}${
+            attr.content || ""
+        }${!attr.closeType || attr.closeType === FxNodeCloseType.fullClosed ? rightBoundary : ""}`;
     },
+};
+
+export const serializeNodeAttrs = (
+    node: FxNodeJSON,
+    rootNodes: FxNodeJSON[],
+    rootSerializer: FxNodeSerializer,
+    options: FxSerializeOptions
+): string => {
+    if (node.attrs && node.attrs.length) {
+        return (
+            " " +
+            node.attrs
+                .map((attr) => {
+                    let attrStr = AttrParser.serialize(
+                        attr,
+                        node.attrs,
+                        rootNodes,
+                        rootSerializer,
+                        options,
+                        node
+                    );
+                    if (typeof options.nodeSerializeHandler === "function") {
+                        attrStr =
+                            options.nodeSerializeHandler(node, AttrParser, attrStr) || attrStr;
+                    }
+                    return attrStr;
+                })
+                .join(" ")
+        );
+    }
+    return "";
 };

@@ -23,7 +23,7 @@ import {
     FxTagType,
     FxTryStep,
 } from "../types";
-import { AttrParser, tryParseAttrs } from "./attr";
+import { serializeNodeAttrs, tryParseAttrs } from "./attr";
 import { DEFAULT_PARSE_OPTIONS } from "src/var";
 import { checkOptionAllow } from "src/option";
 import { BOUNDARY_HAS_SPACE, TAG_NAME_IS_EMPTY } from "src/message";
@@ -70,21 +70,13 @@ export const tryParsePI = (
                 nodeName
             )
         ) {
-            return pushStep(
-                steps,
-                FxEventType.error,
-                expectStartTagEndCursor,
-                BOUNDARY_HAS_SPACE
-            );
+            return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);
         }
     }
     Object.assign(cursor, startTagEndCursor);
     moveCursor(cursor, 0, 1, 1);
     if (nodeName) {
-        const fullNodeName = xml.substring(
-            cursor.offset,
-            mockCursor.offset + 1
-        );
+        const fullNodeName = xml.substring(cursor.offset, mockCursor.offset + 1);
         if (fullNodeName !== nodeName) {
             if (
                 !checkOptionAllow(
@@ -99,21 +91,12 @@ export const tryParsePI = (
                     FxTagType.startTag
                 )
             ) {
-                return pushStep(
-                    steps,
-                    FxEventType.error,
-                    cursor,
-                    BOUNDARY_HAS_SPACE
-                );
+                return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
             }
             pushStep(steps, FxEventType.nodeNameStart, cursor);
             pushStep(steps, FxEventType.nodeNameEnd, mockCursor, fullNodeName);
         } else {
-            pushStep(
-                steps,
-                FxEventType.nodeNameStart,
-                firstAttrSteps[0].cursor
-            );
+            pushStep(steps, FxEventType.nodeNameStart, firstAttrSteps[0].cursor);
             pushStep(steps, FxEventType.nodeNameEnd, mockCursor, nodeName);
         }
         Object.assign(cursor, mockCursor);
@@ -129,22 +112,12 @@ export const tryParsePI = (
             ProcessingInstructionParser
         )
     ) {
-        return pushStep(
-            steps,
-            FxEventType.error,
-            startTagEndCursor,
-            TAG_NAME_IS_EMPTY
-        );
+        return pushStep(steps, FxEventType.error, startTagEndCursor, TAG_NAME_IS_EMPTY);
     }
 
     // 开始解析属性
     pushStep(steps, FxEventType.attrsStart, cursor);
-    const attrSteps = tryParseAttrs(
-        xml,
-        cursor,
-        ProcessingInstructionParser,
-        options
-    );
+    const attrSteps = tryParseAttrs(xml, cursor, ProcessingInstructionParser, options);
     steps = steps.concat(attrSteps);
 
     pushStep(steps, FxEventType.attrsEnd, cursor);
@@ -213,20 +186,7 @@ export const ProcessingInstructionParser: FxNodeAdapter = {
         if (node.name) {
             res += node.name;
         }
-        if (node.attrs && node.attrs.length) {
-            node.attrs.forEach((attr) => {
-                res +=
-                    " " +
-                    AttrParser.serialize(
-                        attr,
-                        node.attrs,
-                        rootNodes,
-                        rootSerializer,
-                        options,
-                        node
-                    );
-            });
-        }
+        serializeNodeAttrs(node, rootNodes, rootSerializer, options);
         if (!node.closeType || node.closeType === FxNodeCloseType.fullClosed) {
             res += `?>`;
         }

@@ -26,15 +26,9 @@ export const serialize = (
     ) => {
         let xml = "";
         nodes.forEach((node) => {
-            let serializer = findNodeSerializer(
-                node,
-                nodes,
-                rootNodes,
-                options,
-                parentNode
-            );
+            let serializer = findNodeSerializer(node, nodes, rootNodes, options, parentNode);
             serializer = serializer || TextParser;
-            xml += serializer.serialize(
+            let res = serializer.serialize(
                 node,
                 nodes,
                 rootNodes,
@@ -42,6 +36,12 @@ export const serialize = (
                 options,
                 parentNode
             );
+            if (typeof options.nodeSerializeHandler === "function") {
+                res = options.nodeSerializeHandler(node, serializer, res) || res;
+            }
+            if (res) {
+                xml += res;
+            }
         });
         return xml;
     };

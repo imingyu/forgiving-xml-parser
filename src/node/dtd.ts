@@ -34,7 +34,7 @@ import {
     TAG_NAME_NEAR_SPACE,
     TAG_NOT_CLOSE,
 } from "../message";
-import { AttrParser, tryParseAttrs } from "./attr";
+import { AttrParser, serializeNodeAttrs, tryParseAttrs } from "./attr";
 import { boundStepsToContext } from "../option";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
@@ -80,21 +80,13 @@ export const tryParseDtdStartTag = (
                 nodeName
             )
         ) {
-            return pushStep(
-                steps,
-                FxEventType.error,
-                expectStartTagEndCursor,
-                BOUNDARY_HAS_SPACE
-            );
+            return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);
         }
     }
     Object.assign(cursor, startTagEndCursor);
     moveCursor(cursor, 0, 1, 1);
     if (nodeName) {
-        const fullNodeName = xml.substring(
-            cursor.offset,
-            mockCursor.offset + 1
-        );
+        const fullNodeName = xml.substring(cursor.offset, mockCursor.offset + 1);
         if (fullNodeName !== nodeName) {
             if (
                 !checkOptionAllow(
@@ -109,21 +101,12 @@ export const tryParseDtdStartTag = (
                     FxTagType.startTag
                 )
             ) {
-                return pushStep(
-                    steps,
-                    FxEventType.error,
-                    cursor,
-                    BOUNDARY_HAS_SPACE
-                );
+                return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
             }
             pushStep(steps, FxEventType.nodeNameStart, cursor);
             pushStep(steps, FxEventType.nodeNameEnd, mockCursor, fullNodeName);
         } else {
-            pushStep(
-                steps,
-                FxEventType.nodeNameStart,
-                firstAttrSteps[0].cursor
-            );
+            pushStep(steps, FxEventType.nodeNameStart, firstAttrSteps[0].cursor);
             pushStep(steps, FxEventType.nodeNameEnd, mockCursor, nodeName);
         }
         Object.assign(cursor, mockCursor);
@@ -139,12 +122,7 @@ export const tryParseDtdStartTag = (
             DtdParser
         )
     ) {
-        return pushStep(
-            steps,
-            FxEventType.error,
-            startTagEndCursor,
-            TAG_NAME_IS_EMPTY
-        );
+        return pushStep(steps, FxEventType.error, startTagEndCursor, TAG_NAME_IS_EMPTY);
     }
 
     // 开始解析属性
@@ -156,11 +134,7 @@ export const tryParseDtdStartTag = (
     const xmlLength = xml.length;
     if (cursor.offset < xmlLength - 1) {
         for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
-            const startTagEndCursor = DtdParser.checkAttrsEnd(
-                xml,
-                cursor,
-                options
-            );
+            const startTagEndCursor = DtdParser.checkAttrsEnd(xml, cursor, options);
             if (startTagEndCursor) {
                 Object.assign(cursor, startTagEndCursor);
                 pushStep(steps, FxEventType.startTagEnd, cursor);
@@ -186,8 +160,7 @@ export const tryParseDtdEndTag = (
     endTagStartCursor?: FxCursorPosition
 ): FxTryStep[] => {
     let steps: FxTryStep[] = [];
-    endTagStartCursor =
-        endTagStartCursor || ignoreSpaceIsHeadTail(xml, cursor, "]", ">");
+    endTagStartCursor = endTagStartCursor || ignoreSpaceIsHeadTail(xml, cursor, "]", ">");
     pushStep(steps, FxEventType.endTagStart, cursor);
     const nextCursor: FxCursorPosition = {
         lineNumber: cursor.lineNumber,
@@ -206,12 +179,7 @@ export const tryParseDtdEndTag = (
                 DtdParser
             )
         ) {
-            return pushStep(
-                steps,
-                FxEventType.error,
-                cursor,
-                BOUNDARY_HAS_SPACE
-            );
+            return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
         }
     }
     Object.assign(cursor, endTagStartCursor);
@@ -226,11 +194,7 @@ export const DtdParser: FxNodeAdapter = {
     attrLeftBoundaryChar: /^'|^"|^\(/,
     attrRightBoundaryChar: /^'|^"|^\)/,
     parseMatch: /^<\s*\!|^>|^\]\s*>/,
-    allowNodeNotClose: (
-        node: FxNode,
-        context: FxParseContext,
-        parser: FxNodeAdapter
-    ): boolean => {
+    allowNodeNotClose: (node: FxNode, context: FxParseContext, parser: FxNodeAdapter): boolean => {
         if (node.type === FxNodeType.dtd && !node.parent) {
         }
         return true;
@@ -243,12 +207,7 @@ export const DtdParser: FxNodeAdapter = {
     },
     parse(context: FxParseContext) {
         let steps: FxTryStep[];
-        const endTagStartCursor = ignoreSpaceIsHeadTail(
-            context.xml,
-            toCursor(context),
-            "]",
-            ">"
-        );
+        const endTagStartCursor = ignoreSpaceIsHeadTail(context.xml, toCursor(context), "]", ">");
         if (endTagStartCursor) {
             // 解析endTag
             steps = tryParseDtdEndTag(
@@ -263,24 +222,13 @@ export const DtdParser: FxNodeAdapter = {
             );
             const lastStep = steps[steps.length - 1];
             if (lastStep.step !== FxEventType.error) {
-                const matchStartTagLevel = findStartTagLevel(
-                    steps,
-                    context,
-                    (node: FxNode) => {
-                        return !!(
-                            node.type === FxNodeType.dtd && node.children
-                        );
-                    }
-                );
+                const matchStartTagLevel = findStartTagLevel(steps, context, (node: FxNode) => {
+                    return !!(node.type === FxNodeType.dtd && node.children);
+                });
                 if (matchStartTagLevel === -1) {
                     const cursor = steps[0].cursor;
                     steps = [];
-                    pushStep(
-                        steps,
-                        FxEventType.error,
-                        cursor,
-                        END_TAG_NOT_MATCH_START
-                    );
+                    pushStep(steps, FxEventType.error, cursor, END_TAG_NOT_MATCH_START);
                 } else if (matchStartTagLevel > 0) {
                     const firstStep = steps[0];
                     let node: FxNode;
@@ -288,31 +236,18 @@ export const DtdParser: FxNodeAdapter = {
                         node = node ? node.parent : context.currentNode;
                         const nodeLastStep = node.children
                             ? node.children[node.children.length - 1].steps[
-                                  node.children[node.children.length - 1].steps
-                                      .length - 1
+                                  node.children[node.children.length - 1].steps.length - 1
                               ]
                             : node.steps[node.steps.length - 1];
                         const nodeFirstStep = node.steps[0];
-                        if (
-                            !checkAllowNodeNotClose(node, context, node.parser)
-                        ) {
-                            pushStep(
-                                steps,
-                                FxEventType.error,
-                                firstStep.cursor,
-                                TAG_NOT_CLOSE
-                            );
+                        if (!checkAllowNodeNotClose(node, context, node.parser)) {
+                            pushStep(steps, FxEventType.error, firstStep.cursor, TAG_NOT_CLOSE);
                             break;
                         }
-                        pushStep(
-                            node.steps,
-                            FxEventType.nodeEnd,
-                            nodeLastStep.cursor,
-                            [
-                                nodeFirstStep.data[0],
-                                FxNodeCloseType.startTagClosed,
-                            ]
-                        );
+                        pushStep(node.steps, FxEventType.nodeEnd, nodeLastStep.cursor, [
+                            nodeFirstStep.data[0],
+                            FxNodeCloseType.startTagClosed,
+                        ]);
                     }
                 }
             }
@@ -344,27 +279,11 @@ export const DtdParser: FxNodeAdapter = {
         if (node.name) {
             res += node.name;
         }
-        if (node.attrs && node.attrs.length) {
-            node.attrs.forEach((attr) => {
-                res +=
-                    " " +
-                    AttrParser.serialize(
-                        attr,
-                        node.attrs,
-                        rootNodes,
-                        rootSerializer,
-                        options,
-                        node
-                    );
-            });
-        }
+        serializeNodeAttrs(node, rootNodes, rootSerializer, options);
         if (node.children && node.children.length) {
             res += "[";
             res += rootSerializer(node.children, options, node);
-            if (
-                !node.closeType ||
-                node.closeType === FxNodeCloseType.fullClosed
-            ) {
+            if (!node.closeType || node.closeType === FxNodeCloseType.fullClosed) {
                 res += `]>`;
             }
         } else {

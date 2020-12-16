@@ -24,7 +24,6 @@ export const boundStepsToContext = (
     context?: FxParseContext,
     loopCallback?: FxBoundStepsLoopCallback
 ): FxNode[] => {
-    console.log(steps);
     let noContext;
     if (!context) {
         noContext = true;
@@ -49,9 +48,7 @@ export const boundStepsToContext = (
                     if (!context.currentNode.locationInfo.attrs) {
                         context.currentNode.locationInfo.attrs = [];
                     }
-                    context.currentNode.locationInfo.attrs.push(
-                        node.locationInfo
-                    );
+                    context.currentNode.locationInfo.attrs.push(node.locationInfo);
                 } else {
                     if (!context.currentNode.children) {
                         context.currentNode.children = [];
@@ -97,18 +94,11 @@ export const boundStepsToContext = (
             }
         } else if (step === FxEventType.startTagEnd) {
             if (context.currentNode) {
-                if (
-                    Array.isArray(data) &&
-                    (data[1] as FxNodeCloseType) in FxNodeCloseType
-                ) {
+                if (Array.isArray(data) && (data[1] as FxNodeCloseType) in FxNodeCloseType) {
                     context.currentNode.closeType = data[1] as FxNodeCloseType;
                 }
                 context.currentNode.steps.push(currentStepItem);
-                setNodeLocationByCursor(
-                    context.currentNode.locationInfo,
-                    cursor,
-                    "startTag"
-                );
+                setNodeLocationByCursor(context.currentNode.locationInfo, cursor, "startTag");
             }
         } else if (step === FxEventType.nodeContentEnd) {
             if (data && context.currentNode) {
@@ -127,19 +117,12 @@ export const boundStepsToContext = (
         } else if (step === FxEventType.endTagEnd) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
-                setNodeLocationByCursor(
-                    context.currentNode.locationInfo,
-                    cursor,
-                    "endTag"
-                );
+                setNodeLocationByCursor(context.currentNode.locationInfo, cursor, "endTag");
             }
         } else if (step === FxEventType.nodeEnd) {
             setContextMaxCursor(context, cursor);
             if (context.currentNode) {
-                setNodeLocationByCursor(
-                    context.currentNode.locationInfo,
-                    cursor
-                );
+                setNodeLocationByCursor(context.currentNode.locationInfo, cursor);
                 if (
                     Array.isArray(data) &&
                     data[1] &&
@@ -147,10 +130,8 @@ export const boundStepsToContext = (
                 ) {
                     if (
                         !(
-                            context.currentNode.closeType ===
-                                FxNodeCloseType.startTagClosed &&
-                            (data[1] as FxNodeCloseType) ===
-                                FxNodeCloseType.notClosed
+                            context.currentNode.closeType === FxNodeCloseType.startTagClosed &&
+                            (data[1] as FxNodeCloseType) === FxNodeCloseType.notClosed
                         )
                     ) {
                         context.currentNode.closeType = data[1] as FxNodeCloseType;
@@ -164,8 +145,7 @@ export const boundStepsToContext = (
                 }
             }
         } else {
-            context.currentNode &&
-                context.currentNode.steps.push(currentStepItem);
+            context.currentNode && context.currentNode.steps.push(currentStepItem);
         }
         if (!noContext) {
             Object.assign(context, cursor);
@@ -199,19 +179,12 @@ export const addWarn = (context: FxParseContext, warn: FxWrong | FxMessage) => {
     context.warnings.push(tsWarn);
 };
 
-export const fireEvent = (
-    type: FxEventType,
-    context: FxParseContext,
-    data: FxNode | FxWrong
-) => {
+export const fireEvent = (type: FxEventType, context: FxParseContext, data: FxNode | FxWrong) => {
     context.options &&
         typeof context.options.onEvent === "function" &&
         context.options.onEvent(type, context, data);
 };
-export function isTrueOption(
-    prop: FxParseOptionsKeys,
-    options?: FxParseOptions
-): boolean {
+export function isTrueOption(prop: FxParseOptionsKeys, options?: FxParseOptions): boolean {
     return !!(options && options[prop]);
 }
 
@@ -278,15 +251,10 @@ export const checkAllowNodeNotClose = (
     context: FxParseContext,
     parser: FxNodeAdapter
 ) => {
-    if (
-        parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.allow
-    ) {
+    if (parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.allow) {
         return true;
     }
-    if (
-        parser.allowNodeNotClose ===
-        FxNodeParserAllowNodeNotCloseOption.notAllow
-    ) {
+    if (parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.notAllow) {
         return false;
     }
     if (typeof parser.allowNodeNotClose === "function") {
@@ -299,11 +267,7 @@ export const checkAllowNodeNotClose = (
         return context.options.allowNodeNotClose.test(onlyAnteriorNode.name);
     }
     if (typeof context.options.allowNodeNotClose === "function") {
-        return context.options.allowNodeNotClose(
-            onlyAnteriorNode,
-            context,
-            parser
-        );
+        return context.options.allowNodeNotClose(onlyAnteriorNode, context, parser);
     }
     return !!context.options.allowNodeNotClose;
 };

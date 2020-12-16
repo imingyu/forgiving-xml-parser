@@ -1,6 +1,6 @@
 {
     "name": "forgiving-xml-parser",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "An forgiving XML/HTML parser and serializer for JavaScript.",
     "main": "dist/index.cjs.js",
     "module": "dist/index.esm.js",

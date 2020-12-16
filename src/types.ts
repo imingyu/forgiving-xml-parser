@@ -43,10 +43,7 @@ export declare type FxPick<T, K extends keyof T> = {
     [P in K]: T[P];
 };
 export declare type FxExclude<T, U> = T extends U ? never : T;
-export declare type FxOmit<T, K extends keyof any> = FxPick<
-    T,
-    FxExclude<keyof T, K>
->;
+export declare type FxOmit<T, K extends keyof any> = FxPick<T, FxExclude<keyof T, K>>;
 export interface FxWrong extends FxMessage, FxCursorPosition {
     fragment?: string;
     detail?: string;
@@ -57,8 +54,14 @@ export interface FxMessage {
     code: number;
     message: string;
 }
-export interface FxSerializeOptions {
+
+export interface FxNodeSerializeHandler {
+    (node: FxNodeJSON, adapter: FxNodeAdapter, serializeResult: string): string;
+}
+export interface FxSerializeBaseOptions {}
+export interface FxSerializeOptions extends FxSerializeBaseOptions {
     nodeAdapters?: FxNodeAdapter[];
+    nodeSerializeHandler?: FxNodeSerializeHandler;
 }
 export interface FxParseContext extends FxCursorPosition {
     xmlLength: number;
@@ -120,11 +123,7 @@ export interface FxOptionChecker {
     (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): boolean;
 }
 export interface FxEqualNameChecker {
-    (
-        endTagName: string,
-        nodeAnterior: FxNode,
-        context: FxParseContext
-    ): boolean;
+    (endTagName: string, nodeAnterior: FxNode, context: FxParseContext): boolean;
 }
 export interface FxOptionDisposal<T> {
     (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): T;
@@ -134,31 +133,15 @@ export enum FxTagType {
     endTag = "endTag",
 }
 export interface FxAllowNearTagBoundarySpace {
-    (
-        xml: string,
-        cursor: FxCursorPosition,
-        parser: FxNodeAdapter,
-        tagName?: string
-    ): boolean;
+    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter, tagName?: string): boolean;
 }
 export interface FxAllowTagNameHasSpace {
-    (
-        xml: string,
-        cursor: FxCursorPosition,
-        tagName: string,
-        tagType: FxTagType
-    ): boolean;
+    (xml: string, cursor: FxCursorPosition, tagName: string, tagType: FxTagType): boolean;
 }
 export interface FxParseBaseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
-    allowStartTagBoundaryNearSpace?:
-        | boolean
-        | RegExp
-        | FxAllowNearTagBoundarySpace;
-    allowEndTagBoundaryNearSpace?:
-        | boolean
-        | RegExp
-        | FxAllowNearTagBoundarySpace;
+    allowStartTagBoundaryNearSpace?: boolean | RegExp | FxAllowNearTagBoundarySpace;
+    allowEndTagBoundaryNearSpace?: boolean | RegExp | FxAllowNearTagBoundarySpace;
     allowTagNameHasSpace?: boolean | RegExp | FxAllowTagNameHasSpace;
     // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     ignoreTagNameCaseEqual?: boolean | RegExp | FxEqualNameChecker;
@@ -171,9 +154,7 @@ export interface FxParseBaseOptions {
     // 是否允许属性等号附近存在空白字符
     allowNearAttrEqualSpace?: boolean | FxOptionChecker;
     // 当遇到属性中含有多个“=”时怎么处置？
-    encounterAttrMoreEqual?:
-        | FxAttrMoreEqualDisposal
-        | FxOptionDisposal<FxAttrMoreEqualDisposal>;
+    encounterAttrMoreEqual?: FxAttrMoreEqualDisposal | FxOptionDisposal<FxAttrMoreEqualDisposal>;
 }
 export interface FxParseOptions extends FxParseBaseOptions {
     onEvent?: FxEventHandler;
@@ -198,11 +179,7 @@ export interface FxNodeSerializeMatcher {
     ): boolean;
 }
 export interface FxNodeSerializer {
-    (
-        nodes: FxNodeJSON[],
-        options: FxSerializeOptions,
-        parentNode?: FxNodeJSON
-    ): string;
+    (nodes: FxNodeJSON[], options: FxSerializeOptions, parentNode?: FxNodeJSON): string;
 }
 
 export enum FxNodeParserAllowNodeNotCloseOption {
@@ -211,11 +188,7 @@ export enum FxNodeParserAllowNodeNotCloseOption {
     followParserOptions = "followParserOptions",
 }
 export interface FxAllowNodeNotCloseChecker {
-    (
-        onlyAnteriorNode: FxNode,
-        context: FxParseContext,
-        parser: FxNodeAdapter
-    ): boolean;
+    (onlyAnteriorNode: FxNode, context: FxParseContext, parser: FxNodeAdapter): boolean;
 }
 export interface FxNodeAdapter {
     nodeType: FxNodeType;
@@ -224,9 +197,7 @@ export interface FxNodeAdapter {
     attrLeftBoundaryChar?: string | RegExp;
     attrRightBoundaryChar?: string | RegExp;
     attrBoundaryCharNeedEqual?: boolean;
-    allowNodeNotClose?:
-        | FxNodeParserAllowNodeNotCloseOption
-        | FxAllowNodeNotCloseChecker;
+    allowNodeNotClose?: FxNodeParserAllowNodeNotCloseOption | FxAllowNodeNotCloseChecker;
     parseMatch: string | RegExp | FxNodeParserMatcher;
     parse(context: FxParseContext, parentNodeParser?: FxNodeAdapter);
     checkAttrsEnd?(
@@ -325,14 +296,11 @@ export interface FxElementEndTagInfo {
 }
 
 export interface FxStartTagCompare {
-    (
-        targetNode: FxNode,
-        context: FxParseContext,
-        endTagSteps: FxTryStep[]
-    ): boolean;
+    (targetNode: FxNode, context: FxParseContext, endTagSteps: FxTryStep[]): boolean;
 }
 
 export interface FxParserOptions {
     nodeAdapters?: FxNodeAdapter[];
     parseOptions?: FxParseBaseOptions;
+    serializeOptions?: FxSerializeBaseOptions;
 }

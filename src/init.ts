@@ -7,10 +7,11 @@ import {
     FxEventHandler,
     FxEventType,
     FxNodeJSON,
+    FxNodeSerializeHandler,
     FxParseOptions,
     FxParseResult,
     FxParserOptions,
-    FxSerializeOptions,
+    FxSerializeBaseOptions,
     FxToJSONOptions,
 } from "./types";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
@@ -28,7 +29,7 @@ DEFAULT_PARSE_OPTIONS.nodeAdapters = [...DEFAULT_NODE_PARSERS];
 export class FxParser {
     options: FxParserOptions;
     events: {
-        [p: string]: FxEventHandler[];
+        [p: string]: Array<FxEventHandler | FxNodeSerializeHandler>;
     };
     constructor(options?: FxParserOptions) {
         options = typeof options !== "object" || !options ? {} : options;
@@ -38,17 +39,13 @@ export class FxParser {
         if (typeof options.parseOptions !== "object" || !options.parseOptions) {
             options.parseOptions = Object.create(DEFAULT_PARSE_OPTIONS);
         } else {
-            options.parseOptions = Object.assign(
-                {},
-                DEFAULT_PARSE_OPTIONS,
-                options.parseOptions
-            );
+            options.parseOptions = Object.assign({}, DEFAULT_PARSE_OPTIONS, options.parseOptions);
         }
         this.options = options;
         this.events = {};
-        this._eventHandler = this._eventHandler.bind(this);
+        this._parseEventHandler = this._parseEventHandler.bind(this);
     }
-    _eventHandler(type: FxEventType) {
+    _parseEventHandler(type: FxEventType) {
         if (this.events[type]) {
             const args = Array.from(arguments);
             this.events[type].forEach((item) => {
@@ -56,7 +53,17 @@ export class FxParser {
             });
         }
     }
-    on(eventName: FxEventType, handler: FxEventHandler) {
+    _serializeEventHandler(): string {
+        let res = arguments[2];
+        if (this.events.serialize) {
+            const args = Array.from(arguments);
+            this.events.serialize.forEach((item) => {
+                res = item && item.apply(null, args);
+            });
+        }
+        return res;
+    }
+    on(eventName: FxEventType | "serialize", handler: FxEventHandler | FxNodeSerializeHandler) {
         if (!this.events[eventName]) {
             this.events[eventName] = [];
         }
@@ -66,33 +73,31 @@ export class FxParser {
         return parse(
             xml,
             Object.assign(
+                {},
+                this.options.parseOptions,
+                typeof parseOptions === "object" && parseOptions ? parseOptions : {},
                 {
                     nodeAdapters: [...this.options.nodeAdapters],
-                    onEvent: this._eventHandler,
-                },
-                this.options.parseOptions,
-                typeof parseOptions === "object" && parseOptions
-                    ? parseOptions
-                    : {}
+                    onEvent: this._parseEventHandler,
+                }
             )
         );
     }
     parseResultToJSON(parseResult: FxParseResult, options?: FxToJSONOptions) {
         return parseResultToJSON(parseResult, options);
     }
-    serialize(
-        json: FxNodeJSON | FxNodeJSON[],
-        serializeOptions?: FxSerializeOptions
-    ): string {
+    serialize(json: FxNodeJSON | FxNodeJSON[], serializeOptions?: FxSerializeBaseOptions): string {
         return serialize(
             json,
             Object.assign(
                 {
                     nodeAdapters: this.options.nodeAdapters,
+                    nodeSerializeHandler: this._serializeEventHandler,
                 },
-                typeof serializeOptions === "object" && serializeOptions
-                    ? serializeOptions
-                    : {}
+                typeof this.options.serializeOptions === "object" && this.options.serializeOptions
+                    ? this.options.serializeOptions
+                    : {},
+                typeof serializeOptions === "object" && serializeOptions ? serializeOptions : {}
             )
         );
     }
