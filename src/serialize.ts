@@ -37,7 +37,16 @@ export const serialize = (
                 parentNode
             );
             if (typeof options.nodeSerializeHandler === "function") {
-                res = options.nodeSerializeHandler(node, serializer, res) || res;
+                res =
+                    options.nodeSerializeHandler(
+                        node,
+                        nodes,
+                        rootNodes,
+                        rootSerialize,
+                        parentNode,
+                        serializer,
+                        res
+                    ) || res;
             }
             if (res) {
                 xml += res;

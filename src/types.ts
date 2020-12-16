@@ -56,7 +56,15 @@ export interface FxMessage {
 }
 
 export interface FxNodeSerializeHandler {
-    (node: FxNodeJSON, adapter: FxNodeAdapter, serializeResult: string): string;
+    (
+        currentNode: FxNodeJSON,
+        brotherNodes: FxNodeJSON[],
+        rootNodes: FxNodeJSON[],
+        rootSerializer: FxNodeSerializer,
+        parentNode: FxNodeJSON,
+        adapter: FxNodeAdapter,
+        serializeResult: string
+    ): string;
 }
 export interface FxSerializeBaseOptions {}
 export interface FxSerializeOptions extends FxSerializeBaseOptions {
@@ -212,7 +220,7 @@ export interface FxNodeAdapter {
         rootNodes: FxNodeJSON[],
         rootSerializer: FxNodeSerializer,
         options: FxSerializeOptions,
-        parentNode?: FxNodeJSON
+        parentNode: FxNodeJSON
     ): string;
 }
 export interface FxNodeParserMatcher {

@@ -553,7 +553,15 @@ export const serializeNodeAttrs = (
                     );
                     if (typeof options.nodeSerializeHandler === "function") {
                         attrStr =
-                            options.nodeSerializeHandler(node, AttrParser, attrStr) || attrStr;
+                            options.nodeSerializeHandler(
+                                attr,
+                                node.attrs,
+                                rootNodes,
+                                rootSerializer,
+                                node,
+                                AttrParser,
+                                attrStr
+                            ) || attrStr;
                     }
                     return attrStr;
                 })
