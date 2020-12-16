@@ -369,7 +369,15 @@
                     if (json && json.nodes && json.nodes.length) {
                         setXml(
                             ForgivingXmlParser.serialize(json.nodes, {
-                                nodeSerializeHandler(node, ad, str) {
+                                nodeSerializeHandler(
+                                    node,
+                                    bs,
+                                    rs,
+                                    rs2,
+                                    parent,
+                                    ad,
+                                    str
+                                ) {
                                     return node.type === "attr" ? "333" : str;
                                 },
                             })
