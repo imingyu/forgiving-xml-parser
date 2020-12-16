@@ -54,11 +54,12 @@ export class FxParser {
         }
     }
     _serializeEventHandler(): string {
-        let res = arguments[2];
+        let res = arguments[arguments.length - 1];
         if (this.events.serialize) {
             const args = Array.from(arguments);
             this.events.serialize.forEach((item) => {
-                res = item && item.apply(null, args);
+                res = (item && item.apply(null, args)) || res;
+                args[args.length - 1] = res;
             });
         }
         return res;
