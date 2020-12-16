@@ -279,7 +279,7 @@ export const DtdParser: FxNodeAdapter = {
         if (node.name) {
             res += node.name;
         }
-        serializeNodeAttrs(node, rootNodes, rootSerializer, options);
+        res += serializeNodeAttrs(node, rootNodes, rootSerializer, options);
         if (node.children && node.children.length) {
             res += "[";
             res += rootSerializer(node.children, options, node);

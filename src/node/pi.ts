@@ -186,7 +186,7 @@ export const ProcessingInstructionParser: FxNodeAdapter = {
         if (node.name) {
             res += node.name;
         }
-        serializeNodeAttrs(node, rootNodes, rootSerializer, options);
+        res += serializeNodeAttrs(node, rootNodes, rootSerializer, options);
         if (!node.closeType || node.closeType === FxNodeCloseType.fullClosed) {
             res += `?>`;
         }
