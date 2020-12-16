@@ -116,16 +116,4 @@ console.log(fxParser.serialize(json2) === serialize(json)); // true
 
 ![Legend](./docs/img/legend.png)
 
-![Element](./docs/img/element.png)
-
-![Comment](./docs/img/comment.png)
-
-![Text](./docs/img/text.png)
-
-![CDATA](./docs/img/cdata.png)
-
-![ProcessingInstruction](./docs/img/pi.png)
-
-![DTD](./docs/img/dtd.png)
-
 </details>
