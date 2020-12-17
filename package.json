@@ -179,7 +179,7 @@
     "uglify-js": "^3.10.4"
   },
   "scripts": {
-    "test": "mocha"
+    "build": "node build.js"
   },
   "repository": {
     "type": "git",

@@ -313,6 +313,7 @@
 
         <script>
             clearTimeout(longTimer);
+            document.getElementById("longAlert").style.display = "none";
             function getOptions(getEl) {
                 getEl = typeof getEl === "undefined" ? false : getEl;
                 var options = {};
