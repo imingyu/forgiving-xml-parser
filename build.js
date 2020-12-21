@@ -15,7 +15,7 @@ const res = minify(readyFile(srcFile), {
     removeAttributeQuotes: true,
     minifyCSS: true,
     minifyJS: true,
-    collapseWhitespace: true
+    collapseWhitespace: true,
+    removeComments: true
 });
-console.log(res)
 writeFile(distFile, res);

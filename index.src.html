@@ -139,6 +139,10 @@
             }
         </style>
         <script>
+            var IN_CN = new Date().toLocaleString();
+            IN_CN = !!(
+                IN_CN.indexOf("上午") !== -1 || IN_CN.indexOf("下午") !== -1
+            );
             var longTimer = setTimeout(function () {
                 document.getElementById("longAlert").style.display = "block";
             }, 5 * 1000);
@@ -146,13 +150,20 @@
                 document.getElementById("longAlert").style.display = "none";
                 document.getElementById("failAlert").style.display = "block";
             }
+            document.write(
+                '<link rel="stylesheet" data-name="vs/editor/editor.main" href="' +
+                    (IN_CN
+                        ? "https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.21.2"
+                        : "./monaco-editor") +
+                    '/min/vs/editor/editor.main.css" onerror="resLoadFail(this)" />'
+            );
         </script>
-        <link
+        <!-- <link
             rel="stylesheet"
             data-name="vs/editor/editor.main"
             href="./monaco-editor/min/vs/editor/editor.main.css"
             onerror="resLoadFail(this)"
-        />
+        /> -->
     </head>
     <body>
         <div id="longAlert">
@@ -288,17 +299,50 @@
 
         <div class="container con-legend">
             <h3>名词术语&事件触发时机</h3>
-            <img class="legend" src="./legend.png" alt="" />
+            <div id="legend"></div>
         </div>
         <script src="./parser.js" onerror="resLoadFail(this)"></script>
         <!-- <script src="./dist/index.umd.js"></script> -->
-        <script src="./jquery.min.js" onerror="resLoadFail(this)"></script>
+        <!-- <script src="./jquery.min.js" onerror="resLoadFail(this)"></script> -->
         <script>
+            document.write(
+                '<script src="' +
+                    (IN_CN
+                        ? "https://cdn.bootcdn.net/ajax/libs/jquery/2.2.4"
+                        : ".") +
+                    '/jquery.min.js" onerror="resLoadFail(this)"><\/script>'
+            );
             var require = {
-                paths: { vs: "./monaco-editor/min/vs" },
+                paths: {
+                    vs:
+                        (IN_CN
+                            ? "https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.21.2"
+                            : "./monaco-editor") + "/min/vs",
+                },
             };
+            document.write(
+                '<script src="' +
+                    (IN_CN
+                        ? "https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.21.2"
+                        : "./monaco-editor") +
+                    '/min/vs/loader.js" onerror="resLoadFail(this)"><\/script>'
+            );
+            document.write(
+                '<script src="' +
+                    (IN_CN
+                        ? "https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.21.2"
+                        : "./monaco-editor") +
+                    '/min/vs/editor/editor.main.nls.js" onerror="resLoadFail(this)"><\/script>'
+            );
+            document.write(
+                '<script src="' +
+                    (IN_CN
+                        ? "https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.21.2"
+                        : "./monaco-editor") +
+                    '/min/vs/editor/editor.main.js" onerror="resLoadFail(this)"><\/script>'
+            );
         </script>
-        <script
+        <!-- <script
             src="./monaco-editor/min/vs/loader.js"
             onerror="resLoadFail(this)"
         ></script>
@@ -309,11 +353,12 @@
         <script
             src="./monaco-editor/min/vs/editor/editor.main.js"
             onerror="resLoadFail(this)"
-        ></script>
+        ></script> -->
 
         <script>
             clearTimeout(longTimer);
             document.getElementById("longAlert").style.display = "none";
+            $('#legend').html('<img class="legend" src="'+(IN_CN?'https://ae04.alicdn.com/kf/H7c639b853fc542199bfe97a10f1ed102z.jpg':'./legend.png')+'" alt="https://imingyu.github.io/forgiving-xml-parser/legend.png">');
             function getOptions(getEl) {
                 getEl = typeof getEl === "undefined" ? false : getEl;
                 var options = {};
