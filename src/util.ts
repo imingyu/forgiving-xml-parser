@@ -21,28 +21,18 @@ import {
 } from "./types";
 import { REX_SPACE } from "./var";
 
-export const createFxError = (
-    msg: FxMessage,
-    cursor: FxCursorPosition
-): FxWrong => {
+export const createFxError = (msg: FxMessage, cursor: FxCursorPosition): FxWrong => {
     const err = (new Error(msg.message) as unknown) as FxWrong;
     err.code = msg.code;
     Object.assign(err, cursor);
     return err;
 };
 
-export const isElementEndTagBegin = (
-    xml: string,
-    cursor: FxCursorPosition
-): FxCursorPosition => {
+export const isElementEndTagBegin = (xml: string, cursor: FxCursorPosition): FxCursorPosition => {
     return ignoreSpaceIsHeadTail(xml, toCursor(cursor), "<", "/");
 };
 
-export const startsWith = (
-    fullStr: string,
-    targetStr: string | RegExp,
-    position: number = 0
-) => {
+export const startsWith = (fullStr: string, targetStr: string | RegExp, position: number = 0) => {
     const str = !position ? fullStr : fullStr.substr(position);
     if (targetStr instanceof RegExp) {
         const arr = str.match(targetStr);
@@ -51,8 +41,7 @@ export const startsWith = (
     return str.indexOf(targetStr) === 0;
 };
 
-export const isFunc = (obj) =>
-    typeof obj === "function" || obj instanceof Function;
+export const isFunc = (obj) => typeof obj === "function" || obj instanceof Function;
 
 export const pushStep = (
     steps: FxTryStep[],
@@ -117,10 +106,7 @@ export const pick = (
         res[prop] = parseResult[prop];
     }
 };
-export const nodeToJSON = (
-    node: FxNode,
-    options?: FxToJSONOptions
-): FxNodeJSON => {
+export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON => {
     const res = {} as FxNodeJSON;
     for (let prop in node) {
         if (prop !== "parent" && prop !== "parser") {
@@ -146,27 +132,28 @@ export const nodeToJSON = (
                             const np = res.data as FxNodeAdapter;
                             res.data = [
                                 np.nodeType,
-                                FxNodeCloseType.fullClosed,
+                                step.step === FxEventType.nodeEnd
+                                    ? FxNodeCloseType.fullClosed
+                                    : undefined,
                                 np.nodeCustomType,
                             ];
                             if (!res.data[2]) {
-                                res.data.splice(2, 1);
+                                res.data.pop();
+                            }
+                            if (!res.data[1]) {
+                                res.data.splice(1, 1);
                             }
                         }
                         return res;
                     });
                 }
             } else if (prop === "closeType") {
-                if (
-                    !(!node[prop] || node[prop] === FxNodeCloseType.fullClosed)
-                ) {
+                if (!(!node[prop] || node[prop] === FxNodeCloseType.fullClosed)) {
                     res[prop] = node[prop];
                 }
             } else if (prop !== "locationInfo") {
                 if (prop === "attrs" || prop === "children") {
-                    res[prop] = node[prop].map((item) =>
-                        nodeToJSON(item, options)
-                    );
+                    res[prop] = node[prop].map((item) => nodeToJSON(item, options));
                 } else {
                     res[prop] = node[prop];
                 }
@@ -185,10 +172,7 @@ export const lxWrongToJSON = (wrong: FxWrong): FxWrong => {
     return json;
 };
 
-export const currentIsLineBreak = (
-    str: string,
-    currentCharIndex: number
-): number => {
+export const currentIsLineBreak = (str: string, currentCharIndex: number): number => {
     if (str[currentCharIndex] === "\n") {
         return 0;
     }
@@ -198,11 +182,7 @@ export const currentIsLineBreak = (
     return -1;
 };
 
-export const equalSubStr = (
-    fullStr: string,
-    index: number,
-    str: string
-): boolean => {
+export const equalSubStr = (fullStr: string, index: number, str: string): boolean => {
     if (fullStr.substr(index, str.length) === str) {
         return true;
     }
@@ -220,10 +200,7 @@ export const repeatString = (str: string, repeatCount: number): string => {
     return res;
 };
 
-export const equalCursor = (
-    cursor1: FxCursorPosition,
-    cursor2: FxCursorPosition
-): boolean => {
+export const equalCursor = (cursor1: FxCursorPosition, cursor2: FxCursorPosition): boolean => {
     return (
         cursor1.lineNumber === cursor2.lineNumber &&
         cursor1.column === cursor2.column &&
@@ -241,12 +218,7 @@ export const notSpaceCharCursor = (xml: string, cursor: FxCursorPosition) => {
         if (REX_SPACE.test(char)) {
             const brType = currentIsLineBreak(xml, resultCursor.offset);
             if (brType !== -1) {
-                moveCursor(
-                    resultCursor,
-                    1,
-                    -resultCursor.column,
-                    !brType ? 0 : 1
-                );
+                moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
             }
             continue;
         }
@@ -268,12 +240,7 @@ export const ignoreSpaceFindCharCursor = (
         if (REX_SPACE.test(char)) {
             const brType = currentIsLineBreak(xml, resultCursor.offset);
             if (brType !== -1) {
-                moveCursor(
-                    resultCursor,
-                    1,
-                    -resultCursor.column,
-                    !brType ? 0 : 1
-                );
+                moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
             }
             continue;
         }
@@ -292,10 +259,7 @@ export const toCursor = (like: FxCursorPosition): FxCursorPosition => {
     } as FxCursorPosition;
 };
 
-export const getEndCursor = (
-    xml: string,
-    cursor: FxCursorPosition
-): FxCursorPosition => {
+export const getEndCursor = (xml: string, cursor: FxCursorPosition): FxCursorPosition => {
     const xmlLength = xml.length;
     const resultCursor = toCursor(cursor);
     for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
@@ -327,12 +291,7 @@ export const findStrCursor = (
                 ) {
                     const brType = currentIsLineBreak(xml, resultCursor.offset);
                     if (brType !== -1) {
-                        moveCursor(
-                            resultCursor,
-                            1,
-                            -resultCursor.column,
-                            !brType ? 0 : 1
-                        );
+                        moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
                     }
                 }
                 return [true, start, resultCursor];
@@ -372,21 +331,15 @@ export const findNodeParser = (
         const matchType = typeof parser.parseMatch;
         if (matchType === "string") {
             if (
-                xml.substr(
-                    cursor.offset,
-                    (parser.parseMatch as string).length
-                ) === parser.parseMatch
+                xml.substr(cursor.offset, (parser.parseMatch as string).length) ===
+                parser.parseMatch
             ) {
                 return true;
             }
             return false;
         }
         if (matchType === "function") {
-            return (parser.parseMatch as FxNodeParserMatcher)(
-                xml,
-                cursor,
-                options
-            );
+            return (parser.parseMatch as FxNodeParserMatcher)(xml, cursor, options);
         }
         if (parser.parseMatch instanceof RegExp) {
             return parser.parseMatch.test(xml.substr(cursor.offset));
@@ -402,13 +355,7 @@ export const findNodeSerializer = (
     parentNode?: FxNodeJSON
 ): FxNodeAdapter => {
     return options.nodeAdapters.find((parser) => {
-        return parser.serializeMatch(
-            currentNode,
-            brotherNodes,
-            rootNodes,
-            options,
-            parentNode
-        );
+        return parser.serializeMatch(currentNode, brotherNodes, rootNodes, options, parentNode);
     });
 };
 
@@ -434,10 +381,7 @@ export const findStartTagLevel = (
     return -1;
 };
 
-export const setContextMaxCursor = (
-    context: FxParseContext,
-    cursor: FxCursorPosition
-) => {
+export const setContextMaxCursor = (context: FxParseContext, cursor: FxCursorPosition) => {
     if (context.maxLineNumber < cursor.lineNumber) {
         context.maxLineNumber = cursor.lineNumber;
     }

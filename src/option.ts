@@ -71,14 +71,23 @@ export const boundStepsToContext = (
         } else if (step === FxEventType.nodeNameStart) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
-                if (!context.currentNode.locationInfo.startTag.name) {
+                if (
+                    context.currentNode.locationInfo.startTag &&
+                    !context.currentNode.locationInfo.startTag.name
+                ) {
                     context.currentNode.locationInfo.startTag.name = {
                         startLineNumber: cursor.lineNumber,
                         startColumn: cursor.column,
                         startOffset: cursor.offset,
                     };
-                } else {
+                } else if (context.currentNode.locationInfo.endTag) {
                     context.currentNode.locationInfo.endTag.name = {
+                        startLineNumber: cursor.lineNumber,
+                        startColumn: cursor.column,
+                        startOffset: cursor.offset,
+                    };
+                } else if (!context.currentNode.locationInfo.name) {
+                    context.currentNode.locationInfo.name = {
                         startLineNumber: cursor.lineNumber,
                         startColumn: cursor.column,
                         startOffset: cursor.offset,
@@ -89,10 +98,15 @@ export const boundStepsToContext = (
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.name = data as string;
-                if (!context.currentNode.locationInfo.startTag.name.endLineNumber) {
+                if (
+                    context.currentNode.locationInfo.startTag &&
+                    !context.currentNode.locationInfo.startTag.name.endLineNumber
+                ) {
                     setNodeLocationByCursor(context.currentNode.locationInfo.startTag.name, cursor);
-                } else {
+                } else if (context.currentNode.locationInfo.endTag) {
                     setNodeLocationByCursor(context.currentNode.locationInfo.endTag.name, cursor);
+                } else if (context.currentNode.locationInfo.name) {
+                    setNodeLocationByCursor(context.currentNode.locationInfo.name, cursor);
                 }
             }
         } else if (step === FxEventType.attrEqual) {

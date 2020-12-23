@@ -415,7 +415,7 @@
                         steps: $("#chkSteps").prop("checked"),
                     });
                     if (parseResult.error && parseResult.error.stack) {
-                        console.error(parseResult.error);
+                        console.error(parseResult.error.stack);
                     }
                     localStorage.setItem("Fx.Options", JSON.stringify(options));
                     setJSON(JSON.stringify(parseResult, null, 4));
