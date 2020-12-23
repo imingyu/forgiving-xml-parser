@@ -2,6 +2,7 @@
 
 ![image](https://img.shields.io/npm/l/forgiving-xml-parser.svg)
 [![image](https://img.shields.io/npm/v/forgiving-xml-parser.svg)](https://www.npmjs.com/package/forgiving-xml-parser)
+[![image](https://img.shields.io/npm/dt/forgiving-xml-parser.svg)](https://www.npmjs.com/package/forgiving-xml-parser)
 
 Enligsh | [简体中文](./README.zh-CN.md)
 
