@@ -1,7 +1,6 @@
 import {
     FxBoundStepsLoopCallback,
     FxEventType,
-    FxMessage,
     FxNode,
     FxNodeCloseType,
     FxNodeAdapter,
@@ -33,10 +32,10 @@ export const boundStepsToContext = (
     for (let index = 0, len = steps.length; index < len; index++) {
         const currentStepItem = steps[index];
         const { step, cursor, data } = currentStepItem;
+        setContextMaxCursor(context, cursor);
         if (step === FxEventType.nodeStart) {
             const { nodeType } = data as FxNodeAdapter;
             const node = createNodeByNodeStartStep(currentStepItem);
-            setContextMaxCursor(context, currentStepItem.cursor);
             node.steps.push(currentStepItem);
             if (context.currentNode) {
                 node.parent = context.currentNode;
@@ -69,10 +68,32 @@ export const boundStepsToContext = (
                     startOffset: cursor.offset,
                 };
             }
+        } else if (step === FxEventType.nodeNameStart) {
+            if (context.currentNode) {
+                context.currentNode.steps.push(currentStepItem);
+                if (!context.currentNode.locationInfo.startTag.name) {
+                    context.currentNode.locationInfo.startTag.name = {
+                        startLineNumber: cursor.lineNumber,
+                        startColumn: cursor.column,
+                        startOffset: cursor.offset,
+                    };
+                } else {
+                    context.currentNode.locationInfo.endTag.name = {
+                        startLineNumber: cursor.lineNumber,
+                        startColumn: cursor.column,
+                        startOffset: cursor.offset,
+                    };
+                }
+            }
         } else if (step === FxEventType.nodeNameEnd) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.name = data as string;
+                if (!context.currentNode.locationInfo.startTag.name.endLineNumber) {
+                    setNodeLocationByCursor(context.currentNode.locationInfo.startTag.name, cursor);
+                } else {
+                    setNodeLocationByCursor(context.currentNode.locationInfo.endTag.name, cursor);
+                }
             }
         } else if (step === FxEventType.attrEqual) {
             if (context.currentNode) {
@@ -86,11 +107,17 @@ export const boundStepsToContext = (
             if (data && context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.boundaryChar = [data as string];
+                context.currentNode.locationInfo.leftBoundary = {
+                    ...cursor,
+                };
             }
         } else if (step === FxEventType.attrRightBoundary) {
             if (data && context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.boundaryChar.push(data as string);
+                context.currentNode.locationInfo.rightBoundary = {
+                    ...cursor,
+                };
             }
         } else if (step === FxEventType.startTagEnd) {
             if (context.currentNode) {
@@ -100,10 +127,22 @@ export const boundStepsToContext = (
                 context.currentNode.steps.push(currentStepItem);
                 setNodeLocationByCursor(context.currentNode.locationInfo, cursor, "startTag");
             }
-        } else if (step === FxEventType.nodeContentEnd) {
-            if (data && context.currentNode) {
+        } else if (step === FxEventType.nodeContentStart) {
+            if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
-                context.currentNode.content = data as string;
+                context.currentNode.locationInfo.content = {
+                    startLineNumber: cursor.lineNumber,
+                    startColumn: cursor.column,
+                    startOffset: cursor.offset,
+                };
+            }
+        } else if (step === FxEventType.nodeContentEnd) {
+            if (context.currentNode) {
+                context.currentNode.steps.push(currentStepItem);
+                if (data) {
+                    context.currentNode.content = data as string;
+                }
+                setNodeLocationByCursor(context.currentNode.locationInfo.content, cursor);
             }
         } else if (step === FxEventType.endTagStart) {
             if (context.currentNode) {
@@ -120,7 +159,6 @@ export const boundStepsToContext = (
                 setNodeLocationByCursor(context.currentNode.locationInfo, cursor, "endTag");
             }
         } else if (step === FxEventType.nodeEnd) {
-            setContextMaxCursor(context, cursor);
             if (context.currentNode) {
                 setNodeLocationByCursor(context.currentNode.locationInfo, cursor);
                 if (
@@ -156,27 +194,11 @@ export const boundStepsToContext = (
                 fireEvent(step, context, context.currentNode);
             }
         }
-        if (index === len - 1) {
-            setContextMaxCursor(context, cursor);
-        }
         if (loopCallback && loopCallback(currentStepItem, index)) {
             break;
         }
     }
     return nodes;
-};
-export const addWarn = (context: FxParseContext, warn: FxWrong | FxMessage) => {
-    if (!context.warnings) {
-        context.warnings = [];
-    }
-    if ("line" in warn) {
-        context.warnings.push(warn);
-        return;
-    }
-    const tsWarn = warn as FxWrong;
-    tsWarn.lineNumber = context.lineNumber;
-    tsWarn.column = context.column;
-    context.warnings.push(tsWarn);
 };
 
 export const fireEvent = (type: FxEventType, context: FxParseContext, data: FxNode | FxWrong) => {

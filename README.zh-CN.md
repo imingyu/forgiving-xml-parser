@@ -80,35 +80,121 @@ console.log(fxParser.serialize(json2) === serialize(json)); // true
 # Api
 
 <details>
-<summary>Functions</summary>
+<summary>方法</summary>
 
--   **parse**(xml: `String`, options?: [LxParseOptions](src/types.ts#L178-L181)): [LxParseResult](src/types.ts#L266-L271)
+-   **parse**(xml: `String`, options?: [FxParseOptions](src/types.ts#L178-L181)): [FxParseResult](src/types.ts#L266-L271)
 
--   **parseResultToJSON**(result: [LxParseResult](src/types.ts#L266-L271), options?: [LxToJSONOptions](src/types.ts#L251-L257)): [LxParseResultJSON](src/types.ts#L258-L265)
+-   **parseResultToJSON**(result: [FxParseResult](src/types.ts#L266-L271), options?: [FxToJSONOptions](src/types.ts#L251-L257)): [FxParseResultJSON](src/types.ts#L258-L265)
 
--   **serialize**(json: [LxNodeJSON](src/types.ts#L287-L299) | [LxNodeJSON](src/types.ts#L287-L299)[], options?: [LxSerializeOptions](src/types.ts#L60-L62)): `String`
+-   **serialize**(json: [FxNodeJSON](src/types.ts#L287-L299) | [FxNodeJSON](src/types.ts#L287-L299)[], options?: [FxSerializeOptions](src/types.ts#L60-L62)): `String`
 
--   **new FxParser**(options?: [LxParserOptions](src/types.ts#L335-L338))
+-   **new FxParser**(options?: [FxParserOptions](src/types.ts#L335-L338))
 
-    -   **parse**(xml: `String`, options?: [LxParseOptions](src/types.ts#L178-L181)): [LxParseResult](src/types.ts#L266-L271)
+    -   **parse**(xml: `String`, options?: [FxParseOptions](src/types.ts#L178-L181)): [FxParseResult](src/types.ts#L266-L271)
 
-    -   **parseResultToJSON**(result: [LxParseResult](src/types.ts#L266-L271), options?: [LxToJSONOptions](src/types.ts#L251-L257)): [LxParseResultJSON](src/types.ts#L258-L265)
+    -   **parseResultToJSON**(result: [FxParseResult](src/types.ts#L266-L271), options?: [FxToJSONOptions](src/types.ts#L251-L257)): [FxParseResultJSON](src/types.ts#L258-L265)
 
-    -   **serialize**(json: [LxNodeJSON](src/types.ts#L287-L299) | [LxNodeJSON](src/types.ts#L287-L299)[], options?: [LxSerializeOptions](src/types.ts#L60-L62)): `String`
+    -   **serialize**(json: [FxNodeJSON](src/types.ts#L287-L299) | [FxNodeJSON](src/types.ts#L287-L299)[], options?: [FxSerializeOptions](src/types.ts#L60-L62)): `String`
 
 </details>
 
 <details>
-<summary>Options</summary>
+<summary>事件</summary>
 
--   [LxParserOptions](src/types.ts#L335-L338)
--   [LxParseOptions](src/types.ts#L178-L181)
--   [LxToJSONOptions](src/types.ts#L251-L257)
--   [LxSerializeOptions](src/types.ts#L60-L62)
+| 事件                | 简介                           | 节点类型触发情况及次数                                                                                                                                    |                                |                                                                                                   |                      |                      |                      |                       |                      |     |
+| ------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------- | -------------------- | -------------------- | -------------------- | --------------------- | -------------------- | --- |
+|                     |                                | Element                                                                                                                                                   | Element(selfclosing)           | Attr                                                                                              | Text                 | Comment              | CDATA                | ProcessingInstruction | DTD                  |
+| `nodeStart`         | 节点开始解析                   | 必定触发，仅触发一次                                                                                                                                      | 同左                           | 同左                                                                                              | 同左                 | 同左                 | 同左                 | 同左                  | 同左                 |
+| `nodeEnd`           | 节点解析完成                   | 节点正确关闭且不是`xml中`最后一个节点时触发，仅触发一次；<br>`<p><span></p>`中的`p`和`span`均会触发；<br>`<p></p><span>`中的`p`会触发，但是`span`不会触发 | 同左                           | 同左                                                                                              | 同左                 | 同左                 | 同左                 | 同左                  | 同左                 |
+| `nodeNameStart`     | 节点名称开始解析               | `startTag`中包含名称时触发一次；<br>（`v1.1.0开始支持`）`endTag`中包含名称时触发一次                                                                      | `startTag`中包含名称时触发一次 | 包含名称时触发一次                                                                                | 不触发               | 不触发               | 不触发               | 同 Attr               | 同 Attr              |
+| `nodeNameEnd`       | 节点名称解析完毕               | `startTag`中包含名称时触发一次；<br>（`v1.1.0开始支持`）`endTag`中包含名称时触发一次                                                                      | `startTag`中包含名称时触发一次 | 包含名称时触发一次                                                                                | 不触发               | 不触发               | 不触发               | 同 Attr               | 同 Attr              |
+| `startTagStart`     | `startTag`部分开始解析         | 必定触发，仅触发一次                                                                                                                                      | 必定触发，仅触发一次           | 不触发                                                                                            | 不触发               | 必定触发，仅触发一次 | 必定触发，仅触发一次 | 必定触发，仅触发一次  | 必定触发，仅触发一次 |
+| `attrsStart`        | `startTag`中的属性部分开始解析 | `startTag`包含属性部分时触发，仅触发一次；                                                                                                                | 同左                           | 不触发                                                                                            | 不触发               | 不触发               | 不触发               | 同 Element            | 同 Element           |
+| `attrsEnd`          | `startTag`中的属性部分解析完成 | `startTag`包含属性部分时触发，仅触发一次；                                                                                                                | 同左                           | 不触发                                                                                            | 不触发               | 不触发               | 不触发               | 同 Element            | 同 Element           |
+| `attrEqual`         | 属性遇到`=`                    | 不触发                                                                                                                                                    | 不触发                         | 属性中包含`=`时触发，触发一次或多次，取决于`options.encounterAttrMoreEqual`                       | 不触发               | 不触发               | 不触发               | 不触发                | 不触发               |
+| `attrLeftBoundary`  | 属性遇到左边界符（如：`"'(`）  | 不触发                                                                                                                                                    | 不触发                         | 属性中包含左边界符时触发，触发一次，左边界符值读取属性父元素的`nodeAdapter.attrLeftBoundaryChar`  | 不触发               | 不触发               | 不触发               | 不触发                | 不触发               |
+| `attrRightBoundary` | 属性遇到右边界符（如：`"')`）  | 不触发                                                                                                                                                    | 不触发                         | 属性中包含右边界符时触发，触发一次，右边界符值读取属性父元素的`nodeAdapter.attrRightBoundaryChar` | 不触发               | 不触发               | 不触发               | 不触发                | 不触发               |
+| `startTagEnd`       | `startTag`部分解析完成         | `startTag`部分正确关闭时触发，仅触发一次；<br>`<user name="Tom">`会触发；<br>`<user name="Tom"`不会触发                                                   | 同左                           | 不触发                                                                                            | 不触发               | 同 Element           | 同 Element           | 同 Element            | 同 Element           |
+| `nodeContentStart`  | 文本内容开始解析               | 不触发                                                                                                                                                    | 不触发                         | 属性中包含内容时触发，触发一次                                                                    | 必定触发，仅触发一次 | 同左                 | 同左                 | 不触发                | 不触发               |
+| `nodeContentEnd`    | 文本内容解析完成               | 不触发                                                                                                                                                    | 不触发                         | 属性中包含内容时触发，触发一次                                                                    | 必定触发，仅触发一次 | 同左                 | 同左                 | 不触发                | 不触发               |
+| `endTagStart`       | `endTag`部分开始解析           | 含有`endTag`部分时触发，仅触发一次；                                                                                                                      | 不触发                         | 不触发                                                                                            | 不触发               | 同 Element           | 同 Element           | 同 Element            | 同 Element           |
+| `endTagEnd`         | `endTag`部分解析完成           | `endTag`部分正确关闭时触发，仅触发一次；                                                                                                                  | 不触发                         | 不触发                                                                                            | 不触发               | 同 Element           | 同 Element           | 同 Element            | 同 Element           |
+| `error`             | 发生异常                       | 异常发生时触发，触发 0 到多次，范围：全局                                                                                                                 |
+
 </details>
 
 <details>
-<summary>NodeAdapters</summary>
+<summary>代码位置信息与解析步骤</summary>
+
+**代码位置信息**
+
+```typescript
+interface FxLocation {
+    startLineNumber: number; // 开始行号，行号从1开始
+    endLineNumber?: number; // 结束行号
+    startColumn: number; // 开始列号，列号从1开始
+    endColumn?: number; // 结束列号
+    startOffset: number; // 开始偏移索引号，偏移索引号从0开始
+    endOffset?: number; // 结束偏移索引号
+}
+interface FxNodeLocationInfo extends FxLocation {
+    startTag?: FxLocation; // startTag部分的代码位置信息
+    endTag?: FxLocation; // endTag部分的代码位置信息
+    attrs?: FxLocation[]; // 属性部分的代码位置信息，数组顺序为每个属性出现的顺序
+}
+
+interface FxNode {
+    locationInfo: FxNodeLocationInfo;
+}
+
+// v1.1.0后变更：
+interface FxNodeTagLocationInfo extends FxLocation {
+    name?: FxLocation; // startTag|endTag部分中名称的位置信息
+}
+interface FxAttrLocationInfo extends FxLocation {
+    name?: FxLocation; // 名称的位置信息
+    content?: FxLocation; // 内容的位置信息
+    leftBoundary?: FxCursorPosition; // 左边界符的位置信息
+    rightBoundary?: FxCursorPosition; // 右边界符的位置信息
+}
+interface FxNodeLocationInfo extends FxLocation {
+    startTag?: FxNodeTagLocationInfo; // startTag部分的代码位置信息
+    endTag?: FxNodeTagLocationInfo; // endTag部分的代码位置信息
+    attrs?: FxAttrLocationInfo[]; // 属性部分的代码位置信息，数组顺序为每个属性出现的顺序
+}
+```
+
+**解析步骤**
+
+```typescript
+interface FxCursorPosition {
+    lineNumber: number; // 行号，从1开始
+    column: number; // 列号，从1开始
+    offset: number; // 偏移索引号，从0开始
+}
+interface FxTryStep {
+    step: FxEventType; // 解析阶段，值就是事件名称
+    cursor: FxCursorPosition; // 当前阶段所处的光标位置
+    data?: FxTryStepData; // 阶段数据，可以包含名称、节点解析器、关闭类型等
+}
+interface FxNode {
+    steps?: FxTryStep[]; // 解析步骤
+}
+```
+
+</details>
+
+<details>
+<summary>配置选项</summary>
+
+-   [FxParserOptions](src/types.ts#L335-L338)
+-   [FxParseOptions](src/types.ts#L178-L181)
+-   [FxToJSONOptions](src/types.ts#L251-L257)
+-   [FxSerializeOptions](src/types.ts#L60-L62)
+</details>
+
+<details>
+<summary>节点解析器</summary>
 </details>
 
 <details>

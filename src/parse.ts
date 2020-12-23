@@ -5,13 +5,7 @@ import {
     FxParseResultJSON,
     FxToJSONOptions,
 } from "./types";
-import {
-    pick,
-    nodeToJSON,
-    lxWrongToJSON,
-    moveCursor,
-    findNodeParser,
-} from "./util";
+import { pick, nodeToJSON, lxWrongToJSON, moveCursor, findNodeParser } from "./util";
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 
@@ -33,11 +27,7 @@ export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
         options,
     };
     try {
-        for (
-            ;
-            context.offset < context.xmlLength;
-            moveCursor(context, 0, 1, 1)
-        ) {
+        for (; context.offset < context.xmlLength; moveCursor(context, 0, 1, 1)) {
             const parser = findNodeParser(
                 context.xml,
                 {
@@ -74,9 +64,6 @@ export const parseResultToJSON = (
     const res: FxParseResultJSON = {};
     if (parseResult.error) {
         res.error = lxWrongToJSON(parseResult.error);
-    }
-    if (parseResult.warnings) {
-        res.warnings = parseResult.warnings.map((item) => lxWrongToJSON(item));
     }
     pick("maxLine", res, parseResult, options);
     pick("maxCol", res, parseResult, options);

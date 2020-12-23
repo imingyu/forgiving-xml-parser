@@ -261,6 +261,8 @@ export const tryParseElementEndTag = (
     let closeRight;
     let tagName = "";
     let endTagEndCursorStep: FxTryStep;
+    let nodeNameStartStep: FxTryStep;
+    let nodeNameEndStep: FxTryStep;
     for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
         const char = xml[cursor.offset];
         if (REX_SPACE.test(char)) {
@@ -287,32 +289,22 @@ export const tryParseElementEndTag = (
             }
             continue;
         }
+        if (!nodeNameStartStep) {
+            nodeNameStartStep = createStep(FxEventType.nodeNameStart, cursor);
+        }
         tagName += char;
+        nodeNameEndStep = createStep(FxEventType.nodeNameEnd, cursor, tagName.trim());
         const nextChar = xml[cursor.offset + 1];
         if (nextChar === ">") {
-            const endCursor = moveCursor(
-                {
-                    ...cursor,
-                },
-                0,
-                1,
-                1
-            );
-            if (endCursor) {
-                tagName = tagName.trim();
-                Object.assign(cursor, endCursor);
-                endTagEndCursorStep = {
-                    step: FxEventType.endTagEnd,
-                    cursor: {
-                        ...cursor,
-                    },
-                    data: tagName,
-                };
-                closeRight = true;
-                break;
-            }
+            moveCursor(cursor, 0, 1, 1);
+            tagName = tagName.trim();
+            endTagEndCursorStep = createStep(FxEventType.endTagEnd, cursor, tagName);
+            closeRight = true;
+            break;
         }
     }
+    nodeNameStartStep && steps.push(nodeNameStartStep);
+    nodeNameEndStep && steps.push(nodeNameEndStep);
     if (closeRight) {
         steps.push(endTagEndCursorStep);
         pushStep(steps, FxEventType.nodeEnd, cursor, [ElementParser, FxNodeCloseType.fullClosed]);

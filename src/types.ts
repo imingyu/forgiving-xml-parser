@@ -79,7 +79,6 @@ export interface FxParseContext extends FxCursorPosition {
     maxColumn: number;
     currentNode?: FxNode;
     options?: FxParseOptions;
-    warnings?: FxWrong[];
     // 是否终止本轮循环
     continueEach?: boolean;
     // 是否终止循环
@@ -240,7 +239,6 @@ export interface FxParseResultJSON {
     xml?: string;
     nodes?: FxNodeJSON[];
     error?: FxWrong;
-    warnings?: FxWrong[];
 }
 export interface FxParseResult extends FxParseResultJSON {
     maxLine: number;
@@ -251,11 +249,18 @@ export interface FxParseResult extends FxParseResultJSON {
 export interface FxBoundStepsLoopCallback {
     (stepItem: FxTryStep, stepItemIndex: number): boolean;
 }
+export interface FxNodeTagLocationInfo extends FxLocation {
+    name?: FxLocation; // startTag|endTag部分中名称的位置信息
+}
 
 export interface FxNodeLocationInfo extends FxLocation {
-    startTag?: FxLocation;
-    endTag?: FxLocation;
-    attrs?: FxLocation[];
+    name?: FxLocation; // 名称的位置信息
+    content?: FxLocation; // 内容的位置信息
+    leftBoundary?: FxCursorPosition; // 左边界符的位置信息
+    rightBoundary?: FxCursorPosition; // 右边界符的位置信息
+    startTag?: FxNodeTagLocationInfo; // startTag部分的代码位置信息
+    endTag?: FxNodeTagLocationInfo; // endTag部分的代码位置信息
+    attrs?: FxNodeLocationInfo[]; // 属性部分的代码位置信息，数组顺序为每个属性出现的顺序
 }
 export enum FxNodeCloseType {
     notClosed = "notClosed",
@@ -291,16 +296,6 @@ export interface FxLocation {
     endColumn?: number;
     startOffset: number;
     endOffset?: number;
-}
-
-export interface FxElementEndTagInfo {
-    content: string;
-    name: string;
-    boundaryHasSpace?: boolean;
-    locationInfo: FxLocation;
-    wrongList?: FxWrong[];
-    closed: boolean;
-    parentIndex: number;
 }
 
 export interface FxStartTagCompare {
