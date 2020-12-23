@@ -99,37 +99,12 @@ console.log(fxParser.serialize(json2) === serialize(json)); // true
 </details>
 
 <details>
-<summary>Events</summary>
-
--   `nodeStart`
--   `nodeEnd`
--   `nodeNameStart`
--   `nodeNameEnd`
--   `startTagStart`
--   `startTagEnd`
--   `endTagStart`
--   `endTagEnd`
--   `attrsStart`
--   `attrsEnd`
--   `attrEqual`
--   `attrLeftBoundary`
--   `attrRightBoundary`
--   `nodeContentStart`
--   `nodeContentEnd`
--   `error`
-</details>
-
-<details>
 <summary>Options</summary>
 
 -   [FxParserOptions](src/types.ts#L335-L338)
 -   [FxParseOptions](src/types.ts#L178-L181)
 -   [FxToJSONOptions](src/types.ts#L251-L257)
 -   [FxSerializeOptions](src/types.ts#L60-L62)
-</details>
-
-<details>
-<summary>NodeAdapters</summary>
 </details>
 
 <details>
