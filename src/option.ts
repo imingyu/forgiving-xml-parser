@@ -132,6 +132,9 @@ export const boundStepsToContext = (
             }
         } else if (step === FxEventType.attrRightBoundary) {
             if (data && context.currentNode) {
+                if (!context.currentNode.content) {
+                    context.currentNode.content = "";
+                }
                 context.currentNode.steps.push(currentStepItem);
                 context.currentNode.boundaryChar.push(data as string);
                 context.currentNode.locationInfo.rightBoundary = {

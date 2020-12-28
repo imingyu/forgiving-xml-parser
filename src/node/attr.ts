@@ -148,6 +148,7 @@ export const tryParseAttr = (
     let content: string;
     let findTarget: FxParseAttrTarget; // 表示正在寻找某目标，而不是当前已经是某目标
     let leftBoundaryValue: string = "";
+    let hasNodeContentStart;
     const clear = () => {
         leftBoundaryValue = content = findTarget = undefined;
     };
@@ -157,6 +158,7 @@ export const tryParseAttr = (
             if (findTarget === FxParseAttrTarget.name) {
                 pushStep(steps, FxEventType.nodeNameStart, cursor, FxNodeType.attr);
             } else if (findTarget === FxParseAttrTarget.content) {
+                hasNodeContentStart = true;
                 pushStep(steps, FxEventType.nodeContentStart, cursor);
             }
             return;
@@ -167,7 +169,7 @@ export const tryParseAttr = (
         if (currentTargetEnd && findTarget) {
             if (findTarget === FxParseAttrTarget.name) {
                 pushStep(steps, FxEventType.nodeNameEnd, cursor, content);
-            } else if (findTarget === FxParseAttrTarget.content) {
+            } else if (findTarget === FxParseAttrTarget.content && hasNodeContentStart) {
                 pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
             }
         }
@@ -267,7 +269,8 @@ export const tryParseAttr = (
                     boundaryValue &&
                     (parentNodeParser.attrBoundaryCharNeedEqual
                         ? leftBoundaryValue === boundaryValue
-                        : true)
+                        : true) &&
+                    hasNodeContentStart
                 ) {
                     pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
                 }
@@ -497,7 +500,7 @@ export const tryParseAttr = (
         } else if (findTarget === FxParseAttrTarget.leftBoundary) {
             pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, FxNodeCloseType.notClosed]);
         } else if (findTarget === FxParseAttrTarget.content) {
-            pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
+            hasNodeContentStart && pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
             pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [
                 AttrParser,
                 leftBoundaryValue ? FxNodeCloseType.notClosed : FxNodeCloseType.fullClosed,
