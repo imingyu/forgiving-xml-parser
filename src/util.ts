@@ -118,6 +118,7 @@ export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON 
                         const res = {
                             ...step,
                         };
+                        delete res.target;
                         if (Array.isArray(res.data)) {
                             let [nodeType, closeType, customType] = res.data;
                             if (typeof nodeType === "object") {

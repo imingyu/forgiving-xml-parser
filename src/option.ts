@@ -11,6 +11,7 @@ import {
     FxParseOptionsKeys,
     FxTryStep,
     FxWrong,
+    FxNodeTryStep,
 } from "./types";
 import {
     createNodeByNodeStartStep,
@@ -29,13 +30,16 @@ export const boundStepsToContext = (
         context = {} as FxParseContext;
     }
     const nodes: FxNode[] = [];
+    let eventNode: FxNode = context.currentNode;
     for (let index = 0, len = steps.length; index < len; index++) {
-        const currentStepItem = steps[index];
+        const currentStepItem = steps[index] as FxNodeTryStep;
+        currentStepItem.target = eventNode;
         const { step, cursor, data } = currentStepItem;
         setContextMaxCursor(context, cursor);
         if (step === FxEventType.nodeStart) {
             const { nodeType } = data as FxNodeAdapter;
             const node = createNodeByNodeStartStep(currentStepItem);
+            currentStepItem.target = node;
             node.steps.push(currentStepItem);
             if (context.currentNode) {
                 node.parent = context.currentNode;
@@ -59,6 +63,7 @@ export const boundStepsToContext = (
                 context.nodes && context.nodes.push(node);
             }
             context.currentNode = node;
+            eventNode = node;
         } else if (step === FxEventType.startTagStart) {
             if (context.currentNode) {
                 context.currentNode.steps.push(currentStepItem);
@@ -205,7 +210,10 @@ export const boundStepsToContext = (
                 fireEvent(step, context, data as FxWrong);
                 throw data;
             } else {
-                fireEvent(step, context, context.currentNode);
+                fireEvent(step, context, eventNode);
+                if (step === FxEventType.nodeEnd) {
+                    eventNode = context.currentNode;
+                }
             }
         }
         if (loopCallback && loopCallback(currentStepItem, index)) {

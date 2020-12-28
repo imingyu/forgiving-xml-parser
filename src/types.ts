@@ -108,6 +108,9 @@ export interface FxTryStep {
     cursor: FxCursorPosition;
     data?: FxTryStepData;
 }
+export interface FxNodeTryStep extends FxTryStep {
+    target: FxNode;
+}
 export enum FxAttrMoreEqualDisposal {
     throwError = "throwError",
     merge = "merge",
@@ -287,6 +290,7 @@ export interface FxNodeJSON {
     boundaryChar?: string[];
     equalCount?: number;
     nature?: FxNodeNature;
+    steps?: FxTryStep[];
 }
 export interface FxNode extends FxNodeJSON {
     parser: FxNodeAdapter;
@@ -294,7 +298,7 @@ export interface FxNode extends FxNodeJSON {
     children?: FxNode[];
     attrs?: FxNode[];
     parent?: FxNode;
-    steps?: FxTryStep[];
+    steps?: FxNodeTryStep[];
 }
 export interface FxLocation {
     startLineNumber: number;
