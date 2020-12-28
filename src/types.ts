@@ -58,7 +58,7 @@ export interface FxMessage {
 export interface FxNodeSerializeHandler {
     (
         currentNode: FxNodeJSON,
-        brotherNodes: FxNodeJSON[],
+        siblingNodes: FxNodeJSON[],
         rootNodes: FxNodeJSON[],
         rootSerializer: FxNodeSerializer,
         parentNode: FxNodeJSON,
@@ -179,7 +179,7 @@ export interface FxAttrParseCallback {
 export interface FxNodeSerializeMatcher {
     (
         currentNode: FxNodeJSON,
-        brotherNodes: FxNodeJSON[],
+        siblingNodes: FxNodeJSON[],
         rootNodes: FxNodeJSON[],
         options: FxSerializeOptions,
         parentNode?: FxNodeJSON
@@ -215,7 +215,7 @@ export interface FxNodeAdapter {
     serializeMatch: FxNodeSerializeMatcher;
     serialize(
         currentNode: FxNodeJSON,
-        brotherNodes: FxNodeJSON[],
+        siblingNodes: FxNodeJSON[],
         rootNodes: FxNodeJSON[],
         rootSerializer: FxNodeSerializer,
         options: FxSerializeOptions,
@@ -226,12 +226,19 @@ export interface FxNodeParserMatcher {
     (xml: string, cursor: FxCursorPosition, options: FxParseOptions): boolean;
 }
 export type FxParseOptionsKeys = keyof FxParseOptions;
+export interface FxToJSONDataFilter {
+    (
+        source: FxWrong | FxNode | FxLocation | FxTryStep,
+        result: FxTryStep | FxWrong | FxNodeJSON | FxLocation
+    ): FxWrong | FxNodeJSON | FxLocation | FxTryStep;
+}
 export interface FxToJSONOptions {
     maxLine?: boolean;
     maxCol?: boolean;
     xml?: boolean;
     locationInfo?: boolean;
     steps?: boolean;
+    dataFilter?: FxToJSONDataFilter;
 }
 export interface FxParseResultJSON {
     maxLine?: number;

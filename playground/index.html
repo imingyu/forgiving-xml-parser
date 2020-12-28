@@ -413,6 +413,12 @@
                     var parseResult = ForgivingXmlParser.parseResultToJSON(json, {
                         locationInfo: $("#chkLocation").prop("checked"),
                         steps: $("#chkSteps").prop("checked"),
+                        // dataFilter(s, r) {
+                        //     if (r.type === "attr") {
+                        //         r.content = "哈哈";
+                        //     }
+                        //     return r;
+                        // },
                     });
                     if (parseResult.error && parseResult.error.stack) {
                         console.error(parseResult.error.stack);

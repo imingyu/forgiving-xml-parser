@@ -18,6 +18,7 @@ import {
     FxParseContext,
     FxStartTagCompare,
     FxNodeLocationInfo,
+    FxLocation,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -108,6 +109,7 @@ export const pick = (
 };
 export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON => {
     const res = {} as FxNodeJSON;
+    const hasFilter = options && isFunc(options.dataFilter);
     for (let prop in node) {
         if (prop !== "parent" && prop !== "parser") {
             if (prop === "steps") {
@@ -144,7 +146,7 @@ export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON 
                                 res.data.splice(1, 1);
                             }
                         }
-                        return res;
+                        return hasFilter ? (options.dataFilter(step, res) as FxTryStep) : res;
                     });
                 }
             } else if (prop === "closeType") {
@@ -153,12 +155,25 @@ export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON 
                 }
             } else if (prop !== "locationInfo") {
                 if (prop === "attrs" || prop === "children") {
-                    res[prop] = node[prop].map((item) => nodeToJSON(item, options));
+                    res[prop] = node[prop].map((item) => {
+                        if (hasFilter) {
+                            return options.dataFilter(
+                                item,
+                                nodeToJSON(item, options)
+                            ) as FxNodeJSON;
+                        }
+                        return nodeToJSON(item, options);
+                    });
                 } else {
                     res[prop] = node[prop];
                 }
             } else if (options && options.locationInfo) {
-                res[prop] = JSON.parse(JSON.stringify(node[prop]));
+                res[prop] = hasFilter
+                    ? (options.dataFilter(
+                          node[prop],
+                          JSON.parse(JSON.stringify(node[prop]))
+                      ) as FxLocation)
+                    : JSON.parse(JSON.stringify(node[prop]));
             }
         }
     }
@@ -349,13 +364,13 @@ export const findNodeParser = (
 
 export const findNodeSerializer = (
     currentNode: FxNodeJSON,
-    brotherNodes: FxNodeJSON[],
+    siblingNodes: FxNodeJSON[],
     rootNodes: FxNodeJSON[],
     options: FxSerializeOptions,
     parentNode?: FxNodeJSON
 ): FxNodeAdapter => {
     return options.nodeAdapters.find((parser) => {
-        return parser.serializeMatch(currentNode, brotherNodes, rootNodes, options, parentNode);
+        return parser.serializeMatch(currentNode, siblingNodes, rootNodes, options, parentNode);
     });
 };
 

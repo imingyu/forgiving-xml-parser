@@ -1,11 +1,13 @@
 import {
+    FxNodeJSON,
     FxParseContext,
     FxParseOptions,
     FxParseResult,
     FxParseResultJSON,
     FxToJSONOptions,
+    FxWrong,
 } from "./types";
-import { pick, nodeToJSON, lxWrongToJSON, moveCursor, findNodeParser } from "./util";
+import { pick, nodeToJSON, lxWrongToJSON, moveCursor, findNodeParser, isFunc } from "./util";
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 
@@ -63,13 +65,24 @@ export const parseResultToJSON = (
 ): FxParseResultJSON => {
     const res: FxParseResultJSON = {};
     if (parseResult.error) {
-        res.error = lxWrongToJSON(parseResult.error);
+        if (options && isFunc(options.dataFilter)) {
+            res.error = options.dataFilter(res.error, lxWrongToJSON(parseResult.error)) as FxWrong;
+        } else {
+            res.error = lxWrongToJSON(parseResult.error);
+        }
     }
     pick("maxLine", res, parseResult, options);
     pick("maxCol", res, parseResult, options);
     pick("xml", res, parseResult, options);
     if (!parseResult.error) {
-        res.nodes = parseResult.nodes.map((node) => nodeToJSON(node, options));
+        let hasFilter = options && isFunc(options.dataFilter);
+        res.nodes = parseResult.nodes.map((node) => {
+            if (hasFilter) {
+                return options.dataFilter(node, nodeToJSON(node, options)) as FxNodeJSON;
+            } else {
+                return nodeToJSON(node, options) as FxNodeJSON;
+            }
+        });
     }
     return res;
 };

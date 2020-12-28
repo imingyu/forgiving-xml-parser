@@ -177,7 +177,7 @@ export const ProcessingInstructionParser: FxNodeAdapter = {
     },
     serialize(
         node: FxNodeJSON,
-        brotherNodes: FxNodeJSON[],
+        siblingNodes: FxNodeJSON[],
         rootNodes: FxNodeJSON[],
         rootSerializer: FxNodeSerializer,
         options: FxSerializeOptions
