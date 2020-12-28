@@ -116,7 +116,8 @@
                 padding-top: 20px;
             }
             #longAlert,
-            #failAlert {
+            #failAlert,
+            #infoAlert {
                 display: none;
                 text-align: center;
                 padding: 15px;
@@ -126,6 +127,12 @@
             a {
                 margin: 0 5px;
                 font-weight: bold;
+            }
+            #infoAlert {
+                display: block;
+                color: #31708f;
+                background-color: #d9edf7;
+                border-color: #bce8f1;
             }
             #longAlert {
                 color: #8a6d3b;
@@ -185,6 +192,12 @@
                 target="_blank"
                 >前往Github下载代码在本地运行该页面</a
             >
+        </div>
+        <div id="infoAlert">
+            Github:<a href="https://github.com/imingyu/forgiving-xml-parser"
+                >https://github.com/imingyu/forgiving-xml-parser</a
+            >
+            NPM: <a href="https://www.npmjs.com/package/forgiving-xml-parser">https://www.npmjs.com/package/forgiving-xml-parser</a>
         </div>
         <div class="container container-options">
             <h3>可选配置</h3>
@@ -358,7 +371,13 @@
         <script>
             clearTimeout(longTimer);
             document.getElementById("longAlert").style.display = "none";
-            $('#legend').html('<img class="legend" src="'+(IN_CN?'https://ae03.alicdn.com/kf/H336e0ee7081445a3bb78e63bde6e0df2O.jpg':'./legend.png')+'" alt="https://imingyu.github.io/forgiving-xml-parser/legend.png">');
+            $("#legend").html(
+                '<img class="legend" src="' +
+                    (IN_CN
+                        ? "https://ae03.alicdn.com/kf/H336e0ee7081445a3bb78e63bde6e0df2O.jpg"
+                        : "./legend.png") +
+                    '" alt="https://imingyu.github.io/forgiving-xml-parser/legend.png">'
+            );
             function getOptions(getEl) {
                 getEl = typeof getEl === "undefined" ? false : getEl;
                 var options = {};
