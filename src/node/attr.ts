@@ -1,9 +1,11 @@
 import { boundStepsToContext } from "../option";
 import {
+    ATTR_BOUNDARY_NOT_RIGHT,
     ATTR_CONTENT_HAS_BR,
     ATTR_EQUAL_NEAR_SPACE,
     ATTR_HAS_MORE_EQUAL,
     ATTR_NAME_IS_EMPTY,
+    ATTR_UNEXPECTED_BOUNDARY,
 } from "../message";
 import { checkOptionAllow, computeOption, isTrueOption } from "../option";
 import {
@@ -27,61 +29,12 @@ import {
     createFxError,
     currentIsLineBreak,
     equalCursor,
-    ignoreSpaceFindCharCursor,
     moveCursor,
     notSpaceCharCursor,
     pushStep,
     repeatString,
 } from "../util";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
-const checkAttrsEnd = (xml: string, cursor: FxCursorPosition): number => {
-    const nextChar = xml[cursor.offset + 1];
-    const nextChar2 = xml[cursor.offset + 2];
-    if (nextChar === ">") {
-        return 2;
-    }
-    if (nextChar === "/" && nextChar2 === ">") {
-        return 3;
-    }
-    return 0;
-};
-const checkAttrNameEnd = (xml: string, cursor: FxCursorPosition): number => {
-    const nextChar = xml[cursor.offset + 1];
-    if (nextChar === "=") {
-        return 1;
-    }
-
-    if (nextChar === '"' || nextChar === "'") {
-        return 2;
-    }
-    const res = checkAttrsEnd(xml, cursor);
-    if (res) {
-        return res;
-    }
-    if (REX_SPACE.test(nextChar)) {
-        let offset = cursor.offset;
-        let len = xml.length;
-        let hasCharOffset;
-        let findChar;
-        while (offset < len) {
-            findChar = xml[offset];
-            if (!REX_SPACE.test(findChar)) {
-                hasCharOffset = offset;
-                break;
-            }
-        }
-        if (hasCharOffset) {
-            if (findChar !== "=" && findChar !== ">" && findChar !== "/") {
-                return 2;
-            }
-            return checkAttrNameEnd(xml, {
-                ...cursor,
-                offset: hasCharOffset - 1,
-            });
-        }
-    }
-    return 0;
-};
 export const tryParseAttrs = (
     xml: string,
     cursor: FxCursorPosition,
@@ -183,6 +136,9 @@ export const tryParseAttr = (
     };
     let attrsEnd;
     const checkAttrEnd = (): boolean => {
+        if (cursor.offset + 1 > xmlLength - 1) {
+            return false;
+        }
         const nextCursor = moveCursor(
             {
                 ...cursor,
@@ -440,7 +396,11 @@ export const tryParseAttr = (
                 }
                 continue;
             }
+            if (!leftBoundaryValue && findTarget === FxParseAttrTarget.content) {
+                throw createFxError(ATTR_UNEXPECTED_BOUNDARY, cursor);
+            }
             if (
+                leftBoundaryValue &&
                 findTarget === FxParseAttrTarget.content &&
                 (parentNodeParser.attrBoundaryCharNeedEqual
                     ? leftBoundaryValue === boundaryValue
@@ -500,6 +460,34 @@ export const tryParseAttr = (
         } else if (findTarget === FxParseAttrTarget.leftBoundary) {
             pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, FxNodeCloseType.notClosed]);
         } else if (findTarget === FxParseAttrTarget.content) {
+            // 检测是否有属性只写了左边界符，忘记写右边界符的情况
+            const contentStartCursor = steps[steps.length - 1].cursor;
+            const testCursor = {
+                ...contentStartCursor,
+            };
+            let prevCursor = {
+                ...contentStartCursor,
+            };
+            for (
+                let len = contentStartCursor.offset + content.length;
+                testCursor.offset < len;
+                moveCursor(testCursor, 0, 1, 1)
+            ) {
+                if (parentNodeParser.checkAttrsEnd(xml, testCursor, options)) {
+                    throw createFxError(ATTR_BOUNDARY_NOT_RIGHT, prevCursor);
+                }
+                prevCursor = {
+                    ...testCursor,
+                };
+                const char = xml[testCursor.offset];
+                if (REX_SPACE.test(char)) {
+                    const brType = currentIsLineBreak(xml, testCursor.offset);
+                    if (brType !== -1) {
+                        moveCursor(testCursor, 1, -testCursor.column, !brType ? 0 : 1);
+                    }
+                    continue;
+                }
+            }
             hasNodeContentStart && pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
             pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [
                 AttrParser,

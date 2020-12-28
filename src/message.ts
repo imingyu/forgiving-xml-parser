@@ -56,3 +56,11 @@ export const END_TAG_NOT_MATCH_START: FxMessage = {
     code: 14,
     message: "无法找到与之匹配的开始标签",
 };
+export const ATTR_BOUNDARY_NOT_RIGHT: FxMessage = {
+    code: 15,
+    message: "属性缺少右边界符",
+};
+export const ATTR_UNEXPECTED_BOUNDARY: FxMessage = {
+    code: 16,
+    message: "意外的边界符",
+};
