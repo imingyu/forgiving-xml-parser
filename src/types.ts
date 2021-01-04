@@ -143,15 +143,33 @@ export enum FxTagType {
     endTag = "endTag",
 }
 export interface FxAllowNearTagBoundarySpace {
-    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter, tagName?: string): boolean;
+    (
+        xml: string,
+        cursor: FxCursorPosition,
+        parser: FxNodeAdapter,
+        tagName?: string,
+        spacePosition?: FxBoundaryPosition
+    ): boolean | FxBoundaryPosition;
 }
 export interface FxAllowTagNameHasSpace {
     (xml: string, cursor: FxCursorPosition, tagName: string, tagType: FxTagType): boolean;
 }
+export enum FxBoundaryPosition {
+    left = "left",
+    right = "right",
+}
 export interface FxParseBaseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
-    allowStartTagBoundaryNearSpace?: boolean | RegExp | FxAllowNearTagBoundarySpace;
-    allowEndTagBoundaryNearSpace?: boolean | RegExp | FxAllowNearTagBoundarySpace;
+    allowStartTagBoundaryNearSpace?:
+        | boolean
+        | FxBoundaryPosition
+        | RegExp
+        | FxAllowNearTagBoundarySpace;
+    allowEndTagBoundaryNearSpace?:
+        | boolean
+        | FxBoundaryPosition
+        | RegExp
+        | FxAllowNearTagBoundarySpace;
     allowTagNameHasSpace?: boolean | RegExp | FxAllowTagNameHasSpace;
     // 忽略标签名称大小写对比；正则会匹配节点名称，命中规则才生效；函数会将当前节点传入，返回true规则才生效
     ignoreTagNameCaseEqual?: boolean | RegExp | FxEqualNameChecker;

@@ -22,6 +22,7 @@ import {
     FxSerializeOptions,
     FxTagType,
     FxTryStep,
+    FxBoundaryPosition,
 } from "../types";
 import { serializeNodeAttrs, tryParseAttrs } from "./attr";
 import { DEFAULT_PARSE_OPTIONS } from "../var";
@@ -67,7 +68,8 @@ export const tryParsePI = (
                 xml,
                 expectStartTagEndCursor,
                 ProcessingInstructionParser,
-                nodeName
+                nodeName,
+                FxBoundaryPosition.left
             )
         ) {
             return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);

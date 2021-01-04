@@ -19,10 +19,12 @@ export enum FxParseTestCaseItemType {
     sourceLocation = "sourceLocation",
 }
 
+export type FxParseTestCaseItems = Array<undefined | FxParseTestCaseItem>;
+
 export interface FxParseTestCaseItem {
     target: FxParseTestCaseItemType | FxNodeType | string;
     value?: any;
-    items?: Array<undefined | FxParseTestCaseItem>;
+    items?: FxParseTestCaseItems;
 }
 
 export type FxEventItem = [FxEventType, FxParseContext, FxNode | FxWrong];

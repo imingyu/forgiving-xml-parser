@@ -12,6 +12,7 @@ import {
     FxTryStep,
     FxWrong,
     FxNodeTryStep,
+    FxBoundaryPosition,
 } from "./types";
 import {
     createNodeByNodeStartStep,
@@ -271,6 +272,13 @@ export const checkOptionAllow = <
     }
     if (options[optionName] instanceof RegExp) {
         return (options[optionName] as RegExp).test(testValue);
+    }
+    if (
+        optionName === "allowStartTagBoundaryNearSpace" &&
+        (options[optionName] as string) in FxBoundaryPosition &&
+        (optionCheckerArgs[optionCheckerArgs.length - 1] as string) in FxBoundaryPosition
+    ) {
+        return optionCheckerArgs[optionCheckerArgs.length - 1] === options[optionName];
     }
     return !!options[optionName];
 };

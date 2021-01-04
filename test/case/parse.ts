@@ -1,6 +1,46 @@
 import { FxNodeType } from "../../src";
 import { FxParseTestCase, FxParseTestCaseItemType } from "../type";
-export const optionsCases: FxParseTestCase[] = [];
+export const optionsCases: FxParseTestCase[] = [
+    {
+        desc: "Selfcloseing node left boundary has space",
+        xml: "< p />",
+        options: {
+            allowStartTagBoundaryNearSpace: false,
+        },
+        items: [
+            {
+                target: "error",
+                value: 1,
+            },
+        ],
+    },
+    {
+        desc: "Element start tag left boundary has space",
+        xml: "< p></p>",
+        options: {
+            allowStartTagBoundaryNearSpace: false,
+        },
+        items: [
+            {
+                target: "error",
+                value: 1,
+            },
+        ],
+    },
+    {
+        desc: "Element start tag(not attrs) right boundary has space",
+        xml: "<p\n></p>",
+        options: {
+            allowStartTagBoundaryNearSpace: false,
+        },
+        items: [
+            {
+                target: "error",
+                value: 1,
+            },
+        ],
+    },
+];
 export const coreCases: FxParseTestCase[] = [
     {
         desc: "t1",

@@ -14,6 +14,7 @@ import {
     FxSerializeOptions,
     FxTagType,
     FxTryStep,
+    FxBoundaryPosition,
 } from "../types";
 import {
     createStep,
@@ -77,7 +78,8 @@ export const tryParseDtdStartTag = (
                 xml,
                 expectStartTagEndCursor,
                 DtdParser,
-                nodeName
+                nodeName,
+                FxBoundaryPosition.left
             )
         ) {
             return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);

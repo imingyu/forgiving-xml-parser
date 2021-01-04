@@ -13,6 +13,7 @@ import {
     FxParseOptions,
     FxSerializeOptions,
     FxTryStep,
+    FxBoundaryPosition,
 } from "../types";
 import {
     createStep,
@@ -159,7 +160,8 @@ export const tryParseElementStartTag = (
                         xml,
                         elementNodeNameStartStep.cursor,
                         ElementParser,
-                        attrName
+                        attrName,
+                        FxBoundaryPosition.left
                     )
                 ) {
                     return pushStep(
@@ -176,6 +178,7 @@ export const tryParseElementStartTag = (
                 );
                 const attrNameEndStep = firstAttrSteps[firstAttrSteps.length - 1];
                 attrNameEndStep.data = attrName;
+                tagName = attrName;
                 Object.assign(elementNodeNameStartStep.cursor, attrNameStartStep.cursor);
                 steps.push(elementNodeNameStartStep, attrNameEndStep);
 
@@ -208,6 +211,21 @@ export const tryParseElementStartTag = (
         steps = steps.concat(attrSteps);
         pushStep(steps, FxEventType.attrsEnd, cursor);
         if (cursor.offset < xmlLength - 1) {
+            if (
+                !checkOptionAllow(
+                    options,
+                    "allowStartTagBoundaryNearSpace",
+                    DEFAULT_PARSE_OPTIONS.allowStartTagBoundaryNearSpace,
+                    tagName,
+                    xml,
+                    cursor,
+                    ElementParser,
+                    tagName,
+                    FxBoundaryPosition.right
+                )
+            ) {
+                return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
+            }
             for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
                 const startTagEndCursor = ElementParser.checkAttrsEnd(xml, cursor, options);
                 if (startTagEndCursor) {

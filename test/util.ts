@@ -1,13 +1,42 @@
-import { FxEventItem, FxParseTestCase, FxParseTestCaseItem, FxParseTestCaseItemType } from "./type";
+import {
+    FxEventItem,
+    FxParseTestCase,
+    FxParseTestCaseItem,
+    FxParseTestCaseItems,
+    FxParseTestCaseItemType,
+} from "./type";
 import {
     FxNode,
+    FxNodeCloseType,
     FxNodeLocationInfo,
     FxNodeTagLocationInfo,
     FxNodeType,
+    FxParseOptions,
     FxParseResult,
+    FxWrong,
     parse,
 } from "../src/index";
 import { assert } from "chai";
+
+export const placeholder = "  <p /> \n <s>1</s>";
+
+export const execPlaceholderParseCases = (options?: FxParseOptions | any) => {
+    const res = parse(placeholder, options);
+    assert.hasAnyKeys(res, ["xml", "maxCol", "nodes"]);
+    assert.equal(res.xml, placeholder);
+    assert.equal(res.maxCol, 9);
+    assert.equal(res.maxLine, 2);
+    assert.equal(res.nodes[0].type, FxNodeType.text);
+    assert.equal(res.nodes[1].type, FxNodeType.element);
+    assert.equal(res.nodes[1].name, "p");
+    assert.equal(res.nodes[1].closeType, FxNodeCloseType.selfCloseing);
+    assert.equal(res.nodes[1].locationInfo.endColumn, 7);
+    assert.equal(res.nodes[1].locationInfo.startTag.endColumn, 7);
+    assert.doesNotHaveAnyKeys(res.nodes[1].locationInfo, ["endTag"]);
+    assert.equal(res.nodes[3].type, FxNodeType.element);
+    assert.equal(res.nodes[3].children[0].content, "1");
+    assert.hasAnyKeys(res.nodes[3].locationInfo, ["endTag"]);
+};
 
 export const execParseTestCase = (ptc: FxParseTestCase) => {
     it(ptc.desc, () => {
@@ -34,12 +63,9 @@ export const arrToObject = (arr: string[]): { [prop: string]: number } => {
 
 export const equalCaseItems = (
     res: FxParseResult | FxNode | FxNode[],
-    items: Array<undefined | FxParseTestCaseItem> | FxParseTestCaseItem
+    items: FxParseTestCaseItems | FxParseTestCaseItem
 ) => {
-    if (!Array.isArray(items)) {
-        if (!items) {
-            return;
-        }
+    if (!Array.isArray(items) && "target" in items) {
         const node = res as FxNode;
         const ptc = items as FxParseTestCaseItem;
         if (ptc.target in FxNodeType) {
@@ -69,7 +95,19 @@ export const equalCaseItems = (
         } else if (ptc.target) {
             assert.hasAnyKeys(res, [ptc.target]);
             if ("value" in ptc) {
-                assert.equal(ptc.value, res[ptc.target]);
+                const err = res[ptc.target] as FxWrong;
+                if (ptc.target === "error") {
+                    const type = typeof ptc.value;
+                    if (type === "number") {
+                        assert.equal(ptc.value, err.code);
+                    } else if (type === "object") {
+                        equalObject(err, ptc.value);
+                    } else {
+                        assert.include(err.message, ptc.value);
+                    }
+                } else {
+                    assert.equal(ptc.value, res[ptc.target]);
+                }
             }
         }
         return;
@@ -87,4 +125,16 @@ export const equalCaseItems = (
         }
         equalCaseItems(res, item);
     });
+};
+
+export const equalObject = (source: any, target: any) => {
+    for (let prop in target) {
+        assert.hasAnyKeys(source, [prop]);
+        if (typeof target[prop] !== "object") {
+            assert.equal(target[prop], source[prop]);
+        } else {
+            assert.isObject(source[prop]);
+            equalObject(source[prop], target[prop]);
+        }
+    }
 };
