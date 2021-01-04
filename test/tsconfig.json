@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "lib": ["ES2015", "ES6", "DOM"],
+        "target": "ES2019",
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "outDir": "dist"
+    },
+    "include": ["./**/*.ts", "./*.ts"],
+    "exclude": ["node_modules", "dist", "*.d.ts"]
+}
