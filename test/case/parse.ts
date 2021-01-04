@@ -1,6 +1,7 @@
-import { FxNodeType } from "../src";
-import { FxParseTestCase, FxParseTestCaseItemType } from "./type";
-const cases: FxParseTestCase[] = [
+import { FxNodeType } from "../../src";
+import { FxParseTestCase, FxParseTestCaseItemType } from "../type";
+export const optionsCases: FxParseTestCase[] = [];
+export const coreCases: FxParseTestCase[] = [
     {
         desc: "t1",
         xml: "<p>123</p>",
@@ -36,4 +37,3 @@ const cases: FxParseTestCase[] = [
         ],
     },
 ];
-export default cases;

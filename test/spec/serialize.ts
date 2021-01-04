@@ -1,7 +1,7 @@
-import { optionsCases, coreCases } from "../case/parse";
+import { optionsCases, coreCases } from "../case/serialize";
 import { execParseTestCase } from "../util";
 
-describe("Parse", () => {
+describe("serialize", () => {
     describe("Options", () => {
         optionsCases.forEach((ptc) => {
             execParseTestCase(ptc);
