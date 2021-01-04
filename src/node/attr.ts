@@ -418,6 +418,9 @@ export const tryParseAttr = (
             }
             moveCursor(cursor, 0, boundaryValue.length - 1, boundaryValue.length - 1);
             plusContent(boundaryValue);
+            if (checkAttrEnd()) {
+                return returnEnd();
+            }
             continue;
         }
         if (findTarget === FxParseAttrTarget.name || findTarget === FxParseAttrTarget.content) {

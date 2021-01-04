@@ -24,9 +24,9 @@ import {
     FxTryStep,
 } from "../types";
 import { serializeNodeAttrs, tryParseAttrs } from "./attr";
-import { DEFAULT_PARSE_OPTIONS } from "src/var";
-import { checkOptionAllow } from "src/option";
-import { BOUNDARY_HAS_SPACE, TAG_NAME_IS_EMPTY } from "src/message";
+import { DEFAULT_PARSE_OPTIONS } from "../var";
+import { checkOptionAllow } from "../option";
+import { BOUNDARY_HAS_SPACE, TAG_NAME_IS_EMPTY } from "../message";
 
 export const tryParsePI = (
     xml: string,
