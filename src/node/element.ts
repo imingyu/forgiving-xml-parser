@@ -212,6 +212,7 @@ export const tryParseElementStartTag = (
         pushStep(steps, FxEventType.attrsEnd, cursor);
         if (cursor.offset < xmlLength - 1) {
             if (
+                REX_SPACE.test(xml[cursor.offset]) &&
                 !checkOptionAllow(
                     options,
                     "allowStartTagBoundaryNearSpace",
@@ -407,25 +408,22 @@ export const ElementParser: FxNodeAdapter = {
                     steps = [];
                     pushStep(steps, FxEventType.error, cursor, END_TAG_NOT_MATCH_START);
                 } else if (matchStartTagLevel > 0) {
-                    const firstStep = steps[0];
+                    let middleSteps = [];
                     let node: FxNode;
-                    for (let level = 0; level <= matchStartTagLevel; level++) {
+                    for (let level = 0; level < matchStartTagLevel; level++) {
                         node = node ? node.parent : context.currentNode;
-                        const nodeLastStep = node.children
-                            ? node.children[node.children.length - 1].steps[
-                                  node.children[node.children.length - 1].steps.length - 1
-                              ]
-                            : node.steps[node.steps.length - 1];
+                        const nodeLastStep = node.steps[node.steps.length - 1];
                         const nodeFirstStep = node.steps[0];
                         if (!checkAllowNodeNotClose(node, context, node.parser)) {
-                            pushStep(steps, FxEventType.error, firstStep.cursor, TAG_NOT_CLOSE);
+                            pushStep(steps, FxEventType.error, nodeLastStep.cursor, TAG_NOT_CLOSE);
                             break;
                         }
-                        pushStep(node.steps, FxEventType.nodeEnd, nodeLastStep.cursor, [
-                            nodeFirstStep.data[0],
+                        pushStep(middleSteps, FxEventType.nodeEnd, nodeLastStep.cursor, [
+                            nodeFirstStep.data as FxNodeAdapter,
                             FxNodeCloseType.startTagClosed,
                         ]);
                     }
+                    steps = middleSteps.concat(steps);
                 }
             }
         } else {

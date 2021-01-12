@@ -414,6 +414,9 @@
 
                 $("#btnParse").bind("click", function (e) {
                     var options = getOptions();
+                    options.allowNodeNotClose = (node) => {
+                        return node.name === "image";
+                    };
                     var xml = getXml();
                     localStorage.setItem("Fx.Xml", xml);
                     var startTime = (performance || Date).now();
