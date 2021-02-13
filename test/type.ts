@@ -1,10 +1,10 @@
 import {
     FxParseOptions,
-    FxNodeType,
     FxNode,
     FxEventType,
     FxWrong,
     FxParseContext,
+    FxParseResult,
 } from "../src/types";
 export interface FxParseTestCase {
     desc: string;
@@ -12,19 +12,13 @@ export interface FxParseTestCase {
     options?: FxParseOptions;
     items: FxParseTestCaseItem[];
 }
-export enum FxParseTestCaseItemType {
-    event = "event",
-    step = "step",
-    child = "child",
-    sourceLocation = "sourceLocation",
+export interface FxParseTestCaseItem {
+    target: string;
+    value?: FxParseTestCaseEqualer | any;
 }
 
-export type FxParseTestCaseItems = Array<undefined | FxParseTestCaseItem>;
-
-export interface FxParseTestCaseItem {
-    target: FxParseTestCaseItemType | FxNodeType | string;
-    value?: any;
-    items?: FxParseTestCaseItems;
+export interface FxParseTestCaseEqualer {
+    (res: FxParseResult): boolean;
 }
 
 export type FxEventItem = [FxEventType, FxParseContext, FxNode | FxWrong];

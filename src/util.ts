@@ -19,6 +19,7 @@ import {
     FxStartTagCompare,
     FxNodeLocationInfo,
     FxLocation,
+    FxSerializeBaseOptions,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -101,19 +102,19 @@ export const pick = (
     prop: string,
     res: FxParseResultJSON,
     parseResult: FxParseResult,
-    options?: FxToJSONOptions
+    options: FxToJSONOptions
 ) => {
-    if (options && options[prop]) {
+    if (options[prop]) {
         res[prop] = parseResult[prop];
     }
 };
-export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON => {
+export const nodeToJSON = (node: FxNode, options: FxToJSONOptions): FxNodeJSON => {
     const res = {} as FxNodeJSON;
-    const hasFilter = options && isFunc(options.dataFilter);
+    const hasFilter = isFunc(options.dataFilter);
     for (let prop in node) {
         if (prop !== "parent" && prop !== "parser") {
             if (prop === "steps") {
-                if (options && options.steps) {
+                if (options.steps) {
                     res[prop] = node[prop].map((step) => {
                         const res = {
                             ...step,
@@ -168,7 +169,7 @@ export const nodeToJSON = (node: FxNode, options?: FxToJSONOptions): FxNodeJSON 
                 } else {
                     res[prop] = node[prop];
                 }
-            } else if (options && options.locationInfo) {
+            } else if (options.locationInfo) {
                 res[prop] = hasFilter
                     ? (options.dataFilter(
                           node[prop],
@@ -383,6 +384,9 @@ export const findStartTagLevel = (
 ): number => {
     let level = 0;
     let node: FxNode = context.currentNode;
+    if (!node) {
+        return -1;
+    }
     if (compare(node, context, endTagSteps)) {
         return level;
     }
@@ -429,4 +433,41 @@ export const setNodeLocationByCursor = (
     loc.endLineNumber = cursor.lineNumber;
     loc.endColumn = cursor.column;
     loc.endOffset = cursor.offset;
+};
+
+export const filterOptions = <T extends FxParseOptions | FxSerializeOptions | FxToJSONOptions>(
+    defaultOptions?: T,
+    options?: T
+): T => {
+    const res = defaultOptions ? Object.assign({}, defaultOptions) : ({} as T);
+    if ("nodeAdapters" in res) {
+        (res as FxParseOptions).nodeAdapters = (res as FxParseOptions).nodeAdapters.map(
+            (item) => item
+        );
+    }
+    if (typeof options === "object") {
+        Object.assign(res, options);
+    }
+    return res;
+};
+
+export const filterFirstAttrSteps = (
+    steps: FxTryStep[],
+    filter: Function
+): Array<[number, FxTryStep]> => {
+    const res: Array<[number, FxTryStep]> = [];
+    for (let i = 0, len = steps.length; i < len; i++) {
+        const step = steps[i];
+        let hasBreak;
+        if (step.step === FxEventType.nodeEnd || step.step === FxEventType.startTagEnd) {
+            hasBreak = true;
+        }
+        if (filter(step)) {
+            res.push([i, step]);
+        }
+        if (hasBreak) {
+            break;
+        }
+    }
+    return res;
 };

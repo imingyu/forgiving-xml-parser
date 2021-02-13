@@ -79,7 +79,8 @@ export const tryParseDtdStartTag = (
                 expectStartTagEndCursor,
                 DtdParser,
                 nodeName,
-                FxBoundaryPosition.left
+                FxBoundaryPosition.left,
+                steps
             )
         ) {
             return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);

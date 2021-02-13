@@ -7,16 +7,20 @@ import {
     FxToJSONOptions,
     FxWrong,
 } from "./types";
-import { pick, nodeToJSON, lxWrongToJSON, moveCursor, findNodeParser, isFunc } from "./util";
+import {
+    pick,
+    nodeToJSON,
+    lxWrongToJSON,
+    moveCursor,
+    findNodeParser,
+    isFunc,
+    filterOptions,
+} from "./util";
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 
 export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
-    options = Object.assign(
-        {},
-        DEFAULT_PARSE_OPTIONS,
-        typeof options === "object" && options ? options : {}
-    );
+    options = filterOptions(DEFAULT_PARSE_OPTIONS, options);
     const context: FxParseContext = {
         offset: 0,
         xmlLength: xml.length,
@@ -63,9 +67,11 @@ export const parseResultToJSON = (
     parseResult: FxParseResult,
     options?: FxToJSONOptions
 ): FxParseResultJSON => {
+    options = filterOptions(null, options);
+    let hasFilter = isFunc(options.dataFilter);
     const res: FxParseResultJSON = {};
     if (parseResult.error) {
-        if (options && isFunc(options.dataFilter)) {
+        if (hasFilter) {
             res.error = options.dataFilter(res.error, lxWrongToJSON(parseResult.error)) as FxWrong;
         } else {
             res.error = lxWrongToJSON(parseResult.error);
@@ -75,7 +81,6 @@ export const parseResultToJSON = (
     pick("maxCol", res, parseResult, options);
     pick("xml", res, parseResult, options);
     if (!parseResult.error) {
-        let hasFilter = options && isFunc(options.dataFilter);
         res.nodes = parseResult.nodes.map((node) => {
             if (hasFilter) {
                 return options.dataFilter(node, nodeToJSON(node, options)) as FxNodeJSON;

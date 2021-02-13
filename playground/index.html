@@ -365,6 +365,23 @@
                         options.elMap[name] = el;
                     }
                 });
+
+                options.allowStartTagBoundaryNearSpace = (
+                    xml,
+                    cursor,
+                    parser,
+                    tagName,
+                    spacePosition,
+                    steps
+                ) => {
+                    if (
+                        spacePosition === ForgivingXmlParser.FxBoundaryPosition.right &&
+                        parser.nodeType === ForgivingXmlParser.FxNodeType.element &&
+                        ForgivingXmlParser.ignoreSpaceFindCharCursor(xml, cursor, "/")
+                    ) {
+                        return true;
+                    }
+                };
                 return options;
             }
 
@@ -426,6 +443,8 @@
                     var parseResult = ForgivingXmlParser.parseResultToJSON(json, {
                         locationInfo: $("#chkLocation").prop("checked"),
                         steps: $("#chkSteps").prop("checked"),
+                        maxCol: true,
+                        maxLine: true,
                         // dataFilter(s, r) {
                         //     if (r.type === "attr") {
                         //         r.content = "哈哈";

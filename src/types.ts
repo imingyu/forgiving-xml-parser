@@ -130,7 +130,7 @@ export interface FxLoopHookHandler {
     (context: FxParseContext): number;
 }
 export interface FxOptionChecker {
-    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): boolean;
+    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter, steps: FxTryStep[]): boolean;
 }
 export interface FxEqualNameChecker {
     (endTagName: string, nodeAnterior: FxNode, context: FxParseContext): boolean;
@@ -148,7 +148,8 @@ export interface FxAllowNearTagBoundarySpace {
         cursor: FxCursorPosition,
         parser: FxNodeAdapter,
         tagName?: string,
-        spacePosition?: FxBoundaryPosition
+        spacePosition?: FxBoundaryPosition,
+        steps?: FxTryStep[]
     ): boolean | FxBoundaryPosition;
 }
 export interface FxAllowTagNameHasSpace {

@@ -13,6 +13,9 @@ import {
     FxWrong,
     FxNodeTryStep,
     FxBoundaryPosition,
+    FxCursorPosition,
+    FxOptionChecker,
+    FxAllowNearTagBoundarySpace,
 } from "./types";
 import {
     createNodeByNodeStartStep,
@@ -250,6 +253,59 @@ export function equalOption<P extends keyof FxParseOptions>(
     }
     return value === defaultValue;
 }
+
+export const checkCommonOption = <T extends keyof FxParseOptions>(
+    options: FxParseOptions,
+    optionName: T,
+    defaultValue: FxParseOptions[T],
+    xml: string,
+    cursor: FxCursorPosition,
+    parser: FxNodeAdapter,
+    steps: FxTryStep[]
+): boolean => {
+    const optionValue = optionName in options ? options[optionName] : defaultValue;
+    if (isFunc(optionValue)) {
+        return (optionValue as FxOptionChecker)(xml, cursor, parser, steps);
+    }
+    return !!optionValue;
+};
+
+export const checkTagBoundaryNearSpace = <
+    T extends "allowStartTagBoundaryNearSpace" | "allowEndTagBoundaryNearSpace"
+>(
+    options: FxParseOptions,
+    optionName: T,
+    defaultValue: FxParseOptions[T],
+    xml: string,
+    cursor: FxCursorPosition,
+    parser: FxNodeAdapter,
+    tagName?: string,
+    spacePosition?: FxBoundaryPosition,
+    steps?: FxTryStep[]
+): boolean => {
+    const optionValue = optionName in options ? options[optionName] : defaultValue;
+    if (isFunc(optionValue)) {
+        const res = (optionValue as FxAllowNearTagBoundarySpace)(
+            xml,
+            cursor,
+            parser,
+            tagName,
+            spacePosition,
+            steps
+        );
+        if ((res as FxBoundaryPosition) in FxBoundaryPosition) {
+            return res === spacePosition;
+        }
+        return !!res;
+    }
+    if (optionValue instanceof RegExp) {
+        return optionValue.test(tagName);
+    }
+    if ((optionValue as FxBoundaryPosition) in FxBoundaryPosition) {
+        return optionValue === spacePosition;
+    }
+    return !!optionValue;
+};
 
 export const checkOptionAllow = <
     T extends keyof FxParseOptions,

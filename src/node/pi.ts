@@ -69,7 +69,8 @@ export const tryParsePI = (
                 expectStartTagEndCursor,
                 ProcessingInstructionParser,
                 nodeName,
-                FxBoundaryPosition.left
+                FxBoundaryPosition.left,
+                steps
             )
         ) {
             return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);

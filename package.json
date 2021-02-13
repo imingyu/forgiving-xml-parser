@@ -19,6 +19,7 @@
         "@types/mocha": "^8.2.0",
         "chai": "^4.2.0",
         "fse": "^4.0.1",
+        "lodash": "^4.17.20",
         "mocha": "^8.1.1",
         "rollup": "^2.23.0",
         "rollup-plugin-uglify": "^5.0.2",

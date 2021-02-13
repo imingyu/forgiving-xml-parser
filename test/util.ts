@@ -1,22 +1,7 @@
-import {
-    FxEventItem,
-    FxParseTestCase,
-    FxParseTestCaseItem,
-    FxParseTestCaseItems,
-    FxParseTestCaseItemType,
-} from "./type";
-import {
-    FxNode,
-    FxNodeCloseType,
-    FxNodeLocationInfo,
-    FxNodeTagLocationInfo,
-    FxNodeType,
-    FxParseOptions,
-    FxParseResult,
-    FxWrong,
-    parse,
-} from "../src/index";
+import { FxParseTestCase, FxParseTestCaseItem } from "./type";
+import { FxNodeCloseType, FxNodeType, FxParseOptions, FxParseResult, parse } from "../src/index";
 import { assert } from "chai";
+import * as _ from "lodash";
 
 export const placeholder = "  <p /> \n <s>1</s>";
 
@@ -61,69 +46,16 @@ export const arrToObject = (arr: string[]): { [prop: string]: number } => {
     return res;
 };
 
-export const equalCaseItems = (
-    res: FxParseResult | FxNode | FxNode[],
-    items: FxParseTestCaseItems | FxParseTestCaseItem
-) => {
-    if (!Array.isArray(items) && "target" in items) {
-        const node = res as FxNode;
-        const ptc = items as FxParseTestCaseItem;
-        if (ptc.target in FxNodeType) {
-            assert.hasAnyKeys(node, ["type"]);
-            assert.equal(node.type, ptc.target);
-        } else if (ptc.target === FxParseTestCaseItemType.child) {
-            if ("nodes" in res) {
-                assert.hasAnyKeys(res, ["xml", "maxCol"]);
-                equalCaseItems(res.nodes, ptc.items);
-            } else {
-                assert.hasAnyKeys(node, ["type", "children"]);
-                assert.equal(node.children.length > 0, true);
-                equalCaseItems(node.children, ptc.items);
-            }
-        } else if (
-            ptc.target === FxParseTestCaseItemType.event ||
-            ptc.target === FxParseTestCaseItemType.step
-        ) {
-            assert.hasAnyKeys(node, ["steps"]);
-            if ("value" in ptc) {
-                const targetSteps = arrToObject(node.steps.map((item) => item.step));
-                assert.hasAnyKeys(targetSteps, Array.isArray(ptc.value) ? ptc.value : [ptc.value]);
-            }
-        } else if (ptc.target === FxParseTestCaseItemType.sourceLocation) {
-            assert.hasAnyKeys(node, ["locationInfo"]);
-            const loc = ptc.value as FxNodeLocationInfo | FxNodeTagLocationInfo;
-        } else if (ptc.target) {
-            assert.hasAnyKeys(res, [ptc.target]);
-            if ("value" in ptc) {
-                const err = res[ptc.target] as FxWrong;
-                if (ptc.target === "error") {
-                    const type = typeof ptc.value;
-                    if (type === "number") {
-                        assert.equal(ptc.value, err.code);
-                    } else if (type === "object") {
-                        equalObject(err, ptc.value);
-                    } else {
-                        assert.include(err.message, ptc.value);
-                    }
-                } else {
-                    assert.equal(ptc.value, res[ptc.target]);
-                }
-            }
-        }
-        return;
-    }
-    if (Array.isArray(res)) {
-        return (res as FxNode[]).forEach((node, index) => {
-            if (items[index]) {
-                equalCaseItems(node, items[index]);
-            }
-        });
-    }
+export const equalCaseItems = (res: FxParseResult, items: FxParseTestCaseItem[]) => {
     items.forEach((item) => {
-        if (!item) {
-            return;
+        assert.equal(_.has(res, item.target), true, `not find：${item.target}`);
+        if ("value" in item) {
+            if (typeof item.value === "function") {
+                assert.equal(item.value(res), true);
+            } else {
+                assert.equal(_.get(res, item.target), item.value);
+            }
         }
-        equalCaseItems(res, item);
     });
 };
 

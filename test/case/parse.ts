@@ -1,5 +1,12 @@
-import { FxNodeType } from "../../src";
-import { FxParseTestCase, FxParseTestCaseItemType } from "../type";
+import {
+    FxBoundaryPosition,
+    FxCursorPosition,
+    FxNodeAdapter,
+    FxNodeType,
+    FxTryStep,
+    ignoreSpaceFindCharCursor,
+} from "../../src";
+import { FxParseTestCase } from "../type";
 export const optionsCases: FxParseTestCase[] = [
     {
         desc: "Selfcloseing node left boundary has space",
@@ -9,8 +16,61 @@ export const optionsCases: FxParseTestCase[] = [
         },
         items: [
             {
-                target: "error",
+                target: "error.code",
                 value: 1,
+            },
+            {
+                target: "error.offset",
+                value: 1,
+            },
+        ],
+    },
+    {
+        desc: "Selfcloseing node start tag right boundary has space",
+        xml: "<p />",
+        options: {
+            allowStartTagBoundaryNearSpace: false,
+        },
+        items: [
+            {
+                target: "error.code",
+                value: 1,
+            },
+            {
+                target: "error.offset",
+                value: 2,
+            },
+        ],
+    },
+    {
+        desc: "Allow selfcloseing boundary has space but allow other node",
+        xml: "<p /><span ><p>< ? pi ?>",
+        options: {
+            allowStartTagBoundaryNearSpace: (
+                xml: string,
+                cursor: FxCursorPosition,
+                parser: FxNodeAdapter,
+                tagName?: string,
+                spacePosition?: FxBoundaryPosition,
+                steps?: FxTryStep[]
+            ): boolean => {
+                if (
+                    spacePosition === FxBoundaryPosition.right &&
+                    parser.nodeType === FxNodeType.element &&
+                    ignoreSpaceFindCharCursor(xml, cursor, "/")
+                ) {
+                    return true;
+                }
+            },
+        },
+        items: [
+            {
+                target: "error.code",
+                value: 1,
+            },
+            {
+                target: "error.offset",
+                value: 10,
             },
         ],
     },
@@ -22,7 +82,11 @@ export const optionsCases: FxParseTestCase[] = [
         },
         items: [
             {
-                target: "error",
+                target: "error.code",
+                value: 1,
+            },
+            {
+                target: "error.offset",
                 value: 1,
             },
         ],
@@ -35,8 +99,12 @@ export const optionsCases: FxParseTestCase[] = [
         },
         items: [
             {
-                target: "error",
+                target: "error.code",
                 value: 1,
+            },
+            {
+                target: "error.offset",
+                value: 2,
             },
         ],
     },
@@ -51,28 +119,12 @@ export const coreCases: FxParseTestCase[] = [
                 value: 10,
             },
             {
-                target: FxParseTestCaseItemType.child,
-                items: [
-                    {
-                        target: FxNodeType.element,
-                        items: [
-                            {
-                                target: FxParseTestCaseItemType.child,
-                                items: [
-                                    {
-                                        target: FxNodeType.text,
-                                        items: [
-                                            {
-                                                target: "content",
-                                                value: "123",
-                                            },
-                                        ],
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                ],
+                target: "nodes[0].children[0].content",
+                value: "123",
+            },
+            {
+                target: "nodes[0].children[0].type",
+                value: FxNodeType.text,
             },
         ],
     },

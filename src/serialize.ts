@@ -1,5 +1,5 @@
 import { FxNodeJSON, FxSerializeOptions } from "./types";
-import { findNodeSerializer } from "./util";
+import { filterOptions, findNodeSerializer } from "./util";
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 export const serialize = (
@@ -12,11 +12,11 @@ export const serialize = (
     if (!Array.isArray(nodes)) {
         nodes = [nodes];
     }
-    options = Object.assign(
+    options = filterOptions(
         {
             nodeAdapters: DEFAULT_PARSE_OPTIONS.nodeAdapters,
         },
-        typeof options === "object" && options ? options : {}
+        options
     );
     const rootNodes = nodes;
     const rootSerialize = (
