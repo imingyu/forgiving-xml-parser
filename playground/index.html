@@ -366,22 +366,22 @@
                     }
                 });
 
-                options.allowStartTagBoundaryNearSpace = (
-                    xml,
-                    cursor,
-                    parser,
-                    tagName,
-                    spacePosition,
-                    steps
-                ) => {
-                    if (
-                        spacePosition === ForgivingXmlParser.FxBoundaryPosition.right &&
-                        parser.nodeType === ForgivingXmlParser.FxNodeType.element &&
-                        ForgivingXmlParser.ignoreSpaceFindCharCursor(xml, cursor, "/")
-                    ) {
-                        return true;
-                    }
-                };
+                // options.allowStartTagBoundaryNearSpace = (
+                //     xml,
+                //     cursor,
+                //     parser,
+                //     tagName,
+                //     spacePosition,
+                //     steps
+                // ) => {
+                //     if (
+                //         spacePosition === ForgivingXmlParser.FxBoundaryPosition.right &&
+                //         parser.nodeType === ForgivingXmlParser.FxNodeType.element &&
+                //         ForgivingXmlParser.ignoreSpaceFindCharCursor(xml, cursor, "/")
+                //     ) {
+                //         return true;
+                //     }
+                // };
                 return options;
             }
 

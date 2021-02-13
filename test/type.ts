@@ -12,6 +12,9 @@ export interface FxParseTestCase {
     options?: FxParseOptions;
     items: FxParseTestCaseItem[];
 }
+export type FxParseOptionsTestCaseMap = {
+    [prop in keyof FxParseOptions]?: FxParseTestCase[];
+};
 export interface FxParseTestCaseItem {
     target: string;
     value?: FxParseTestCaseEqualer | any;

@@ -4,10 +4,16 @@ import { execParseTestCase } from "../util";
 
 describe("Parse", () => {
     describe("Options", () => {
-        execCommonParseOptionTestCases();
-        optionsCases.forEach((ptc) => {
-            execParseTestCase(ptc);
+        describe("basic", () => {
+            execCommonParseOptionTestCases();
         });
+        for (let optionName in optionsCases) {
+            describe(optionName, () => {
+                optionsCases[optionName].forEach((ptc) => {
+                    execParseTestCase(ptc);
+                });
+            });
+        }
     });
     describe("Core", () => {
         coreCases.forEach((ptc) => {

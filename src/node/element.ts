@@ -206,6 +206,7 @@ export const tryParseElementStartTag = (
             steps = steps.concat(attrSteps);
             Object.assign(cursor, attrEndCursor);
             pushStep(steps, FxEventType.attrsEnd, cursor);
+            moveCursor(cursor, 0, 1, 1);
         }
         if (cursor.offset < xmlLength - 1) {
             if (
