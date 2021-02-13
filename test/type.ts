@@ -13,7 +13,10 @@ export interface FxParseTestCase {
     items: FxParseTestCaseItem[];
 }
 export type FxParseOptionsTestCaseMap = {
-    [prop in keyof FxParseOptions]?: FxParseTestCase[];
+    [prop in keyof FxParseOptions]?: FxTestCaseMap | FxParseTestCase[];
+};
+export type FxTestCaseMap = {
+    [prop: string]: FxTestCaseMap | FxParseTestCase[];
 };
 export interface FxParseTestCaseItem {
     target: string;

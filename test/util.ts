@@ -1,4 +1,4 @@
-import { FxParseTestCase, FxParseTestCaseItem } from "./type";
+import { FxParseTestCase, FxParseTestCaseItem, FxTestCaseMap } from "./type";
 import { FxNodeCloseType, FxNodeType, FxParseOptions, FxParseResult, parse } from "../src/index";
 import { assert } from "chai";
 import * as _ from "lodash";
@@ -67,6 +67,22 @@ export const equalObject = (source: any, target: any) => {
         } else {
             assert.isObject(source[prop]);
             equalObject(source[prop], target[prop]);
+        }
+    }
+};
+
+export const testCases = (cases: FxTestCaseMap | FxParseTestCase[], handler: Function) => {
+    if (Array.isArray(cases)) {
+        cases.forEach((ptc) => {
+            it(ptc.desc, () => {
+                equalCaseItems(handler(ptc.xml, ptc.options), ptc.items);
+            });
+        });
+    } else if (cases) {
+        for (let prop in cases) {
+            describe(prop, () => {
+                testCases(cases[prop], handler);
+            });
         }
     }
 };
