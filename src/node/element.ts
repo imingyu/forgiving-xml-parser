@@ -177,6 +177,8 @@ export const tryParseElementStartTag = (
                     tagName = attrName;
                     pushStep(steps, FxEventType.nodeNameStart, attrNameStartStep.cursor);
                     pushStep(steps, FxEventType.nodeNameEnd, attrNameEndStep.cursor, tagName);
+                    Object.assign(cursor, attrNameEndStep.cursor);
+                    moveCursor(cursor, 0, 1, 1);
                 }
             }
         }

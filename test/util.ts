@@ -1,5 +1,12 @@
 import { FxParseTestCase, FxParseTestCaseItem, FxTestCaseMap } from "./type";
-import { FxNodeCloseType, FxNodeType, FxParseOptions, FxParseResult, parse } from "../src/index";
+import {
+    FxNodeCloseType,
+    FxNodeType,
+    FxParseOptions,
+    FxParseResult,
+    parse,
+    parseResultToJSON,
+} from "../src/index";
 import { assert } from "chai";
 import * as _ from "lodash";
 
@@ -48,7 +55,11 @@ export const arrToObject = (arr: string[]): { [prop: string]: number } => {
 
 export const equalCaseItems = (res: FxParseResult, items: FxParseTestCaseItem[]) => {
     items.forEach((item) => {
-        assert.equal(_.has(res, item.target), true, `not find：${item.target}`);
+        if (item.target.startsWith("!")) {
+            assert.equal(_.has(res, item.target.substr(1)), false);
+        } else {
+            assert.equal(_.has(res, item.target), true, `not found:${item.target}`);
+        }
         if ("value" in item) {
             if (typeof item.value === "function") {
                 assert.equal(item.value(res), true);
@@ -75,7 +86,8 @@ export const testCases = (cases: FxTestCaseMap | FxParseTestCase[], handler: Fun
     if (Array.isArray(cases)) {
         cases.forEach((ptc) => {
             it(ptc.desc, () => {
-                equalCaseItems(handler(ptc.xml, ptc.options), ptc.items);
+                const res = handler(ptc.xml, ptc.options);
+                equalCaseItems(res, ptc.items);
             });
         });
     } else if (cases) {
