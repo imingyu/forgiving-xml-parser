@@ -1,6 +1,7 @@
 import { parse } from "../../src";
 import { execCommonParseOptionTestCases } from "../case/options";
-import { optionsCases, coreCases } from "../case/parse";
+import * as optionsCases from "../case/parse-options";
+import * as coreCases from "../case/parse-core";
 import { testCases } from "../util";
 
 describe("Parse", () => {
