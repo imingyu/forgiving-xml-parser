@@ -49,7 +49,7 @@ export const tryParseAttrs = (
         const res = tryParseAttr(xml, cursor, parentNodeParser, options, currentAttrSteps);
         steps = steps.concat(currentAttrSteps);
         if (res === "break" || (attrCallback && attrCallback(currentAttrSteps, steps))) {
-            return steps;
+            break;
         }
     }
     return steps;
@@ -237,6 +237,10 @@ export const tryParseAttr = (
                     return true;
                 }
             }
+        }
+        if (!findTarget && !!parentNodeParser.checkAttrsEnd(xml, nextValidCharCursor, options)) {
+            attrsEnd = true;
+            return true;
         }
     };
     const returnEnd = () => {

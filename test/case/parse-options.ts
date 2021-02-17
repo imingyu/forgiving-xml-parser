@@ -6,7 +6,7 @@ import {
     FxTryStep,
     ignoreSpaceFindCharCursor,
 } from "../../src";
-import { FxParseOptionsTestCaseMap, FxParseTestCase, FxTestCaseMap } from "../type";
+import { FxParseTestCase, FxTestCaseMap } from "../type";
 const createOptionCommonCases = (
     optionName: string,
     optionVal: any,
@@ -125,6 +125,46 @@ const createOptionCommonCases = (
                 },
             ],
         },
+        {
+            desc: "Element node",
+            xml: "<p>1</p>",
+            options: {
+                [optionName]: optionVal,
+            },
+            items: [
+                {
+                    target: "!error",
+                },
+                {
+                    target: "nodes[0].type",
+                    value: FxNodeType.element,
+                },
+                {
+                    target: "nodes[0].children[0].content",
+                    value: "1",
+                },
+            ],
+        },
+        {
+            desc: "Selfcloseing node",
+            xml: "<p/>",
+            options: {
+                [optionName]: optionVal,
+            },
+            items: [
+                {
+                    target: "!error",
+                },
+                {
+                    target: "nodes[0].type",
+                    value: FxNodeType.element,
+                },
+                {
+                    target: "nodes[0].name",
+                    value: "p",
+                },
+            ],
+        },
     ];
     res.forEach((item) => {
         item.desc = `Common case:${item.desc}`;
@@ -135,6 +175,33 @@ const createOptionCommonCases = (
     return res;
 };
 export const allowStartTagBoundaryNearSpace: FxTestCaseMap = {
+    "value=not suport value": [
+        ...createOptionCommonCases(
+            "allowStartTagBoundaryNearSpace",
+            2,
+            "value is number like true"
+        ),
+        ...createOptionCommonCases(
+            "allowStartTagBoundaryNearSpace",
+            {},
+            "value is object like true"
+        ),
+        ...createOptionCommonCases(
+            "allowStartTagBoundaryNearSpace",
+            null,
+            "value is null like false"
+        ),
+        ...createOptionCommonCases(
+            "allowStartTagBoundaryNearSpace",
+            () => 3,
+            "value is function return like true"
+        ),
+        ...createOptionCommonCases(
+            "allowStartTagBoundaryNearSpace",
+            () => null,
+            "value is function return like false"
+        ),
+    ],
     "value=true": [...createOptionCommonCases("allowStartTagBoundaryNearSpace", true)],
     "value=false": [
         ...createOptionCommonCases("allowStartTagBoundaryNearSpace", false),
@@ -274,6 +341,150 @@ export const allowStartTagBoundaryNearSpace: FxTestCaseMap = {
                 },
             ],
         },
+        {
+            desc: "PI start tag left boundary has space",
+            xml: "< ?xml?>",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "error.code",
+                    value: 1,
+                },
+                {
+                    target: "error.offset",
+                    value: 1,
+                },
+            ],
+        },
+        {
+            desc: "Child is PI and PI start tag left boundary has space",
+            xml: "<p>< ?xml?></p>",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "error.code",
+                    value: 1,
+                },
+                {
+                    target: "error.offset",
+                    value: 4,
+                },
+            ],
+        },
+        {
+            desc: "PI end tag left boundary has space",
+            xml: "<?xml? >",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "!error",
+                },
+                {
+                    target: "nodes[0].name",
+                    value: "xml",
+                },
+            ],
+        },
+        {
+            desc: "DTD start tag left boundary has space (1)",
+            xml: "< !ELEMENT br EMPTY>",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "error.code",
+                    value: 1,
+                },
+                {
+                    target: "error.offset",
+                    value: 1,
+                },
+            ],
+        },
+        {
+            desc: "DTD start tag left boundary has space (2)",
+            xml: "<! ELEMENT br EMPTY><p/>",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "!error",
+                },
+                {
+                    target: "nodes[0].type",
+                    value: FxNodeType.dtd,
+                },
+                {
+                    target: "nodes[0].name",
+                    value: "ELEMENT",
+                },
+                {
+                    target: "nodes[0].locationInfo.startTag.name.startOffset",
+                    value: 3,
+                },
+            ],
+        },
+        {
+            desc: "DTD start tag right boundary has space (1)",
+            xml: "<!ELEMENT br EMPTY >",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "error.code",
+                    value: 1,
+                },
+                {
+                    target: "error.offset",
+                    value: 18,
+                },
+            ],
+        },
+        {
+            desc: "DTD start tag right boundary has space (2)",
+            xml: " <!DOCTYPE note [\n<!ELEMENT note (to,from,heading,body)>\n]>",
+            options: {
+                allowStartTagBoundaryNearSpace: false,
+            },
+            items: [
+                {
+                    target: "!error",
+                },
+                {
+                    target: "nodes[1].type",
+                    value: FxNodeType.dtd,
+                },
+                {
+                    target: "nodes[1].name",
+                    value: "DOCTYPE",
+                },
+                {
+                    target: "nodes[1].locationInfo.startTag.endOffset",
+                    value: 16,
+                },
+                {
+                    target: "nodes[1].attrs[0].name",
+                    value: "note",
+                },
+                {
+                    target: "nodes[1].children[1].name",
+                    value: "ELEMENT",
+                },
+                {
+                    target: "nodes[1].children[1].attrs[1].content",
+                    value: "to,from,heading,body",
+                },
+            ],
+        },
     ],
     "value=FxBoundaryPosition.left": [
         ...createOptionCommonCases("allowStartTagBoundaryNearSpace", FxBoundaryPosition.left),
@@ -395,7 +606,6 @@ export const allowStartTagBoundaryNearSpace: FxTestCaseMap = {
             () => FxBoundaryPosition.right,
             "func return right"
         ),
-
         {
             desc: "Allow selfcloseing boundary has space but allow other node",
             xml: "<p /><span ><p>< ? pi ?>",
@@ -430,3 +640,310 @@ export const allowStartTagBoundaryNearSpace: FxTestCaseMap = {
         },
     ],
 };
+
+// export const allowEndTagBoundaryNearSpace: FxTestCaseMap = {
+//     "value=not suport value": [
+//         ...createOptionCommonCases("allowEndTagBoundaryNearSpace", 2, "value is number like true"),
+//         ...createOptionCommonCases("allowEndTagBoundaryNearSpace", {}, "value is object like true"),
+//         ...createOptionCommonCases(
+//             "allowEndTagBoundaryNearSpace",
+//             null,
+//             "value is null like false"
+//         ),
+//         ...createOptionCommonCases(
+//             "allowEndTagBoundaryNearSpace",
+//             () => 3,
+//             "value is function return like true"
+//         ),
+//         ...createOptionCommonCases(
+//             "allowEndTagBoundaryNearSpace",
+//             () => null,
+//             "value is function return like false"
+//         ),
+//     ],
+//     "value=true": [...createOptionCommonCases("allowEndTagBoundaryNearSpace", true)],
+//     "value=false": [
+//         ...createOptionCommonCases("allowEndTagBoundaryNearSpace", false),
+//         {
+//             desc: "Selfcloseing node left boundary has space",
+//             xml: "< p />",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "!error",
+//                 },
+//                 {
+//                     target: "nodes[0].name",
+//                     value: "p",
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Selfcloseing node start tag right boundary has space",
+//             xml: "<p />",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "!error",
+//                 },
+//                 {
+//                     target: "nodes[0].name",
+//                     value: "p",
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Element end tag(not attrs) left boundary has space",
+//             xml: "<p>< /p>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 4,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Element(has attrs) end tag left boundary has space",
+//             xml: "<p hidden>< /p>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 11,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Element end tag right boundary has space",
+//             xml: "<p></\np>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 5,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Element end tag name has space",
+//             xml: "<span></s pan>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 9,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Child end tag left boundary has space",
+//             xml: "<p><span>12< /span></p>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 12,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Child end tag right boundary has space",
+//             xml: "<p><span></ span>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: false,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 11,
+//                 },
+//             ],
+//         },
+//     ],
+//     "value=FxBoundaryPosition.left": [
+//         ...createOptionCommonCases("allowEndTagBoundaryNearSpace", FxBoundaryPosition.left),
+//         {
+//             desc: "Selfcloseing node left boundary has space",
+//             xml: "<span>< p/>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: FxBoundaryPosition.left,
+//             },
+//             items: [
+//                 {
+//                     target: "!error",
+//                 },
+//                 {
+//                     target: "nodes[0].children[0].name",
+//                     value: "p",
+//                 },
+//                 {
+//                     target: "nodes[0].children[0].locationInfo.startTag.name.startOffset",
+//                     value: 8,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Selfcloseing node start tag right boundary has space",
+//             xml: " <p /><span>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: FxBoundaryPosition.left,
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 3,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "Element end tag left boundary has space",
+//             xml: "<p><span>23</span>< /p>",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: FxBoundaryPosition.left,
+//             },
+//             items: [
+//                 {
+//                     target: "!error",
+//                 },
+//                 {
+//                     target: "nodes[0].name",
+//                     value: "p",
+//                 },
+//                 {
+//                     target: "nodes[0].locationInfo.startTag.name.startOffset",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "nodes[0].locationInfo.endTag.name.startOffset",
+//                     value: 21,
+//                 },
+//             ],
+//         },
+//         {
+//             desc: "PI end tag left boundary has space",
+//             xml: "<?xml? >",
+//             options: {
+//                 allowEndTagBoundaryNearSpace: FxBoundaryPosition.left,
+//             },
+//             items: [
+//                 {
+//                     target: "!error",
+//                 },
+//                 {
+//                     target: "nodes[0].name",
+//                     value: "xml",
+//                 },
+//                 {
+//                     target: "nodes[0].locationInfo.startTag.name.startOffset",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "nodes[0].locationInfo.endTag.name.startOffset",
+//                     value: 21,
+//                 },
+//             ],
+//         },
+//     ],
+//     "value=FxBoundaryPosition.right": [
+//         ...createOptionCommonCases("allowStartTagBoundaryNearSpace", FxBoundaryPosition.right),
+//     ],
+//     "value=RegExp": [...createOptionCommonCases("allowStartTagBoundaryNearSpace", /p/)],
+//     "value=Function": [
+//         ...createOptionCommonCases(
+//             "allowStartTagBoundaryNearSpace",
+//             () => true,
+//             "func return true"
+//         ),
+//         ...createOptionCommonCases(
+//             "allowStartTagBoundaryNearSpace",
+//             () => false,
+//             "func return true"
+//         ),
+//         ...createOptionCommonCases(
+//             "allowStartTagBoundaryNearSpace",
+//             () => FxBoundaryPosition.left,
+//             "func return left"
+//         ),
+//         ...createOptionCommonCases(
+//             "allowStartTagBoundaryNearSpace",
+//             () => FxBoundaryPosition.right,
+//             "func return right"
+//         ),
+
+//         {
+//             desc: "Allow selfcloseing boundary has space but allow other node",
+//             xml: "<p /><span ><p>< ? pi ?>",
+//             options: {
+//                 allowStartTagBoundaryNearSpace: (
+//                     xml: string,
+//                     cursor: FxCursorPosition,
+//                     parser: FxNodeAdapter,
+//                     tagName?: string,
+//                     spacePosition?: FxBoundaryPosition,
+//                     steps?: FxTryStep[]
+//                 ): boolean => {
+//                     if (
+//                         spacePosition === FxBoundaryPosition.right &&
+//                         parser.nodeType === FxNodeType.element &&
+//                         ignoreSpaceFindCharCursor(xml, cursor, "/")
+//                     ) {
+//                         return true;
+//                     }
+//                 },
+//             },
+//             items: [
+//                 {
+//                     target: "error.code",
+//                     value: 1,
+//                 },
+//                 {
+//                     target: "error.offset",
+//                     value: 10,
+//                 },
+//             ],
+//         },
+//     ],
+// };

@@ -12,7 +12,6 @@ import {
     FxParseContext,
     FxParseOptions,
     FxSerializeOptions,
-    FxTagType,
     FxTryStep,
     FxBoundaryPosition,
 } from "../types";
@@ -39,121 +38,13 @@ import { AttrParser, serializeNodeAttrs, tryParseAttrs } from "./attr";
 import { boundStepsToContext } from "../option";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
+import { tryParseStartTag } from "./tag";
 export const tryParseDtdStartTag = (
     xml: string,
     cursor: FxCursorPosition,
     options: FxParseOptions
 ) => {
-    let steps: FxTryStep[] = [];
-    pushStep(steps, FxEventType.nodeStart, cursor, DtdParser);
-    pushStep(steps, FxEventType.startTagStart, cursor);
-    const startTagEndCursor = ignoreSpaceIsHeadTail(xml, cursor, "<", "!");
-    const expectStartTagEndCursor = moveCursor(toCursor(cursor), 0, 1, 1);
-    const mockCursor = toCursor(startTagEndCursor);
-    moveCursor(mockCursor, 0, 1, 1);
-    const firstAttrSteps = tryParseAttrs(
-        xml,
-        mockCursor,
-        DtdParser,
-        options,
-        (currentAttrSteps: FxTryStep[]): boolean => {
-            return true;
-        }
-    );
-    let nodeName = "";
-    const attrs = boundStepsToContext(firstAttrSteps, null);
-    // 判断第一个属性仅存在名称
-    if (attrs[0] && !attrs[0].equalCount && !attrs[0].content) {
-        nodeName = attrs[0].name;
-    }
-
-    if (!equalCursor(startTagEndCursor, expectStartTagEndCursor)) {
-        // 检测option
-        if (
-            !checkOptionAllow(
-                options,
-                "allowStartTagBoundaryNearSpace",
-                DEFAULT_PARSE_OPTIONS.allowStartTagBoundaryNearSpace,
-                nodeName,
-                xml,
-                expectStartTagEndCursor,
-                DtdParser,
-                nodeName,
-                FxBoundaryPosition.left,
-                steps
-            )
-        ) {
-            return pushStep(steps, FxEventType.error, expectStartTagEndCursor, BOUNDARY_HAS_SPACE);
-        }
-    }
-    Object.assign(cursor, startTagEndCursor);
-    moveCursor(cursor, 0, 1, 1);
-    if (nodeName) {
-        const fullNodeName = xml.substring(cursor.offset, mockCursor.offset + 1);
-        if (fullNodeName !== nodeName) {
-            if (
-                !checkOptionAllow(
-                    options,
-                    "allowTagNameHasSpace",
-                    DEFAULT_PARSE_OPTIONS.allowTagNameHasSpace,
-                    nodeName,
-                    xml,
-                    cursor,
-                    DtdParser,
-                    fullNodeName,
-                    FxTagType.startTag
-                )
-            ) {
-                return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
-            }
-            pushStep(steps, FxEventType.nodeNameStart, cursor);
-            pushStep(steps, FxEventType.nodeNameEnd, mockCursor, fullNodeName);
-        } else {
-            pushStep(steps, FxEventType.nodeNameStart, firstAttrSteps[0].cursor);
-            pushStep(steps, FxEventType.nodeNameEnd, mockCursor, nodeName);
-        }
-        Object.assign(cursor, mockCursor);
-        moveCursor(cursor, 0, 1, 1);
-    } else if (
-        !checkOptionAllow(
-            options,
-            "allowNodeNameEmpty",
-            DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
-            null,
-            xml,
-            startTagEndCursor,
-            DtdParser
-        )
-    ) {
-        return pushStep(steps, FxEventType.error, startTagEndCursor, TAG_NAME_IS_EMPTY);
-    }
-
-    // 开始解析属性
-    pushStep(steps, FxEventType.attrsStart, cursor);
-    const attrSteps = tryParseAttrs(xml, cursor, DtdParser, options);
-    steps = steps.concat(attrSteps);
-
-    pushStep(steps, FxEventType.attrsEnd, cursor);
-    const xmlLength = xml.length;
-    if (cursor.offset < xmlLength - 1) {
-        for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
-            const startTagEndCursor = DtdParser.checkAttrsEnd(xml, cursor, options);
-            if (startTagEndCursor) {
-                Object.assign(cursor, startTagEndCursor);
-                pushStep(steps, FxEventType.startTagEnd, cursor);
-                if (xml[cursor.offset] === ">") {
-                    pushStep(steps, FxEventType.nodeEnd, cursor, DtdParser);
-                }
-                moveCursor(cursor, 0, 1, 1);
-                break;
-            }
-            const brType = currentIsLineBreak(xml, cursor.offset);
-            if (brType != -1) {
-                moveCursor(cursor, 1, -cursor.column + 1, !brType ? 0 : 1);
-            }
-        }
-    }
-    return steps;
+    return tryParseStartTag(DtdParser, xml, cursor, options);
 };
 
 export const tryParseDtdEndTag = (

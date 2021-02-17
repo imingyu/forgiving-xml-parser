@@ -54,17 +54,25 @@ export const arrToObject = (arr: string[]): { [prop: string]: number } => {
 };
 
 export const equalCaseItems = (res: FxParseResult, items: FxParseTestCaseItem[]) => {
-    items.forEach((item) => {
+    items.forEach((item, index) => {
         if (item.target.startsWith("!")) {
-            assert.equal(_.has(res, item.target.substr(1)), false);
+            assert.equal(
+                _.has(res, item.target.substr(1)),
+                false,
+                `#${index} Should not key(${item.target.substr(1)})`
+            );
         } else {
-            assert.equal(_.has(res, item.target), true, `not found:${item.target}`);
+            assert.equal(_.has(res, item.target), true, `#${index} Not found key(${item.target})`);
         }
         if ("value" in item) {
             if (typeof item.value === "function") {
-                assert.equal(item.value(res), true);
+                assert.equal(item.value(res), true, `#${index} [${item.target}] Not equal(true)`);
             } else {
-                assert.equal(_.get(res, item.target), item.value);
+                assert.equal(
+                    _.get(res, item.target),
+                    item.value,
+                    `#${index} [${item.target}] Not equal(${item.value})`
+                );
             }
         }
     });

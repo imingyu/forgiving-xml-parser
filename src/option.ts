@@ -16,6 +16,7 @@ import {
     FxCursorPosition,
     FxOptionChecker,
     FxAllowNearTagBoundarySpace,
+    FxAllowTagNameHasSpace,
 } from "./types";
 import {
     createNodeByNodeStartStep,
@@ -303,6 +304,26 @@ export const checkTagBoundaryNearSpace = <
     }
     if ((optionValue as FxBoundaryPosition) in FxBoundaryPosition) {
         return optionValue === spacePosition;
+    }
+    return !!optionValue;
+};
+
+export const checkAllowTagNameHasSpace = <T extends "allowTagNameHasSpace">(
+    options: FxParseOptions,
+    defaultValue: FxParseOptions[T],
+    xml: string,
+    cursor: FxCursorPosition,
+    parser: FxNodeAdapter,
+    tagName: string
+): boolean => {
+    const optionName = "allowTagNameHasSpace";
+    const optionValue = optionName in options ? options[optionName] : defaultValue;
+    if (isFunc(optionValue)) {
+        const res = (optionValue as FxAllowTagNameHasSpace)(xml, cursor, parser, tagName);
+        return !!res;
+    }
+    if (optionValue instanceof RegExp) {
+        return optionValue.test(tagName);
     }
     return !!optionValue;
 };

@@ -20,6 +20,7 @@ import {
     FxNodeLocationInfo,
     FxLocation,
     FxSerializeBaseOptions,
+    FxNodeType,
 } from "./types";
 import { REX_SPACE } from "./var";
 

@@ -138,10 +138,6 @@ export interface FxEqualNameChecker {
 export interface FxOptionDisposal<T> {
     (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): T;
 }
-export enum FxTagType {
-    startTag = "startTag",
-    endTag = "endTag",
-}
 export interface FxAllowNearTagBoundarySpace {
     (
         xml: string,
@@ -153,7 +149,7 @@ export interface FxAllowNearTagBoundarySpace {
     ): boolean | FxBoundaryPosition;
 }
 export interface FxAllowTagNameHasSpace {
-    (xml: string, cursor: FxCursorPosition, tagName: string, tagType: FxTagType): boolean;
+    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter, tagName: string): boolean;
 }
 export enum FxBoundaryPosition {
     left = "left",
