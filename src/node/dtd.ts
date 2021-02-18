@@ -38,7 +38,7 @@ import { AttrParser, serializeNodeAttrs, tryParseAttrs } from "./attr";
 import { boundStepsToContext } from "../option";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
-import { tryParseStartTag } from "./tag";
+import { tryParseStartTag, tryParseEndTag } from "./tag";
 export const tryParseDtdStartTag = (
     xml: string,
     cursor: FxCursorPosition,
@@ -50,36 +50,9 @@ export const tryParseDtdStartTag = (
 export const tryParseDtdEndTag = (
     xml: string,
     cursor: FxCursorPosition,
-    options: FxParseOptions,
-    endTagStartCursor?: FxCursorPosition
+    options: FxParseOptions
 ): FxTryStep[] => {
-    let steps: FxTryStep[] = [];
-    endTagStartCursor = endTagStartCursor || ignoreSpaceIsHeadTail(xml, cursor, "]", ">");
-    pushStep(steps, FxEventType.endTagStart, cursor);
-    const nextCursor: FxCursorPosition = {
-        lineNumber: cursor.lineNumber,
-        column: cursor.column + 1,
-        offset: cursor.offset + 1,
-    };
-    if (!equalCursor(nextCursor, endTagStartCursor)) {
-        if (
-            !checkOptionAllow(
-                options,
-                "allowEndTagBoundaryNearSpace",
-                DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
-                null,
-                xml,
-                nextCursor,
-                DtdParser
-            )
-        ) {
-            return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
-        }
-    }
-    Object.assign(cursor, endTagStartCursor);
-    pushStep(steps, FxEventType.endTagEnd, cursor);
-    pushStep(steps, FxEventType.nodeEnd, cursor, DtdParser);
-    return steps;
+    return tryParseEndTag(DtdParser, xml, cursor, options);
 };
 
 export const DtdParser: FxNodeAdapter = {
@@ -106,8 +79,7 @@ export const DtdParser: FxNodeAdapter = {
                     column: context.column,
                     offset: context.offset,
                 },
-                context.options,
-                endTagStartCursor
+                context.options
             );
             const lastStep = steps[steps.length - 1];
             if (lastStep.step !== FxEventType.error) {

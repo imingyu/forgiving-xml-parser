@@ -136,6 +136,7 @@ export const tryParseStartTag = (
     if (nodeName) {
         pushStep(steps, FxEventType.nodeNameStart, nodeNameActualStartCursor);
         // 效验边界符与nodeName之间是否存在空白符
+        let errMsg = BOUNDARY_HAS_SPACE;
         if (!equalCursor(nodeNameExpectedStartCursor, nodeNameActualStartCursor)) {
             let hasError;
             if (parser.nodeType === FxNodeType.element) {
@@ -159,14 +160,10 @@ export const tryParseStartTag = (
                     parser,
                     nodeName
                 );
+                errMsg = TAG_NAME_NEAR_SPACE;
             }
             if (hasError) {
-                return pushStep(
-                    steps,
-                    FxEventType.error,
-                    nodeNameExpectedStartCursor,
-                    BOUNDARY_HAS_SPACE
-                );
+                return pushStep(steps, FxEventType.error, nodeNameExpectedStartCursor, errMsg);
             }
         }
         pushStep(steps, FxEventType.nodeNameEnd, nodeNameEndCursor, nodeName);
@@ -297,5 +294,224 @@ export const tryParseStartTag = (
         pushStep(steps, FxEventType.startTagEnd, swimCursor, [parser, FxNodeCloseType.notClosed]);
     }
 
+    return steps;
+};
+
+export const tryParseEndTag = (
+    parser: FxNodeAdapter,
+    xml: string,
+    currentCursor: FxCursorPosition,
+    options: FxParseOptions
+): FxTryStep[] => {
+    let leftBoundaryExpectedEndCursor: FxCursorPosition = moveCursor(
+        toCursor(currentCursor),
+        0,
+        1,
+        1
+    ); // 左边界符期待的结束坐标
+    let leftBoundaryActualEndCursor: FxCursorPosition; // 左边界符实际的结束坐标
+    if (parser.nodeType === FxNodeType.element) {
+        leftBoundaryActualEndCursor = ignoreSpaceIsHeadTail(xml, currentCursor, "<", "/");
+    } else if (parser.nodeType === FxNodeType.dtd) {
+        leftBoundaryActualEndCursor = ignoreSpaceIsHeadTail(xml, currentCursor, "]", ">");
+    } else {
+        return [];
+    }
+    const steps: FxTryStep[] = [];
+    const swimCursor = toCursor(currentCursor);
+    pushStep(steps, FxEventType.endTagStart, swimCursor);
+
+    // 效验左边界符的右侧或中间是否存在空白符
+    if (
+        !equalCursor(leftBoundaryExpectedEndCursor, leftBoundaryActualEndCursor) &&
+        !checkTagBoundaryNearSpace(
+            options,
+            "allowEndTagBoundaryNearSpace",
+            DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
+            xml,
+            swimCursor,
+            parser,
+            "",
+            FxBoundaryPosition.left,
+            steps
+        )
+    ) {
+        return pushStep(
+            steps,
+            FxEventType.error,
+            moveCursor(toCursor(swimCursor), 0, 1, 1),
+            BOUNDARY_HAS_SPACE
+        );
+    }
+
+    // 将光标移动到【左边界符实际的结束坐标】
+    Object.assign(swimCursor, leftBoundaryActualEndCursor);
+
+    if (parser.nodeType === FxNodeType.dtd) {
+        pushStep(steps, FxEventType.endTagEnd, swimCursor);
+        pushStep(steps, FxEventType.nodeEnd, swimCursor, parser);
+        return steps;
+    }
+
+    // 将光标挪移到“/”的后一个字符
+    moveCursor(swimCursor, 0, 1, 1);
+
+    const closeEndTag = (nodeName: string, cursor: FxCursorPosition) => {
+        if (!checkAllowNodeNotClose(null, null, parser, nodeName, options, xml, cursor, steps)) {
+            return pushStep(steps, FxEventType.error, cursor, TAG_NOT_CLOSE);
+        }
+        pushStep(steps, FxEventType.endTagEnd, cursor, nodeName);
+        pushStep(steps, FxEventType.nodeEnd, cursor, [parser, FxNodeCloseType.notClosed]);
+    };
+
+    const xmlLength = xml.length;
+    if (swimCursor.offset > xmlLength - 1) {
+        // 已经到了最后，但标签未闭合
+        closeEndTag("", leftBoundaryActualEndCursor);
+        return steps;
+    }
+
+    let tagNameExpectedStartCursor: FxCursorPosition = toCursor(swimCursor); // end tag name期待的开始坐标
+    let tagNameActualStartCursor: FxCursorPosition; // end tag name实际的开始坐标
+    let tagNameEndCursor: FxCursorPosition; // end tag name 结束坐标
+    let _tagNameSpaceCursor: FxCursorPosition; // end tag name 中的第一个空白字符坐标
+    let tagNameSpaceCursor: FxCursorPosition; // end tag name 中的第一个空白字符坐标
+    let rightBoundaryExpectedCursor: FxCursorPosition; // end tag 右边界符坐标 期待的
+    let rightBoundaryActualCursor: FxCursorPosition; // end tag 右边界符坐标 实际的
+    let lastCursor: FxCursorPosition;
+    let tagName: string = "";
+
+    for (; swimCursor.offset < xmlLength; moveCursor(swimCursor, 0, 1, 1)) {
+        const char = xml[swimCursor.offset];
+        if (char === ">") {
+            if (!rightBoundaryExpectedCursor) {
+                rightBoundaryExpectedCursor = toCursor(swimCursor);
+            }
+            rightBoundaryActualCursor = toCursor(swimCursor);
+            break;
+        }
+        lastCursor = toCursor(swimCursor);
+        if (REX_SPACE.test(char)) {
+            const brType = currentIsLineBreak(xml, swimCursor.offset);
+            if (brType != -1) {
+                moveCursor(swimCursor, 1, -swimCursor.column, !brType ? 0 : 1);
+            }
+            if (tagName) {
+                tagName += char;
+                _tagNameSpaceCursor = toCursor(swimCursor);
+            }
+            continue;
+        }
+
+        if (!tagNameActualStartCursor) {
+            tagNameActualStartCursor = toCursor(swimCursor);
+        }
+        if (_tagNameSpaceCursor && !tagNameSpaceCursor) {
+            tagNameSpaceCursor = _tagNameSpaceCursor;
+        }
+        tagName += char;
+        tagNameEndCursor = toCursor(swimCursor);
+        rightBoundaryExpectedCursor = moveCursor(toCursor(swimCursor), 0, 1, 1);
+    }
+
+    if (!tagNameActualStartCursor) {
+        // end tag 里面全都是空白字符
+        if (
+            !checkTagBoundaryNearSpace(
+                options,
+                "allowEndTagBoundaryNearSpace",
+                DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
+                xml,
+                tagNameExpectedStartCursor,
+                parser,
+                "",
+                FxBoundaryPosition.left,
+                steps
+            )
+        ) {
+            return pushStep(
+                steps,
+                FxEventType.error,
+                tagNameExpectedStartCursor,
+                BOUNDARY_HAS_SPACE
+            );
+        }
+        if (
+            // 效验nodeName是否为空
+            !checkCommonOption(
+                options,
+                "allowNodeNameEmpty",
+                DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
+                xml,
+                tagNameExpectedStartCursor,
+                parser,
+                steps
+            )
+        ) {
+            return pushStep(
+                steps,
+                FxEventType.error,
+                tagNameExpectedStartCursor,
+                TAG_NAME_IS_EMPTY
+            );
+        }
+    }
+    if (
+        !equalCursor(tagNameExpectedStartCursor, tagNameActualStartCursor) &&
+        !checkTagBoundaryNearSpace(
+            options,
+            "allowEndTagBoundaryNearSpace",
+            DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
+            xml,
+            tagNameExpectedStartCursor,
+            parser,
+            tagName,
+            FxBoundaryPosition.left,
+            steps
+        )
+    ) {
+        return pushStep(steps, FxEventType.error, tagNameExpectedStartCursor, BOUNDARY_HAS_SPACE);
+    }
+    pushStep(steps, FxEventType.nodeNameStart, tagNameActualStartCursor);
+    if (
+        tagNameSpaceCursor &&
+        !checkAllowTagNameHasSpace(
+            options,
+            DEFAULT_PARSE_OPTIONS.allowTagNameHasSpace,
+            xml,
+            tagNameSpaceCursor,
+            parser,
+            tagName
+        )
+    ) {
+        return pushStep(steps, FxEventType.error, tagNameSpaceCursor, TAG_NAME_NEAR_SPACE);
+    }
+    pushStep(steps, FxEventType.nodeNameEnd, tagNameEndCursor, tagName);
+    if (!rightBoundaryActualCursor) {
+        // 没找到右边界符
+        closeEndTag(tagName, tagNameExpectedStartCursor);
+        return steps;
+    }
+    if (
+        !equalCursor(rightBoundaryActualCursor, rightBoundaryExpectedCursor) &&
+        !checkTagBoundaryNearSpace(
+            options,
+            "allowEndTagBoundaryNearSpace",
+            DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
+            xml,
+            rightBoundaryExpectedCursor,
+            parser,
+            "",
+            FxBoundaryPosition.right,
+            steps
+        )
+    ) {
+        return pushStep(steps, FxEventType.error, rightBoundaryExpectedCursor, BOUNDARY_HAS_SPACE);
+    }
+    pushStep(steps, FxEventType.endTagEnd, rightBoundaryActualCursor, tagName);
+    pushStep(steps, FxEventType.nodeEnd, rightBoundaryActualCursor, [
+        parser,
+        FxNodeCloseType.fullClosed,
+    ]);
     return steps;
 };

@@ -40,7 +40,7 @@ import { tryParseAttrs, serializeNodeAttrs } from "./attr";
 import { boundStepsToContext, checkCommonOption, checkTagBoundaryNearSpace } from "../option";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
-import { tryParseStartTag } from "./tag";
+import { tryParseStartTag, tryParseEndTag } from "./tag";
 export const tryParseElementStartTag = (
     xml: string,
     cursor: FxCursorPosition,
@@ -52,93 +52,9 @@ export const tryParseElementStartTag = (
 export const tryParseElementEndTag = (
     xml: string,
     cursor: FxCursorPosition,
-    options: FxParseOptions,
-    endTagStartCursor?: FxCursorPosition
+    options: FxParseOptions
 ): FxTryStep[] => {
-    let steps: FxTryStep[] = [];
-    const xmlLength = xml.length;
-    endTagStartCursor = endTagStartCursor || ignoreSpaceIsHeadTail(xml, cursor, "<", "/");
-    pushStep(steps, FxEventType.endTagStart, cursor);
-    const nextCursor: FxCursorPosition = {
-        lineNumber: cursor.lineNumber,
-        column: cursor.column + 1,
-        offset: cursor.offset + 1,
-    };
-    if (!equalCursor(nextCursor, endTagStartCursor)) {
-        if (
-            !checkTagBoundaryNearSpace(
-                options,
-                "allowEndTagBoundaryNearSpace",
-                DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
-                xml,
-                cursor,
-                ElementParser,
-                "",
-                FxBoundaryPosition.left,
-                steps
-            )
-        ) {
-            return pushStep(steps, FxEventType.error, cursor, BOUNDARY_HAS_SPACE);
-        }
-    }
-    Object.assign(cursor, endTagStartCursor);
-    // 将光标挪移到“/”的后一个字符
-    moveCursor(cursor, 0, 1, 1);
-    let closeRight;
-    let tagName = "";
-    let endTagEndCursorStep: FxTryStep;
-    let nodeNameStartStep: FxTryStep;
-    let nodeNameEndStep: FxTryStep;
-    for (; cursor.offset < xmlLength; moveCursor(cursor, 0, 1, 1)) {
-        const char = xml[cursor.offset];
-        if (REX_SPACE.test(char)) {
-            if (
-                !checkTagBoundaryNearSpace(
-                    options,
-                    "allowEndTagBoundaryNearSpace",
-                    DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
-                    xml,
-                    cursor,
-                    ElementParser,
-                    tagName,
-                    FxBoundaryPosition.right,
-                    steps
-                )
-            ) {
-                return pushStep(steps, FxEventType.error, cursor, TAG_NAME_NEAR_SPACE);
-            }
-            const brType = currentIsLineBreak(xml, cursor.offset);
-            if (brType != -1) {
-                moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
-            }
-            if (tagName) {
-                tagName += char;
-            }
-            continue;
-        }
-        if (char !== ">") {
-            if (!nodeNameStartStep) {
-                nodeNameStartStep = createStep(FxEventType.nodeNameStart, cursor);
-            }
-            tagName += char;
-            if (xml[cursor.offset + 1] === ">") {
-                nodeNameEndStep = createStep(FxEventType.nodeNameEnd, cursor, tagName.trim());
-            }
-        } else {
-            tagName = tagName.trim();
-            endTagEndCursorStep = createStep(FxEventType.endTagEnd, cursor, tagName);
-            closeRight = true;
-            break;
-        }
-    }
-    nodeNameStartStep && steps.push(nodeNameStartStep);
-    nodeNameEndStep && steps.push(nodeNameEndStep);
-    if (closeRight) {
-        steps.push(endTagEndCursorStep);
-        pushStep(steps, FxEventType.nodeEnd, cursor, [ElementParser, FxNodeCloseType.fullClosed]);
-        moveCursor(cursor, 0, 1, 1);
-    }
-    return steps;
+    return tryParseEndTag(ElementParser, xml, cursor, options);
 };
 
 const equalTagName = (
@@ -203,8 +119,7 @@ export const ElementParser: FxNodeAdapter = {
                     column: context.column,
                     offset: context.offset,
                 },
-                context.options,
-                endTagStartCursor
+                context.options
             );
             const lastStep = steps[steps.length - 1];
             if (lastStep.step !== FxEventType.error) {

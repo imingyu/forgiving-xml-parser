@@ -94,6 +94,34 @@ export const Element: FxParseTestCase[] = [
             },
         ],
     },
+    {
+        desc: "Start tag not close (attr close)",
+        xml: '<p "s" name="a" checked',
+        items: [
+            {
+                target: "!error",
+            },
+            {
+                target: "nodes[0].name",
+                value: "p",
+            },
+            {
+                target: "nodes[0].attrs.length",
+                value: 3,
+            },
+            {
+                target: "nodes[0].attrs[0].content",
+                value: "s",
+            },
+            {
+                target: "!nodes[0].attrs[0].name",
+            },
+            {
+                target: "nodes[0].attrs[1].content",
+                value: "a",
+            },
+        ],
+    },
 ];
 export const Comment: FxParseTestCase[] = [...createCommonCases(FxNodeType.comment)];
 export const CDATA: FxParseTestCase[] = [...createCommonCases(FxNodeType.cdata)];
