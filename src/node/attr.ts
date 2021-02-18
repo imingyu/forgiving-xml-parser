@@ -126,12 +126,14 @@ export const tryParseAttr = (
                 pushStep(steps, FxEventType.nodeContentEnd, cursor, content);
             }
         }
-        pushStep(steps, FxEventType.nodeEnd, cursor, [
-            AttrParser,
-            findTarget === FxParseAttrTarget.name || findTarget === FxParseAttrTarget.content
+        let closeType: FxNodeCloseType =
+            findTarget === FxParseAttrTarget.name
                 ? FxNodeCloseType.fullClosed
-                : FxNodeCloseType.notClosed,
-        ]);
+                : FxNodeCloseType.notClosed;
+        if (findTarget === FxParseAttrTarget.content) {
+            closeType = !leftBoundaryValue ? FxNodeCloseType.fullClosed : FxNodeCloseType.notClosed;
+        }
+        pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, closeType]);
         clear();
     };
     let attrsEnd;
@@ -212,6 +214,16 @@ export const tryParseAttr = (
                     return true;
                 }
                 return false;
+            }
+            // 如果当前正在寻找左边界，但是下个有效字符（非空白）不等于左边界符，则该attr结束
+            const boundaryValue = getAttrBoundaryChar(
+                xml,
+                parentNodeParser.attrLeftBoundaryChar,
+                nextValidCharCursor
+            );
+            if (!boundaryValue || boundaryValue !== nextValidChar) {
+                fireAttrEnd();
+                return true;
             }
         }
         if (findTarget === FxParseAttrTarget.content) {
@@ -465,7 +477,10 @@ export const tryParseAttr = (
                 FxNodeCloseType.fullClosed,
             ]);
         } else if (findTarget === FxParseAttrTarget.leftBoundary) {
-            pushStep(steps, FxEventType.nodeEnd, cursor, [AttrParser, FxNodeCloseType.notClosed]);
+            pushStep(steps, FxEventType.nodeEnd, steps[steps.length - 1].cursor, [
+                AttrParser,
+                FxNodeCloseType.notClosed,
+            ]);
         } else if (findTarget === FxParseAttrTarget.content) {
             // 检测是否有属性只写了左边界符，忘记写右边界符的情况
             const contentStartCursor = steps[steps.length - 1].cursor;

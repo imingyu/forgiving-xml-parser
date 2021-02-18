@@ -381,7 +381,12 @@ export const computeOption = <
 export const checkAllowNodeNotClose = (
     onlyAnteriorNode: FxNode,
     context: FxParseContext,
-    parser: FxNodeAdapter
+    parser: FxNodeAdapter,
+    nodeNmae?: string,
+    options?: FxParseOptions,
+    xml?: string,
+    cursor?: FxCursorPosition,
+    steps?: FxTryStep[]
 ) => {
     if (parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.allow) {
         return true;
@@ -390,16 +395,23 @@ export const checkAllowNodeNotClose = (
         return false;
     }
     if (typeof parser.allowNodeNotClose === "function") {
-        return parser.allowNodeNotClose(onlyAnteriorNode, context, parser);
+        if (onlyAnteriorNode) {
+            return parser.allowNodeNotClose(onlyAnteriorNode, context, parser);
+        }
+        return parser.allowNodeNotClose(xml, cursor, parser, steps, nodeNmae);
     }
-    if (!context.options || !context.options.allowNodeNotClose) {
+    options = options || context.options;
+    if (!options || !options.allowNodeNotClose) {
         return false;
     }
-    if (context.options.allowNodeNotClose instanceof RegExp) {
-        return context.options.allowNodeNotClose.test(onlyAnteriorNode.name);
+    if ((onlyAnteriorNode || nodeNmae) && options.allowNodeNotClose instanceof RegExp) {
+        return options.allowNodeNotClose.test(onlyAnteriorNode ? onlyAnteriorNode.name : nodeNmae);
     }
-    if (typeof context.options.allowNodeNotClose === "function") {
-        return context.options.allowNodeNotClose(onlyAnteriorNode, context, parser);
+    if (typeof options.allowNodeNotClose === "function") {
+        if (onlyAnteriorNode) {
+            return options.allowNodeNotClose(onlyAnteriorNode, context, parser);
+        }
+        return options.allowNodeNotClose(xml, cursor, parser, steps, nodeNmae);
     }
-    return !!context.options.allowNodeNotClose;
+    return !!options.allowNodeNotClose;
 };

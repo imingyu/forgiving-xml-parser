@@ -88,11 +88,6 @@ export const DtdParser: FxNodeAdapter = {
     attrLeftBoundaryChar: /^'|^"|^\(/,
     attrRightBoundaryChar: /^'|^"|^\)/,
     parseMatch: /^<\s*\!|^>|^\]\s*>/,
-    allowNodeNotClose: (node: FxNode, context: FxParseContext, parser: FxNodeAdapter): boolean => {
-        if (node.type === FxNodeType.dtd && !node.parent) {
-        }
-        return true;
-    },
     checkAttrsEnd(xml: string, cursor: FxCursorPosition) {
         const char = xml[cursor.offset];
         if (char === ">" || char === "[") {

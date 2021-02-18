@@ -214,6 +214,13 @@ export enum FxNodeParserAllowNodeNotCloseOption {
 }
 export interface FxAllowNodeNotCloseChecker {
     (onlyAnteriorNode: FxNode, context: FxParseContext, parser: FxNodeAdapter): boolean;
+    (
+        xml: string,
+        cursor: FxCursorPosition,
+        parser: FxNodeAdapter,
+        steps: FxTryStep[],
+        nodeName?: string
+    ): boolean;
 }
 export interface FxNodeAdapter {
     nodeType: FxNodeType;

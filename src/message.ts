@@ -46,7 +46,7 @@ export const TAG_NAME_NOT_EQUAL: FxMessage = {
 };
 export const ATTR_EQUAL_NEAR_SPACE: FxMessage = {
     code: 12,
-    message: "标签“=”附近存在空白字符",
+    message: "属性“=”附近存在空白字符",
 };
 export const TAG_NAME_NEAR_SPACE: FxMessage = {
     code: 13,

@@ -284,6 +284,17 @@ export const tryParseStartTag = (
                 selfClose ? FxNodeCloseType.selfCloseing : FxNodeCloseType.fullClosed,
             ]);
         }
+    } else {
+        // 标签未闭合
+        if (
+            !checkAllowNodeNotClose(null, null, parser, nodeName, options, xml, swimCursor, steps)
+        ) {
+            return pushStep(steps, FxEventType.error, swimCursor, TAG_NOT_CLOSE);
+        }
+        if (parser.nodeType !== FxNodeType.processingInstruction) {
+            pushStep(steps, FxEventType.startTagEnd, swimCursor);
+        }
+        pushStep(steps, FxEventType.startTagEnd, swimCursor, [parser, FxNodeCloseType.notClosed]);
     }
 
     return steps;
