@@ -515,3 +515,73 @@ export const tryParseEndTag = (
     ]);
     return steps;
 };
+
+const equalTagName = (
+    endTagName: string,
+    nodeAnterior: FxNode,
+    context: FxParseContext
+): boolean => {
+    if (nodeAnterior.name === endTagName) {
+        return true;
+    }
+    if (
+        (nodeAnterior.name || "").toLowerCase() === (endTagName || "").toLowerCase() &&
+        checkOptionAllow(
+            context.options,
+            "ignoreTagNameCaseEqual",
+            DEFAULT_PARSE_OPTIONS.ignoreTagNameCaseEqual,
+            nodeAnterior.name,
+            endTagName,
+            nodeAnterior,
+            context
+        )
+    ) {
+        return true;
+    }
+    return false;
+};
+
+export const matchTag = (
+    parser: FxNodeAdapter,
+    context: FxParseContext,
+    endTagSteps: FxTryStep[]
+): FxTryStep[] => {
+    const lastStep = endTagSteps[endTagSteps.length - 1];
+    if (lastStep.step !== FxEventType.error) {
+        const endTagEndStep = endTagSteps.find((item) => item.step === FxEventType.endTagEnd);
+        const endTagName = endTagEndStep.data as string;
+        let matchStartTagLevel: number = -1;
+        if (parser.nodeType === FxNodeType.element) {
+            matchStartTagLevel = findStartTagLevel(endTagSteps, context, (node: FxNode) => {
+                return equalTagName(endTagName, node, context);
+            });
+        } else {
+            matchStartTagLevel = findStartTagLevel(endTagSteps, context, (node: FxNode) => {
+                return !!(node.type === FxNodeType.dtd && node.children);
+            });
+        }
+        if (matchStartTagLevel === -1) {
+            const cursor = endTagSteps[0].cursor;
+            endTagSteps = [];
+            pushStep(endTagSteps, FxEventType.error, cursor, END_TAG_NOT_MATCH_START);
+        } else if (matchStartTagLevel > 0) {
+            let middleSteps = [];
+            let node: FxNode;
+            for (let level = 0; level < matchStartTagLevel; level++) {
+                node = node ? node.parent : context.currentNode;
+                const nodeLastStep = node.steps[node.steps.length - 1];
+                const nodeFirstStep = node.steps[0];
+                if (!checkAllowNodeNotClose(node, context, node.parser)) {
+                    pushStep(endTagSteps, FxEventType.error, nodeLastStep.cursor, TAG_NOT_CLOSE);
+                    break;
+                }
+                pushStep(middleSteps, FxEventType.nodeEnd, nodeLastStep.cursor, [
+                    nodeFirstStep.data as FxNodeAdapter,
+                    FxNodeCloseType.startTagClosed,
+                ]);
+            }
+            endTagSteps = middleSteps.concat(endTagSteps);
+        }
+    }
+    return endTagSteps;
+};

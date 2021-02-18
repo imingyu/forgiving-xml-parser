@@ -15,30 +15,10 @@ import {
     FxTryStep,
     FxBoundaryPosition,
 } from "../types";
-import {
-    createStep,
-    currentIsLineBreak,
-    equalCursor,
-    findStartTagLevel,
-    ignoreSpaceFindCharCursor,
-    ignoreSpaceIsHeadTail,
-    moveCursor,
-    pushStep,
-    toCursor,
-} from "../util";
-import {
-    BOUNDARY_HAS_SPACE,
-    END_TAG_NOT_MATCH_START,
-    TAG_HAS_MORE_BOUNDARY_CHAR,
-    TAG_NAME_IS_EMPTY,
-    TAG_NAME_NEAR_SPACE,
-    TAG_NOT_CLOSE,
-} from "../message";
-import { AttrParser, serializeNodeAttrs, tryParseAttrs } from "./attr";
+import { ignoreSpaceIsHeadTail, toCursor } from "../util";
+import { serializeNodeAttrs } from "./attr";
 import { boundStepsToContext } from "../option";
-import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
-import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
-import { tryParseStartTag, tryParseEndTag } from "./tag";
+import { tryParseStartTag, tryParseEndTag, matchTag } from "./tag";
 export const tryParseDtdStartTag = (
     xml: string,
     cursor: FxCursorPosition,
@@ -81,37 +61,7 @@ export const DtdParser: FxNodeAdapter = {
                 },
                 context.options
             );
-            const lastStep = steps[steps.length - 1];
-            if (lastStep.step !== FxEventType.error) {
-                const matchStartTagLevel = findStartTagLevel(steps, context, (node: FxNode) => {
-                    return !!(node.type === FxNodeType.dtd && node.children);
-                });
-                if (matchStartTagLevel === -1) {
-                    const cursor = steps[0].cursor;
-                    steps = [];
-                    pushStep(steps, FxEventType.error, cursor, END_TAG_NOT_MATCH_START);
-                } else if (matchStartTagLevel > 0) {
-                    const firstStep = steps[0];
-                    let node: FxNode;
-                    for (let level = 0; level <= matchStartTagLevel; level++) {
-                        node = node ? node.parent : context.currentNode;
-                        const nodeLastStep = node.children
-                            ? node.children[node.children.length - 1].steps[
-                                  node.children[node.children.length - 1].steps.length - 1
-                              ]
-                            : node.steps[node.steps.length - 1];
-                        const nodeFirstStep = node.steps[0];
-                        if (!checkAllowNodeNotClose(node, context, node.parser)) {
-                            pushStep(steps, FxEventType.error, firstStep.cursor, TAG_NOT_CLOSE);
-                            break;
-                        }
-                        pushStep(node.steps, FxEventType.nodeEnd, nodeLastStep.cursor, [
-                            nodeFirstStep.data[0],
-                            FxNodeCloseType.startTagClosed,
-                        ]);
-                    }
-                }
-            }
+            steps = matchTag(DtdParser, context, steps);
         } else {
             steps = tryParseDtdStartTag(
                 context.xml,
