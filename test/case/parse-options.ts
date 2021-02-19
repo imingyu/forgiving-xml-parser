@@ -661,7 +661,26 @@ export const allowEndTagBoundaryNearSpace: FxTestCaseMap = {
             "value is function return like false"
         ),
     ],
-    "value=true": [...createOptionCommonCases("allowEndTagBoundaryNearSpace", true)],
+    "value=true": [
+        ...createOptionCommonCases("allowEndTagBoundaryNearSpace", true),
+        {
+            desc: "Element node end tag left boundary has space (1)",
+            xml: "<div>\n<p>< /p>",
+            items: [
+                {
+                    target: "!error",
+                },
+                {
+                    target: "nodes[0].children[1].name",
+                    value: "p",
+                },
+                {
+                    target: "nodes[0].children[1].locationInfo.endTag.name.startOffset",
+                    value: 13,
+                },
+            ],
+        },
+    ],
     "value=false": [
         ...createOptionCommonCases("allowEndTagBoundaryNearSpace", false),
         {
