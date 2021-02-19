@@ -1,6 +1,5 @@
-export * from "./message";
-export * from "./var";
 export * from "./types";
+export { DEFAULT_PARSE_OPTIONS } from "./var";
 export * from "./util";
 export * from "./node/text";
 export * from "./node/alone";
@@ -10,6 +9,7 @@ export * from "./node/attr";
 export * from "./node/element";
 export * from "./node/pi";
 export * from "./node/dtd";
+export * from "./node/tag";
 export * from "./parse";
 export * from "./serialize";
 export * from "./init";

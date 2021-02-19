@@ -53,6 +53,7 @@ export interface FxWrong extends FxMessage, FxCursorPosition {
 export interface FxMessage {
     code: number;
     message: string;
+    messageCN?: string;
 }
 
 export interface FxNodeSerializeHandler {

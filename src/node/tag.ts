@@ -3,27 +3,19 @@ import {
     FxEventType,
     FxNode,
     FxNodeCloseType,
-    FxNodeJSON,
-    FxNodeNature,
     FxNodeAdapter,
-    FxNodeParserAllowNodeNotCloseOption,
-    FxNodeSerializer,
     FxNodeType,
     FxParseContext,
     FxParseOptions,
-    FxSerializeOptions,
     FxTryStep,
     FxBoundaryPosition,
 } from "../types";
 import {
-    createStep,
     currentIsLineBreak,
     equalCursor,
     filterFirstAttrSteps,
     findStartTagLevel,
-    ignoreSpaceFindCharCursor,
     ignoreSpaceIsHeadTail,
-    isElementEndTagBegin,
     moveCursor,
     pushStep,
     toCursor,
@@ -31,18 +23,12 @@ import {
 import {
     BOUNDARY_HAS_SPACE,
     END_TAG_NOT_MATCH_START,
-    TAG_HAS_MORE_BOUNDARY_CHAR,
     TAG_NAME_IS_EMPTY,
     TAG_NAME_NEAR_SPACE,
     TAG_NOT_CLOSE,
 } from "../message";
-import { tryParseAttrs, serializeNodeAttrs } from "./attr";
-import {
-    boundStepsToContext,
-    checkAllowTagNameHasSpace,
-    checkCommonOption,
-    checkTagBoundaryNearSpace,
-} from "../option";
+import { tryParseAttrs } from "./attr";
+import { checkAllowTagNameHasSpace, checkCommonOption, checkTagBoundaryNearSpace } from "../option";
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
 export const tryParseStartTag = (

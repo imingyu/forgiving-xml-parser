@@ -676,7 +676,7 @@ export const allowEndTagBoundaryNearSpace: FxTestCaseMap = {
                 },
                 {
                     target: "nodes[0].children[1].locationInfo.endTag.name.startOffset",
-                    value: 13,
+                    value: 12,
                 },
             ],
         },

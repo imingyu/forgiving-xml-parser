@@ -1,15 +1,7 @@
-import {
-    moveCursor,
-    pushStep,
-    equalCursor,
-    currentIsLineBreak,
-    ignoreSpaceIsHeadTail,
-    toCursor,
-} from "../util";
+import { ignoreSpaceIsHeadTail } from "../util";
 import { boundStepsToContext } from "../option";
 import {
     FxCursorPosition,
-    FxEventType,
     FxNodeCloseType,
     FxNodeJSON,
     FxNodeNature,
@@ -21,12 +13,8 @@ import {
     FxParseOptions,
     FxSerializeOptions,
     FxTryStep,
-    FxBoundaryPosition,
 } from "../types";
-import { serializeNodeAttrs, tryParseAttrs } from "./attr";
-import { DEFAULT_PARSE_OPTIONS } from "../var";
-import { checkOptionAllow } from "../option";
-import { BOUNDARY_HAS_SPACE, TAG_NAME_IS_EMPTY } from "../message";
+import { serializeNodeAttrs } from "./attr";
 import { tryParseStartTag } from "./tag";
 
 export const tryParsePI = (

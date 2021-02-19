@@ -1,19 +1,15 @@
 import {
     FxCursorPosition,
-    FxEventType,
-    FxNode,
     FxNodeCloseType,
     FxNodeJSON,
     FxNodeNature,
     FxNodeAdapter,
-    FxNodeParserAllowNodeNotCloseOption,
     FxNodeSerializer,
     FxNodeType,
     FxParseContext,
     FxParseOptions,
     FxSerializeOptions,
     FxTryStep,
-    FxBoundaryPosition,
 } from "../types";
 import { ignoreSpaceIsHeadTail, toCursor } from "../util";
 import { serializeNodeAttrs } from "./attr";

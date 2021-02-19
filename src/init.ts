@@ -9,7 +9,6 @@ import {
     FxNodeJSON,
     FxNodeSerializeHandler,
     FxParseBaseOptions,
-    FxParseOptions,
     FxParseResult,
     FxParserOptions,
     FxSerializeBaseOptions,

@@ -19,14 +19,15 @@ import {
     FxStartTagCompare,
     FxNodeLocationInfo,
     FxLocation,
-    FxSerializeBaseOptions,
-    FxNodeType,
 } from "./types";
 import { REX_SPACE } from "./var";
 
 export const createFxError = (msg: FxMessage, cursor: FxCursorPosition): FxWrong => {
     const err = (new Error(msg.message) as unknown) as FxWrong;
     err.code = msg.code;
+    if (msg.messageCN) {
+        err.messageCN = msg.messageCN;
+    }
     Object.assign(err, cursor);
     return err;
 };
@@ -35,14 +36,14 @@ export const isElementEndTagBegin = (xml: string, cursor: FxCursorPosition): FxC
     return ignoreSpaceIsHeadTail(xml, toCursor(cursor), "<", "/");
 };
 
-export const startsWith = (fullStr: string, targetStr: string | RegExp, position: number = 0) => {
-    const str = !position ? fullStr : fullStr.substr(position);
-    if (targetStr instanceof RegExp) {
-        const arr = str.match(targetStr);
-        return arr && arr[0] && str.indexOf(arr[0]) === 0;
-    }
-    return str.indexOf(targetStr) === 0;
-};
+// export const startsWith = (fullStr: string, targetStr: string | RegExp, position: number = 0) => {
+//     const str = !position ? fullStr : fullStr.substr(position);
+//     if (targetStr instanceof RegExp) {
+//         const arr = str.match(targetStr);
+//         return arr && arr[0] && str.indexOf(arr[0]) === 0;
+//     }
+//     return str.indexOf(targetStr) === 0;
+// };
 
 export const isFunc = (obj) => typeof obj === "function" || obj instanceof Function;
 
@@ -200,12 +201,12 @@ export const currentIsLineBreak = (str: string, currentCharIndex: number): numbe
     return -1;
 };
 
-export const equalSubStr = (fullStr: string, index: number, str: string): boolean => {
-    if (fullStr.substr(index, str.length) === str) {
-        return true;
-    }
-    return false;
-};
+// export const equalSubStr = (fullStr: string, index: number, str: string): boolean => {
+//     if (fullStr.substr(index, str.length) === str) {
+//         return true;
+//     }
+//     return false;
+// };
 
 export const repeatString = (str: string, repeatCount: number): string => {
     let res = "";
@@ -277,51 +278,51 @@ export const toCursor = (like: FxCursorPosition): FxCursorPosition => {
     } as FxCursorPosition;
 };
 
-export const getEndCursor = (xml: string, cursor: FxCursorPosition): FxCursorPosition => {
-    const xmlLength = xml.length;
-    const resultCursor = toCursor(cursor);
-    for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
-        const brType = currentIsLineBreak(xml, resultCursor.offset);
-        if (brType !== -1) {
-            moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
-        }
-    }
-    return resultCursor;
-};
+// export const getEndCursor = (xml: string, cursor: FxCursorPosition): FxCursorPosition => {
+//     const xmlLength = xml.length;
+//     const resultCursor = toCursor(cursor);
+//     for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
+//         const brType = currentIsLineBreak(xml, resultCursor.offset);
+//         if (brType !== -1) {
+//             moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
+//         }
+//     }
+//     return resultCursor;
+// };
 
-export const findStrCursor = (
-    xml: string,
-    cursor: FxCursorPosition,
-    targetStr: string
-): [boolean, FxCursorPosition, FxCursorPosition?] => {
-    const xmlLength = xml.length;
-    const resultCursor = toCursor(cursor);
-    for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
-        const char = xml[resultCursor.offset];
-        if (char === targetStr[0]) {
-            const substr = xml.substr(resultCursor.offset, targetStr.length);
-            if (substr === targetStr) {
-                const start = toCursor(resultCursor);
-                for (
-                    let index = 0, len = substr.length;
-                    index < len;
-                    index++ && moveCursor(resultCursor, 0, 1, 1)
-                ) {
-                    const brType = currentIsLineBreak(xml, resultCursor.offset);
-                    if (brType !== -1) {
-                        moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
-                    }
-                }
-                return [true, start, resultCursor];
-            }
-        }
-        const brType = currentIsLineBreak(xml, resultCursor.offset);
-        if (brType !== -1) {
-            moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
-        }
-    }
-    return [false, resultCursor];
-};
+// export const findStrCursor = (
+//     xml: string,
+//     cursor: FxCursorPosition,
+//     targetStr: string
+// ): [boolean, FxCursorPosition, FxCursorPosition?] => {
+//     const xmlLength = xml.length;
+//     const resultCursor = toCursor(cursor);
+//     for (; resultCursor.offset < xmlLength; moveCursor(resultCursor, 0, 1, 1)) {
+//         const char = xml[resultCursor.offset];
+//         if (char === targetStr[0]) {
+//             const substr = xml.substr(resultCursor.offset, targetStr.length);
+//             if (substr === targetStr) {
+//                 const start = toCursor(resultCursor);
+//                 for (
+//                     let index = 0, len = substr.length;
+//                     index < len;
+//                     index++ && moveCursor(resultCursor, 0, 1, 1)
+//                 ) {
+//                     const brType = currentIsLineBreak(xml, resultCursor.offset);
+//                     if (brType !== -1) {
+//                         moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
+//                     }
+//                 }
+//                 return [true, start, resultCursor];
+//             }
+//         }
+//         const brType = currentIsLineBreak(xml, resultCursor.offset);
+//         if (brType !== -1) {
+//             moveCursor(resultCursor, 1, -resultCursor.column, !brType ? 0 : 1);
+//         }
+//     }
+//     return [false, resultCursor];
+// };
 
 export const ignoreSpaceIsHeadTail = (
     xml: string,

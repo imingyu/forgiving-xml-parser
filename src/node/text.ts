@@ -1,10 +1,4 @@
-import {
-    currentIsLineBreak,
-    findNodeParser,
-    isElementEndTagBegin,
-    moveCursor,
-    startsWith,
-} from "../util";
+import { currentIsLineBreak, findNodeParser, isElementEndTagBegin, moveCursor } from "../util";
 import { boundStepsToContext } from "../option";
 import {
     FxCursorPosition,
@@ -29,9 +23,7 @@ export const tryParseText = (
     const steps: FxTryStep[] = [];
     const xmlLength = xml.length;
     const parentIsScriptElement =
-        parentNode &&
-        parentNode.type === FxNodeType.element &&
-        parentNode.name === "script";
+        parentNode && parentNode.type === FxNodeType.element && parentNode.name === "script";
     steps.push({
         step: FxEventType.nodeStart,
         cursor: {
@@ -61,13 +53,9 @@ export const tryParseText = (
         let nextNewNodeParse;
         if (parentIsScriptElement) {
             // 如果当前text的父元素是script标签，则一直找到</script>才能开始下一个Parser
-            const nextIsElementEndTag = isElementEndTagBegin(
-                xml,
-                nextCharCousor
-            );
+            const nextIsElementEndTag = isElementEndTagBegin(xml, nextCharCousor);
             nextNewNodeParse =
-                nextIsElementEndTag &&
-                /^<\s*\/\s*script/.test(xml.substr(nextCharCousor.offset));
+                nextIsElementEndTag && /^<\s*\/\s*script/.test(xml.substr(nextCharCousor.offset));
         } else {
             nextNewNodeParse = !!findNodeParser(xml, nextCharCousor, options);
         }
