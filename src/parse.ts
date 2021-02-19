@@ -15,6 +15,7 @@ import {
     findNodeParser,
     isFunc,
     filterOptions,
+    stepToJSON,
 } from "./util";
 import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
@@ -30,6 +31,7 @@ export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
         lineNumber: 1,
         column: 1,
         nodes: [],
+        steps: [],
         options,
     };
     try {
@@ -54,6 +56,7 @@ export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
             maxLine: context.maxLineNumber,
             maxCol: context.maxColumn,
             nodes: context.nodes,
+            steps: context.steps,
         } as FxParseResult;
     } catch (error) {
         return {
@@ -80,6 +83,11 @@ export const parseResultToJSON = (
     pick("maxLine", res, parseResult, options);
     pick("maxCol", res, parseResult, options);
     pick("xml", res, parseResult, options);
+    if (parseResult.steps && options.steps) {
+        res.steps = parseResult.steps.map((step) => {
+            return stepToJSON(step, options);
+        });
+    }
     if (!parseResult.error) {
         res.nodes = parseResult.nodes.map((node) => {
             if (hasFilter) {

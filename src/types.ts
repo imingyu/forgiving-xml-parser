@@ -76,6 +76,7 @@ export interface FxParseContext extends FxCursorPosition {
     xmlLength: number;
     xml: string;
     nodes: FxNode[];
+    steps: FxTryStep[];
     maxLineNumber: number;
     maxColumn: number;
     currentNode?: FxNode;
@@ -270,6 +271,7 @@ export interface FxParseResultJSON {
     maxLine?: number;
     maxCol?: number;
     xml?: string;
+    steps?: FxTryStep[];
     nodes?: FxNodeJSON[];
     error?: FxWrong;
 }
@@ -277,6 +279,7 @@ export interface FxParseResult extends FxParseResultJSON {
     maxLine: number;
     maxCol: number;
     xml: string;
+    steps?: FxNodeTryStep[];
     nodes?: FxNode[];
 }
 export interface FxBoundStepsLoopCallback {

@@ -38,6 +38,7 @@ export const boundStepsToContext = (
     let eventNode: FxNode = context.currentNode;
     for (let index = 0, len = steps.length; index < len; index++) {
         const currentStepItem = steps[index] as FxNodeTryStep;
+        context && context.steps.push(currentStepItem);
         currentStepItem.target = eventNode;
         const { step, cursor, data } = currentStepItem;
         setContextMaxCursor(context, cursor);

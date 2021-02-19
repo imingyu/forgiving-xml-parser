@@ -19,6 +19,7 @@ import {
     FxStartTagCompare,
     FxNodeLocationInfo,
     FxLocation,
+    FxNodeTryStep,
 } from "./types";
 import { REX_SPACE } from "./var";
 
@@ -110,6 +111,40 @@ export const pick = (
         res[prop] = parseResult[prop];
     }
 };
+export const stepToJSON = (step: FxNodeTryStep, options: FxToJSONOptions): FxTryStep => {
+    const hasFilter = isFunc(options.dataFilter);
+    const res = {
+        ...step,
+    };
+    delete res.target;
+    if (Array.isArray(res.data)) {
+        let [nodeType, closeType, customType] = res.data;
+        if (typeof nodeType === "object") {
+            const np = nodeType as FxNodeAdapter;
+            customType = customType || np.nodeCustomType;
+            nodeType = np.nodeType;
+        }
+        const data = [nodeType, closeType, customType];
+        if (!data[2]) {
+            data.splice(2, 1);
+        }
+        res.data = data as FxTryStepData;
+    } else if (typeof res.data === "object") {
+        const np = res.data as FxNodeAdapter;
+        res.data = [
+            np.nodeType,
+            step.step === FxEventType.nodeEnd ? FxNodeCloseType.fullClosed : undefined,
+            np.nodeCustomType,
+        ];
+        if (!res.data[2]) {
+            res.data.pop();
+        }
+        if (!res.data[1]) {
+            res.data.splice(1, 1);
+        }
+    }
+    return hasFilter ? (options.dataFilter(step, res) as FxTryStep) : res;
+};
 export const nodeToJSON = (node: FxNode, options: FxToJSONOptions): FxNodeJSON => {
     const res = {} as FxNodeJSON;
     const hasFilter = isFunc(options.dataFilter);
@@ -118,39 +153,7 @@ export const nodeToJSON = (node: FxNode, options: FxToJSONOptions): FxNodeJSON =
             if (prop === "steps") {
                 if (options.steps) {
                     res[prop] = node[prop].map((step) => {
-                        const res = {
-                            ...step,
-                        };
-                        delete res.target;
-                        if (Array.isArray(res.data)) {
-                            let [nodeType, closeType, customType] = res.data;
-                            if (typeof nodeType === "object") {
-                                const np = nodeType as FxNodeAdapter;
-                                customType = customType || np.nodeCustomType;
-                                nodeType = np.nodeType;
-                            }
-                            const data = [nodeType, closeType, customType];
-                            if (!data[2]) {
-                                data.splice(2, 1);
-                            }
-                            res.data = data as FxTryStepData;
-                        } else if (typeof res.data === "object") {
-                            const np = res.data as FxNodeAdapter;
-                            res.data = [
-                                np.nodeType,
-                                step.step === FxEventType.nodeEnd
-                                    ? FxNodeCloseType.fullClosed
-                                    : undefined,
-                                np.nodeCustomType,
-                            ];
-                            if (!res.data[2]) {
-                                res.data.pop();
-                            }
-                            if (!res.data[1]) {
-                                res.data.splice(1, 1);
-                            }
-                        }
-                        return hasFilter ? (options.dataFilter(step, res) as FxTryStep) : res;
+                        return stepToJSON(step, options);
                     });
                 }
             } else if (prop === "closeType") {
