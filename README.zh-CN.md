@@ -82,25 +82,6 @@ console.log(fxParser.serialize(json2) === serialize(json)); // true
 # Api
 
 <details>
-<summary>方法</summary>
-
--   **parse**(xml: `String`, options?: [FxParseOptions](src/types.ts#L178-L181)): [FxParseResult](src/types.ts#L266-L271)
-
--   **parseResultToJSON**(result: [FxParseResult](src/types.ts#L266-L271), options?: [FxToJSONOptions](src/types.ts#L251-L257)): [FxParseResultJSON](src/types.ts#L258-L265)
-
--   **serialize**(json: [FxNodeJSON](src/types.ts#L287-L299) | [FxNodeJSON](src/types.ts#L287-L299)[], options?: [FxSerializeOptions](src/types.ts#L60-L62)): `String`
-
--   **new FxParser**(options?: [FxParserOptions](src/types.ts#L335-L338))
-
-    -   **parse**(xml: `String`, options?: [FxParseOptions](src/types.ts#L178-L181)): [FxParseResult](src/types.ts#L266-L271)
-
-    -   **parseResultToJSON**(result: [FxParseResult](src/types.ts#L266-L271), options?: [FxToJSONOptions](src/types.ts#L251-L257)): [FxParseResultJSON](src/types.ts#L258-L265)
-
-    -   **serialize**(json: [FxNodeJSON](src/types.ts#L287-L299) | [FxNodeJSON](src/types.ts#L287-L299)[], options?: [FxSerializeOptions](src/types.ts#L60-L62)): `String`
-
-</details>
-
-<details>
 <summary>事件</summary>
 
 | 事件                | 简介                           | 节点类型触发情况及次数                                                                                                                                    |                                |                                                                                                   |                      |                      |                      |                       |                      |     |
@@ -184,19 +165,6 @@ interface FxNode {
 }
 ```
 
-</details>
-
-<details>
-<summary>配置选项</summary>
-
--   [FxParserOptions](src/types.ts#L335-L338)
--   [FxParseOptions](src/types.ts#L178-L181)
--   [FxToJSONOptions](src/types.ts#L251-L257)
--   [FxSerializeOptions](src/types.ts#L60-L62)
-</details>
-
-<details>
-<summary>节点解析器</summary>
 </details>
 
 <details>
