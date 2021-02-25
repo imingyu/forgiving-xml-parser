@@ -76,3 +76,8 @@ export const ATTR_UNEXPECTED_BOUNDARY: FxMessage = {
     message: "Attr boundary char position is wrong",
     messageCN: "意外的边界符",
 };
+export const NOT_MATCH_ADAPTER: FxMessage = {
+    code: 17,
+    message: "Current char not match node adapter",
+    messageCN: "未匹配到解析器，无法解析",
+};

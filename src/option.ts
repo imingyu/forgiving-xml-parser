@@ -262,12 +262,12 @@ export const checkCommonOption = <T extends keyof FxParseOptions>(
     defaultValue: FxParseOptions[T],
     xml: string,
     cursor: FxCursorPosition,
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     steps: FxTryStep[]
 ): boolean => {
     const optionValue = optionName in options ? options[optionName] : defaultValue;
     if (isFunc(optionValue)) {
-        return (optionValue as FxOptionChecker)(xml, cursor, parser, steps);
+        return (optionValue as FxOptionChecker)(xml, cursor, adapter, steps);
     }
     return !!optionValue;
 };
@@ -280,7 +280,7 @@ export const checkTagBoundaryNearSpace = <
     defaultValue: FxParseOptions[T],
     xml: string,
     cursor: FxCursorPosition,
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     tagName?: string,
     spacePosition?: FxBoundaryPosition,
     steps?: FxTryStep[]
@@ -290,7 +290,7 @@ export const checkTagBoundaryNearSpace = <
         const res = (optionValue as FxAllowNearTagBoundarySpace)(
             xml,
             cursor,
-            parser,
+            adapter,
             tagName,
             spacePosition,
             steps
@@ -314,13 +314,13 @@ export const checkAllowTagNameHasSpace = <T extends "allowTagNameHasSpace">(
     defaultValue: FxParseOptions[T],
     xml: string,
     cursor: FxCursorPosition,
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     tagName: string
 ): boolean => {
     const optionName = "allowTagNameHasSpace";
     const optionValue = optionName in options ? options[optionName] : defaultValue;
     if (isFunc(optionValue)) {
-        const res = (optionValue as FxAllowTagNameHasSpace)(xml, cursor, parser, tagName);
+        const res = (optionValue as FxAllowTagNameHasSpace)(xml, cursor, adapter, tagName);
         return !!res;
     }
     if (optionValue instanceof RegExp) {
@@ -382,24 +382,24 @@ export const computeOption = <
 export const checkAllowNodeNotClose = (
     onlyAnteriorNode: FxNode,
     context: FxParseContext,
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     nodeNmae?: string,
     options?: FxParseOptions,
     xml?: string,
     cursor?: FxCursorPosition,
     steps?: FxTryStep[]
 ) => {
-    if (parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.allow) {
+    if (adapter.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.allow) {
         return true;
     }
-    if (parser.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.notAllow) {
+    if (adapter.allowNodeNotClose === FxNodeParserAllowNodeNotCloseOption.notAllow) {
         return false;
     }
-    if (typeof parser.allowNodeNotClose === "function") {
+    if (typeof adapter.allowNodeNotClose === "function") {
         if (onlyAnteriorNode) {
-            return parser.allowNodeNotClose(onlyAnteriorNode, context, parser);
+            return adapter.allowNodeNotClose(onlyAnteriorNode, context, adapter);
         }
-        return parser.allowNodeNotClose(xml, cursor, parser, steps, nodeNmae);
+        return adapter.allowNodeNotClose(xml, cursor, adapter, steps, nodeNmae);
     }
     options = options || context.options;
     if (!options || !options.allowNodeNotClose) {
@@ -410,9 +410,9 @@ export const checkAllowNodeNotClose = (
     }
     if (typeof options.allowNodeNotClose === "function") {
         if (onlyAnteriorNode) {
-            return options.allowNodeNotClose(onlyAnteriorNode, context, parser);
+            return options.allowNodeNotClose(onlyAnteriorNode, context, adapter);
         }
-        return options.allowNodeNotClose(xml, cursor, parser, steps, nodeNmae);
+        return options.allowNodeNotClose(xml, cursor, adapter, steps, nodeNmae);
     }
     return !!options.allowNodeNotClose;
 };

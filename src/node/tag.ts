@@ -32,20 +32,20 @@ import { checkAllowTagNameHasSpace, checkCommonOption, checkTagBoundaryNearSpace
 import { DEFAULT_PARSE_OPTIONS, REX_SPACE } from "../var";
 import { checkAllowNodeNotClose, checkOptionAllow } from "../option";
 export const tryParseStartTag = (
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     xml: string,
     currentCursor: FxCursorPosition,
     options: FxParseOptions
 ): FxTryStep[] => {
     let leftBoundaryExpectedEndCursor: FxCursorPosition; // 左边界符期待的结束坐标
     let leftBoundaryActualEndCursor: FxCursorPosition; // 左边界符实际的结束坐标
-    if (parser.nodeType === FxNodeType.element) {
+    if (adapter.nodeType === FxNodeType.element) {
         leftBoundaryExpectedEndCursor = toCursor(currentCursor);
         leftBoundaryActualEndCursor = toCursor(currentCursor);
-    } else if (parser.nodeType === FxNodeType.dtd) {
+    } else if (adapter.nodeType === FxNodeType.dtd) {
         leftBoundaryExpectedEndCursor = moveCursor(toCursor(currentCursor), 0, 1, 1);
         leftBoundaryActualEndCursor = ignoreSpaceIsHeadTail(xml, currentCursor, "<", "!");
-    } else if (parser.nodeType === FxNodeType.processingInstruction) {
+    } else if (adapter.nodeType === FxNodeType.processingInstruction) {
         leftBoundaryExpectedEndCursor = moveCursor(toCursor(currentCursor), 0, 1, 1);
         leftBoundaryActualEndCursor = ignoreSpaceIsHeadTail(xml, currentCursor, "<", "?");
     } else {
@@ -53,7 +53,7 @@ export const tryParseStartTag = (
     }
     let steps: FxTryStep[] = [];
     const swimCursor = toCursor(currentCursor);
-    pushStep(steps, FxEventType.nodeStart, swimCursor, parser);
+    pushStep(steps, FxEventType.nodeStart, swimCursor, adapter);
     pushStep(steps, FxEventType.startTagStart, swimCursor);
 
     // 效验左边界符的右侧或中间是否存在空白符
@@ -65,7 +65,7 @@ export const tryParseStartTag = (
             DEFAULT_PARSE_OPTIONS.allowStartTagBoundaryNearSpace,
             xml,
             swimCursor,
-            parser,
+            adapter,
             "",
             FxBoundaryPosition.left,
             steps
@@ -83,7 +83,7 @@ export const tryParseStartTag = (
     Object.assign(swimCursor, leftBoundaryActualEndCursor);
 
     // 如果是pi node，则startTag结束
-    if (parser.nodeType === FxNodeType.processingInstruction) {
+    if (adapter.nodeType === FxNodeType.processingInstruction) {
         pushStep(steps, FxEventType.startTagEnd, swimCursor);
     }
     moveCursor(swimCursor, 0, 1, 1);
@@ -93,7 +93,7 @@ export const tryParseStartTag = (
     let nodeNameEndCursor: FxCursorPosition; // nodeName的结束坐标
 
     // 直接按照attr来解析，然后从中尝试寻找 nodeName
-    const attrSteps = tryParseAttrs(xml, swimCursor, parser, options);
+    const attrSteps = tryParseAttrs(xml, swimCursor, adapter, options);
     if (attrSteps.length) {
         let hasEqual;
         let hasBrundary;
@@ -125,14 +125,14 @@ export const tryParseStartTag = (
         let errMsg = BOUNDARY_HAS_SPACE;
         if (!equalCursor(nodeNameExpectedStartCursor, nodeNameActualStartCursor)) {
             let hasError;
-            if (parser.nodeType === FxNodeType.element) {
+            if (adapter.nodeType === FxNodeType.element) {
                 hasError = !checkTagBoundaryNearSpace(
                     options,
                     "allowStartTagBoundaryNearSpace",
                     DEFAULT_PARSE_OPTIONS.allowStartTagBoundaryNearSpace,
                     xml,
                     nodeNameExpectedStartCursor,
-                    parser,
+                    adapter,
                     nodeName,
                     FxBoundaryPosition.left,
                     steps
@@ -143,7 +143,7 @@ export const tryParseStartTag = (
                     DEFAULT_PARSE_OPTIONS.allowTagNameHasSpace,
                     xml,
                     nodeNameExpectedStartCursor,
-                    parser,
+                    adapter,
                     nodeName
                 );
                 errMsg = TAG_NAME_NEAR_SPACE;
@@ -161,7 +161,7 @@ export const tryParseStartTag = (
             DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
             xml,
             nodeNameExpectedStartCursor,
-            parser,
+            adapter,
             steps
         )
     ) {
@@ -176,10 +176,10 @@ export const tryParseStartTag = (
     const xmlLength = xml.length;
     const attrsEndNextCursor = moveCursor(toCursor(swimCursor), 0, 1, 1);
     const rightBoundaryExpectedEndCursor: FxCursorPosition =
-        parser.nodeType === FxNodeType.processingInstruction
+        adapter.nodeType === FxNodeType.processingInstruction
             ? moveCursor(toCursor(swimCursor), 0, 2, 2)
             : moveCursor(toCursor(swimCursor), 0, 1, 1);
-    let rightBoundaryActualEndCursor: FxCursorPosition = parser.checkAttrsEnd(
+    let rightBoundaryActualEndCursor: FxCursorPosition = adapter.checkAttrsEnd(
         xml,
         swimCursor,
         options
@@ -188,7 +188,7 @@ export const tryParseStartTag = (
     if (!rightBoundaryActualEndCursor && swimCursor.offset < xml.length - 1) {
         const tempCursor = toCursor(swimCursor);
         for (; tempCursor.offset < xmlLength; moveCursor(tempCursor, 0, 1, 1)) {
-            const endCursor = parser.checkAttrsEnd(xml, tempCursor, options);
+            const endCursor = adapter.checkAttrsEnd(xml, tempCursor, options);
             if (endCursor) {
                 rightBoundaryActualEndCursor = endCursor;
                 break;
@@ -211,20 +211,20 @@ export const tryParseStartTag = (
             !equalCursor(rightBoundaryExpectedEndCursor, rightBoundaryActualEndCursor)
         ) {
             let hasError;
-            if (parser.nodeType === FxNodeType.processingInstruction) {
+            if (adapter.nodeType === FxNodeType.processingInstruction) {
                 hasError = !checkTagBoundaryNearSpace(
                     options,
                     "allowEndTagBoundaryNearSpace",
                     DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
                     xml,
                     attrsEndNextCursor,
-                    parser,
+                    adapter,
                     nodeName,
                     FxBoundaryPosition.left,
                     steps
                 );
             } else if (
-                parser.nodeType === FxNodeType.dtd &&
+                adapter.nodeType === FxNodeType.dtd &&
                 xml[rightBoundaryActualEndCursor.offset] === "["
             ) {
                 // <!DOCTYPE note [
@@ -235,7 +235,7 @@ export const tryParseStartTag = (
                     DEFAULT_PARSE_OPTIONS.allowStartTagBoundaryNearSpace,
                     xml,
                     attrsEndNextCursor,
-                    parser,
+                    adapter,
                     nodeName,
                     FxBoundaryPosition.right,
                     steps
@@ -251,40 +251,40 @@ export const tryParseStartTag = (
             }
         }
 
-        if (parser.nodeType === FxNodeType.processingInstruction) {
+        if (adapter.nodeType === FxNodeType.processingInstruction) {
             pushStep(steps, FxEventType.endTagStart, swimCursor);
             pushStep(steps, FxEventType.endTagEnd, rightBoundaryActualEndCursor);
         }
         Object.assign(swimCursor, rightBoundaryActualEndCursor);
-        if (parser.nodeType !== FxNodeType.processingInstruction) {
+        if (adapter.nodeType !== FxNodeType.processingInstruction) {
             pushStep(steps, FxEventType.startTagEnd, swimCursor);
         }
         const selfClose =
-            parser.nodeType === FxNodeType.element && attrsEndAfterChars.indexOf("/") !== -1;
-        if (selfClose || parser.nodeType === FxNodeType.processingInstruction) {
+            adapter.nodeType === FxNodeType.element && attrsEndAfterChars.indexOf("/") !== -1;
+        if (selfClose || adapter.nodeType === FxNodeType.processingInstruction) {
             pushStep(steps, FxEventType.nodeEnd, swimCursor, [
-                parser,
+                adapter,
                 selfClose ? FxNodeCloseType.selfCloseing : FxNodeCloseType.fullClosed,
             ]);
         }
     } else {
         // 标签未闭合
         if (
-            !checkAllowNodeNotClose(null, null, parser, nodeName, options, xml, swimCursor, steps)
+            !checkAllowNodeNotClose(null, null, adapter, nodeName, options, xml, swimCursor, steps)
         ) {
             return pushStep(steps, FxEventType.error, swimCursor, TAG_NOT_CLOSE);
         }
-        if (parser.nodeType !== FxNodeType.processingInstruction) {
+        if (adapter.nodeType !== FxNodeType.processingInstruction) {
             pushStep(steps, FxEventType.startTagEnd, swimCursor);
         }
-        pushStep(steps, FxEventType.startTagEnd, swimCursor, [parser, FxNodeCloseType.notClosed]);
+        pushStep(steps, FxEventType.startTagEnd, swimCursor, [adapter, FxNodeCloseType.notClosed]);
     }
 
     return steps;
 };
 
 export const tryParseEndTag = (
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     xml: string,
     currentCursor: FxCursorPosition,
     options: FxParseOptions
@@ -296,9 +296,9 @@ export const tryParseEndTag = (
         1
     ); // 左边界符期待的结束坐标
     let leftBoundaryActualEndCursor: FxCursorPosition; // 左边界符实际的结束坐标
-    if (parser.nodeType === FxNodeType.element) {
+    if (adapter.nodeType === FxNodeType.element) {
         leftBoundaryActualEndCursor = ignoreSpaceIsHeadTail(xml, currentCursor, "<", "/");
-    } else if (parser.nodeType === FxNodeType.dtd) {
+    } else if (adapter.nodeType === FxNodeType.dtd) {
         leftBoundaryActualEndCursor = ignoreSpaceIsHeadTail(xml, currentCursor, "]", ">");
     } else {
         return [];
@@ -316,7 +316,7 @@ export const tryParseEndTag = (
             DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
             xml,
             swimCursor,
-            parser,
+            adapter,
             "",
             FxBoundaryPosition.left,
             steps
@@ -333,9 +333,9 @@ export const tryParseEndTag = (
     // 将光标移动到【左边界符实际的结束坐标】
     Object.assign(swimCursor, leftBoundaryActualEndCursor);
 
-    if (parser.nodeType === FxNodeType.dtd) {
+    if (adapter.nodeType === FxNodeType.dtd) {
         pushStep(steps, FxEventType.endTagEnd, swimCursor);
-        pushStep(steps, FxEventType.nodeEnd, swimCursor, parser);
+        pushStep(steps, FxEventType.nodeEnd, swimCursor, adapter);
         return steps;
     }
 
@@ -343,11 +343,11 @@ export const tryParseEndTag = (
     moveCursor(swimCursor, 0, 1, 1);
 
     const closeEndTag = (nodeName: string, cursor: FxCursorPosition) => {
-        if (!checkAllowNodeNotClose(null, null, parser, nodeName, options, xml, cursor, steps)) {
+        if (!checkAllowNodeNotClose(null, null, adapter, nodeName, options, xml, cursor, steps)) {
             return pushStep(steps, FxEventType.error, cursor, TAG_NOT_CLOSE);
         }
         pushStep(steps, FxEventType.endTagEnd, cursor, nodeName);
-        pushStep(steps, FxEventType.nodeEnd, cursor, [parser, FxNodeCloseType.notClosed]);
+        pushStep(steps, FxEventType.nodeEnd, cursor, [adapter, FxNodeCloseType.notClosed]);
     };
 
     const xmlLength = xml.length;
@@ -409,7 +409,7 @@ export const tryParseEndTag = (
                 DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
                 xml,
                 tagNameExpectedStartCursor,
-                parser,
+                adapter,
                 "",
                 FxBoundaryPosition.left,
                 steps
@@ -430,7 +430,7 @@ export const tryParseEndTag = (
                 DEFAULT_PARSE_OPTIONS.allowNodeNameEmpty,
                 xml,
                 tagNameExpectedStartCursor,
-                parser,
+                adapter,
                 steps
             )
         ) {
@@ -450,7 +450,7 @@ export const tryParseEndTag = (
             DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
             xml,
             tagNameExpectedStartCursor,
-            parser,
+            adapter,
             tagName,
             FxBoundaryPosition.left,
             steps
@@ -466,7 +466,7 @@ export const tryParseEndTag = (
             DEFAULT_PARSE_OPTIONS.allowTagNameHasSpace,
             xml,
             tagNameSpaceCursor,
-            parser,
+            adapter,
             tagName
         )
     ) {
@@ -486,7 +486,7 @@ export const tryParseEndTag = (
             DEFAULT_PARSE_OPTIONS.allowEndTagBoundaryNearSpace,
             xml,
             rightBoundaryExpectedCursor,
-            parser,
+            adapter,
             "",
             FxBoundaryPosition.right,
             steps
@@ -496,7 +496,7 @@ export const tryParseEndTag = (
     }
     pushStep(steps, FxEventType.endTagEnd, rightBoundaryActualCursor, tagName);
     pushStep(steps, FxEventType.nodeEnd, rightBoundaryActualCursor, [
-        parser,
+        adapter,
         FxNodeCloseType.fullClosed,
     ]);
     return steps;
@@ -528,7 +528,7 @@ const equalTagName = (
 };
 
 export const matchTag = (
-    parser: FxNodeAdapter,
+    adapter: FxNodeAdapter,
     context: FxParseContext,
     endTagSteps: FxTryStep[]
 ): FxTryStep[] => {
@@ -537,7 +537,7 @@ export const matchTag = (
         const endTagEndStep = endTagSteps.find((item) => item.step === FxEventType.endTagEnd);
         const endTagName = endTagEndStep.data as string;
         let matchStartTagLevel: number = -1;
-        if (parser.nodeType === FxNodeType.element) {
+        if (adapter.nodeType === FxNodeType.element) {
             matchStartTagLevel = findStartTagLevel(endTagSteps, context, (node: FxNode) => {
                 return equalTagName(endTagName, node, context);
             });
@@ -557,7 +557,7 @@ export const matchTag = (
                 node = node ? node.parent : context.currentNode;
                 const nodeLastStep = node.steps[node.steps.length - 1];
                 const nodeFirstStep = node.steps[0];
-                if (!checkAllowNodeNotClose(node, context, node.parser)) {
+                if (!checkAllowNodeNotClose(node, context, node.adapter)) {
                     pushStep(endTagSteps, FxEventType.error, nodeLastStep.cursor, TAG_NOT_CLOSE);
                     break;
                 }

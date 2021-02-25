@@ -3,6 +3,7 @@ import { CDATAParser } from "./node/cdata";
 import { ElementParser } from "./node/element";
 import { DtdParser } from "./node/dtd";
 import { ProcessingInstructionParser } from "./node/pi";
+import { TextAdapter } from "./node/text";
 import {
     FxEventHandler,
     FxEventType,
@@ -23,6 +24,7 @@ const DEFAULT_NODE_PARSERS = [
     ProcessingInstructionParser,
     DtdParser,
     ElementParser,
+    TextAdapter,
 ];
 DEFAULT_PARSE_OPTIONS.nodeAdapters = [...DEFAULT_NODE_PARSERS];
 

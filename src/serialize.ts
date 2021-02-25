@@ -1,6 +1,6 @@
 import { FxNodeJSON, FxSerializeOptions } from "./types";
 import { filterOptions, findNodeSerializer } from "./util";
-import { TextParser } from "./node/text";
+import { TextAdapter } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
 export const serialize = (
     nodes: FxNodeJSON | FxNodeJSON[],
@@ -27,7 +27,7 @@ export const serialize = (
         let xml = "";
         nodes.forEach((node) => {
             let serializer = findNodeSerializer(node, nodes, rootNodes, options, parentNode);
-            serializer = serializer || TextParser;
+            serializer = serializer || TextAdapter;
             let res = serializer.serialize(
                 node,
                 nodes,

@@ -132,26 +132,26 @@ export interface FxLoopHookHandler {
     (context: FxParseContext): number;
 }
 export interface FxOptionChecker {
-    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter, steps: FxTryStep[]): boolean;
+    (xml: string, cursor: FxCursorPosition, adapter: FxNodeAdapter, steps: FxTryStep[]): boolean;
 }
 export interface FxEqualNameChecker {
     (endTagName: string, nodeAnterior: FxNode, context: FxParseContext): boolean;
 }
 export interface FxOptionDisposal<T> {
-    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter): T;
+    (xml: string, cursor: FxCursorPosition, adapter: FxNodeAdapter): T;
 }
 export interface FxAllowNearTagBoundarySpace {
     (
         xml: string,
         cursor: FxCursorPosition,
-        parser: FxNodeAdapter,
+        adapter: FxNodeAdapter,
         tagName?: string,
         spacePosition?: FxBoundaryPosition,
         steps?: FxTryStep[]
     ): boolean | FxBoundaryPosition;
 }
 export interface FxAllowTagNameHasSpace {
-    (xml: string, cursor: FxCursorPosition, parser: FxNodeAdapter, tagName: string): boolean;
+    (xml: string, cursor: FxCursorPosition, adapter: FxNodeAdapter, tagName: string): boolean;
 }
 export enum FxBoundaryPosition {
     left = "left",
@@ -215,14 +215,18 @@ export enum FxNodeParserAllowNodeNotCloseOption {
     followParserOptions = "followParserOptions",
 }
 export interface FxAllowNodeNotCloseChecker {
-    (onlyAnteriorNode: FxNode, context: FxParseContext, parser: FxNodeAdapter): boolean;
+    (onlyAnteriorNode: FxNode, context: FxParseContext, adapter: FxNodeAdapter): boolean;
     (
         xml: string,
         cursor: FxCursorPosition,
-        parser: FxNodeAdapter,
+        adapter: FxNodeAdapter,
         steps: FxTryStep[],
         nodeName?: string
     ): boolean;
+}
+
+export interface FxContentEndChecker {
+    (xml: string, cursor: FxCursorPosition, options: FxParseOptions, parentNode?: FxNode): boolean;
 }
 export interface FxNodeAdapter {
     nodeType: FxNodeType;
@@ -232,6 +236,7 @@ export interface FxNodeAdapter {
     attrRightBoundaryChar?: string | RegExp;
     attrBoundaryCharNeedEqual?: boolean;
     allowNodeNotClose?: FxNodeParserAllowNodeNotCloseOption | FxAllowNodeNotCloseChecker;
+    contentEndChecker?: FxContentEndChecker;
     parseMatch: string | RegExp | FxNodeParserMatcher;
     parse(context: FxParseContext, parentNodeParser?: FxNodeAdapter);
     checkAttrsEnd?(
@@ -319,7 +324,7 @@ export interface FxNodeJSON {
     steps?: FxTryStep[];
 }
 export interface FxNode extends FxNodeJSON {
-    parser: FxNodeAdapter;
+    adapter: FxNodeAdapter;
     locationInfo: FxNodeLocationInfo;
     children?: FxNode[];
     attrs?: FxNode[];

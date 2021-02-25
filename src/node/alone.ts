@@ -15,17 +15,14 @@ export const tryParseAloneNode = (
     cursor: FxCursorPosition,
     startTagText: string,
     endTagText: string,
-    parser: FxNodeAdapter
+    adapter: FxNodeAdapter
 ): FxTryStep[] => {
     const steps: FxTryStep[] = [];
     const xmlLength = xml.length;
-    pushStep(steps, FxEventType.nodeStart, cursor, parser);
+    pushStep(steps, FxEventType.nodeStart, cursor, adapter);
     pushStep(steps, FxEventType.startTagStart, cursor);
     moveCursor(cursor, 0, startTagText.length - 1, startTagText.length - 1);
-    pushStep(steps, FxEventType.startTagEnd, cursor, [
-        parser,
-        FxNodeCloseType.startTagClosed,
-    ]);
+    pushStep(steps, FxEventType.startTagEnd, cursor, [adapter, FxNodeCloseType.startTagClosed]);
     moveCursor(cursor, 0, 1, 1);
     pushStep(steps, FxEventType.nodeContentStart, cursor);
     let content = "";
@@ -41,10 +38,7 @@ export const tryParseAloneNode = (
             pushStep(steps, FxEventType.endTagStart, cursor);
             moveCursor(cursor, 0, endTagText.length - 1, endTagText.length - 1);
             pushStep(steps, FxEventType.endTagEnd, cursor);
-            pushStep(steps, FxEventType.nodeEnd, cursor, [
-                parser,
-                FxNodeCloseType.fullClosed,
-            ]);
+            pushStep(steps, FxEventType.nodeEnd, cursor, [adapter, FxNodeCloseType.fullClosed]);
             moveCursor(cursor, 0, 1, 1);
             break;
         }
@@ -60,7 +54,7 @@ export const parseAloneNode = (
     context: FxParseContext,
     startTagText: string,
     endTagText: string,
-    parser: FxNodeAdapter
+    adapter: FxNodeAdapter
 ) => {
     const steps = tryParseAloneNode(
         context.xml,
@@ -72,7 +66,7 @@ export const parseAloneNode = (
         },
         startTagText,
         endTagText,
-        parser
+        adapter
     );
     boundStepsToContext(steps, context);
 };

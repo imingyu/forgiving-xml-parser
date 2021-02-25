@@ -1,4 +1,10 @@
-import { currentIsLineBreak, findNodeParser, isElementEndTagBegin, moveCursor } from "../util";
+import {
+    currentIsLineBreak,
+    findNodeAdapter,
+    isElementEndTagBegin,
+    moveCursor,
+    toCursor,
+} from "../util";
 import { boundStepsToContext } from "../option";
 import {
     FxCursorPosition,
@@ -22,14 +28,12 @@ export const tryParseText = (
 ): FxTryStep[] => {
     const steps: FxTryStep[] = [];
     const xmlLength = xml.length;
-    const parentIsScriptElement =
-        parentNode && parentNode.type === FxNodeType.element && parentNode.name === "script";
     steps.push({
         step: FxEventType.nodeStart,
         cursor: {
             ...cursor,
         },
-        data: TextParser,
+        data: TextAdapter,
     });
     steps.push({
         step: FxEventType.nodeContentStart,
@@ -45,22 +49,7 @@ export const tryParseText = (
         if (brType !== -1) {
             moveCursor(cursor, 1, -cursor.column, !brType ? 0 : 1);
         }
-        const nextCharCousor: FxCursorPosition = {
-            lineNumber: cursor.lineNumber,
-            offset: cursor.offset + 1,
-            column: cursor.column + 1,
-        };
-        let nextNewNodeParse;
-        if (parentIsScriptElement) {
-            // 如果当前text的父元素是script标签，则一直找到</script>才能开始下一个Parser
-            const nextIsElementEndTag = isElementEndTagBegin(xml, nextCharCousor);
-            nextNewNodeParse =
-                nextIsElementEndTag && /^<\s*\/\s*script/.test(xml.substr(nextCharCousor.offset));
-        } else {
-            nextNewNodeParse = !!findNodeParser(xml, nextCharCousor, options);
-        }
-
-        if (cursor.offset >= xmlLength - 1 || nextNewNodeParse) {
+        if (TextAdapter.contentEndChecker(xml, cursor, options, parentNode)) {
             steps.push({
                 step: FxEventType.nodeContentEnd,
                 cursor: {
@@ -73,7 +62,7 @@ export const tryParseText = (
                 cursor: {
                     ...cursor,
                 },
-                data: [TextParser, FxNodeCloseType.fullClosed],
+                data: [TextAdapter, FxNodeCloseType.fullClosed],
             });
             break;
         }
@@ -81,9 +70,35 @@ export const tryParseText = (
     return steps;
 };
 
-export const TextParser: FxNodeAdapter = {
+const REG_SCRIPE_END_TAG = /^<\s*\/\s*script/;
+export const TextAdapter: FxNodeAdapter = {
     nodeNature: FxNodeNature.alone,
     nodeType: FxNodeType.text,
+    contentEndChecker(
+        xml: string,
+        cursor: FxCursorPosition,
+        options: FxParseOptions,
+        parentNode?: FxNode
+    ): boolean {
+        const nextCharCousor: FxCursorPosition = moveCursor(toCursor(cursor), 0, 1, 1);
+        let nextNewNodeParse;
+        const parentIsScriptElement =
+            parentNode && parentNode.type === FxNodeType.element && parentNode.name === "script";
+        if (parentIsScriptElement) {
+            // 如果当前text的父元素是script标签，则一直找到</script>才能开始下一个Parser
+            const nextIsElementEndTag = isElementEndTagBegin(xml, nextCharCousor);
+            nextNewNodeParse =
+                nextIsElementEndTag && REG_SCRIPE_END_TAG.test(xml.substr(nextCharCousor.offset));
+        } else {
+            const adapter = findNodeAdapter(xml, nextCharCousor, options);
+            nextNewNodeParse = adapter && adapter.nodeType !== FxNodeType.text ? true : false;
+        }
+
+        if (cursor.offset >= xml.length - 1 || nextNewNodeParse) {
+            return true;
+        }
+        return false;
+    },
     parseMatch() {
         return true;
     },

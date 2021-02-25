@@ -1,4 +1,5 @@
 import {
+    FxEventType,
     FxNodeJSON,
     FxParseContext,
     FxParseOptions,
@@ -12,13 +13,14 @@ import {
     nodeToJSON,
     lxWrongToJSON,
     moveCursor,
-    findNodeParser,
+    findNodeAdapter,
     isFunc,
     filterOptions,
     stepToJSON,
 } from "./util";
-import { TextParser } from "./node/text";
 import { DEFAULT_PARSE_OPTIONS } from "./var";
+import { fireEvent } from "./option";
+import { NOT_MATCH_ADAPTER } from "./message";
 
 export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
     options = filterOptions(DEFAULT_PARSE_OPTIONS, options);
@@ -36,7 +38,7 @@ export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
     };
     try {
         for (; context.offset < context.xmlLength; moveCursor(context, 0, 1, 1)) {
-            const parser = findNodeParser(
+            const adapter = findNodeAdapter(
                 context.xml,
                 {
                     lineNumber: context.lineNumber,
@@ -45,11 +47,18 @@ export const parse = (xml: string, options?: FxParseOptions): FxParseResult => {
                 },
                 context.options
             );
-            if (parser) {
-                parser.parse(context);
+            if (adapter) {
+                adapter.parse(context);
                 continue;
+            } else {
+                const err: FxWrong = (new Error(NOT_MATCH_ADAPTER.message) as unknown) as FxWrong;
+                Object.assign(err, NOT_MATCH_ADAPTER);
+                err.offset = context.offset;
+                err.lineNumber = context.lineNumber;
+                err.column = context.column;
+                fireEvent(FxEventType.error, context, err as FxWrong);
+                throw err;
             }
-            TextParser.parse(context);
         }
         return {
             xml,
