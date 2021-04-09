@@ -24,6 +24,7 @@ import {
     setContextMaxCursor,
     setNodeLocationByCursor,
 } from "./util";
+import { FxBoundaryPositionMap, FxNodeCloseTypeMap } from "./enum-map";
 export const boundStepsToContext = (
     steps: FxTryStep[],
     context?: FxParseContext,
@@ -149,7 +150,7 @@ export const boundStepsToContext = (
             }
         } else if (step === FxEventType.startTagEnd) {
             if (context.currentNode) {
-                if (Array.isArray(data) && (data[1] as FxNodeCloseType) in FxNodeCloseType) {
+                if (Array.isArray(data) && FxNodeCloseTypeMap[data[1] as FxNodeCloseType]) {
                     context.currentNode.closeType = data[1] as FxNodeCloseType;
                 }
                 context.currentNode.steps.push(currentStepItem);
@@ -192,7 +193,7 @@ export const boundStepsToContext = (
                 if (
                     Array.isArray(data) &&
                     data[1] &&
-                    (data[1] as FxNodeCloseType) in FxNodeCloseType
+                    FxNodeCloseTypeMap[data[1] as FxNodeCloseType]
                 ) {
                     if (
                         !(
@@ -295,7 +296,7 @@ export const checkTagBoundaryNearSpace = <
             spacePosition,
             steps
         );
-        if ((res as FxBoundaryPosition) in FxBoundaryPosition) {
+        if (FxBoundaryPositionMap[res as FxBoundaryPosition]) {
             return res === spacePosition;
         }
         return !!res;
@@ -303,7 +304,7 @@ export const checkTagBoundaryNearSpace = <
     if (optionValue instanceof RegExp) {
         return optionValue.test(tagName);
     }
-    if ((optionValue as FxBoundaryPosition) in FxBoundaryPosition) {
+    if (FxBoundaryPositionMap[optionValue as FxBoundaryPosition]) {
         return optionValue === spacePosition;
     }
     return !!optionValue;
@@ -353,8 +354,8 @@ export const checkOptionAllow = <
     }
     if (
         optionName === "allowStartTagBoundaryNearSpace" &&
-        (options[optionName] as string) in FxBoundaryPosition &&
-        (optionCheckerArgs[optionCheckerArgs.length - 1] as string) in FxBoundaryPosition
+        FxBoundaryPositionMap[options[optionName] as string] &&
+        FxBoundaryPositionMap[optionCheckerArgs[optionCheckerArgs.length - 1] as string]
     ) {
         return optionCheckerArgs[optionCheckerArgs.length - 1] === options[optionName];
     }

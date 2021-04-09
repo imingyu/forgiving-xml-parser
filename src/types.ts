@@ -1,4 +1,4 @@
-export enum FxNodeType {
+export const enum FxNodeType {
     // <!-- -->
     comment = "comment",
     // <span>
@@ -14,13 +14,18 @@ export enum FxNodeType {
     // 自定义的
     custom = "custom",
 }
-export enum FxParseAttrTarget {
+export const enum FxNodeParserAllowNodeNotCloseOption {
+    allow = "allow",
+    notAllow = "notAllow",
+    followParserOptions = "followParserOptions",
+}
+export const enum FxParseAttrTarget {
     name = "name",
     equal = "equal",
     leftBoundary = "leftBoundary",
     content = "content",
 }
-export enum FxEventType {
+export const enum FxEventType {
     nodeStart = "nodeStart",
     nodeEnd = "nodeEnd",
     nodeNameStart = "nodeNameStart",
@@ -38,6 +43,35 @@ export enum FxEventType {
     nodeContentEnd = "nodeContentEnd",
     error = "error",
     warn = "warn",
+}
+export const enum FxNodeCloseType {
+    notClosed = "notClosed",
+    fullClosed = "fullClosed",
+    selfCloseing = "selfCloseing",
+    startTagClosed = "startTagClosed",
+}
+export const enum FxNodeNature {
+    alone = "alone",
+    children = "children",
+}
+export const enum FxAttrMoreEqualDisposal {
+    throwError = "throwError",
+    merge = "merge",
+    newAttr = "newAttr",
+}
+export const enum StartTagMoreLeftBoundaryCharDisposal {
+    throwError = "throwError",
+    ignore = "ignore",
+    // 将字符追加到tagName
+    accumulationToName = "accumulationToName",
+    // 当做一个新的node处理
+    newNode = "newNode",
+    // 当做当前的子node处理
+    childNode = "childNode",
+}
+export const enum FxBoundaryPosition {
+    left = "left",
+    right = "right",
 }
 export declare type FxPick<T, K extends keyof T> = {
     [P in K]: T[P];
@@ -113,21 +147,7 @@ export interface FxTryStep {
 export interface FxNodeTryStep extends FxTryStep {
     target: FxNode;
 }
-export enum FxAttrMoreEqualDisposal {
-    throwError = "throwError",
-    merge = "merge",
-    newAttr = "newAttr",
-}
-export enum StartTagMoreLeftBoundaryCharDisposal {
-    throwError = "throwError",
-    ignore = "ignore",
-    // 将字符追加到tagName
-    accumulationToName = "accumulationToName",
-    // 当做一个新的node处理
-    newNode = "newNode",
-    // 当做当前的子node处理
-    childNode = "childNode",
-}
+
 export interface FxLoopHookHandler {
     (context: FxParseContext): number;
 }
@@ -153,10 +173,7 @@ export interface FxAllowNearTagBoundarySpace {
 export interface FxAllowTagNameHasSpace {
     (xml: string, cursor: FxCursorPosition, adapter: FxNodeAdapter, tagName: string): boolean;
 }
-export enum FxBoundaryPosition {
-    left = "left",
-    right = "right",
-}
+
 export interface FxParseBaseOptions {
     // 是否允许开始标签的左边界符附近存在空白字符；正则会匹配节点名称，命中规则才生效；函数会将当前光标位置传入，返回true规则才生效
     allowStartTagBoundaryNearSpace?:
@@ -188,11 +205,6 @@ export interface FxParseOptions extends FxParseBaseOptions {
     nodeAdapters?: FxNodeAdapter[];
 }
 
-export enum FxNodeNature {
-    alone = "alone",
-    children = "children",
-}
-
 export interface FxAttrParseCallback {
     (attrSteps: FxTryStep[], readyAttrsSteps: FxTryStep[]): boolean;
 }
@@ -209,11 +221,6 @@ export interface FxNodeSerializer {
     (nodes: FxNodeJSON[], options: FxSerializeOptions, parentNode?: FxNodeJSON): string;
 }
 
-export enum FxNodeParserAllowNodeNotCloseOption {
-    allow = "allow",
-    notAllow = "notAllow",
-    followParserOptions = "followParserOptions",
-}
 export interface FxAllowNodeNotCloseChecker {
     (onlyAnteriorNode: FxNode, context: FxParseContext, adapter: FxNodeAdapter): boolean;
     (
@@ -303,12 +310,7 @@ export interface FxNodeLocationInfo extends FxLocation {
     endTag?: FxNodeTagLocationInfo; // endTag部分的代码位置信息
     attrs?: FxNodeLocationInfo[]; // 属性部分的代码位置信息，数组顺序为每个属性出现的顺序
 }
-export enum FxNodeCloseType {
-    notClosed = "notClosed",
-    fullClosed = "fullClosed",
-    selfCloseing = "selfCloseing",
-    startTagClosed = "startTagClosed",
-}
+
 export interface FxNodeJSON {
     type: FxNodeType;
     customType?: string;

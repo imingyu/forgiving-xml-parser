@@ -70,7 +70,7 @@ export const tryParseText = (
     return steps;
 };
 
-const REG_SCRIPE_END_TAG = /^<\s*\/\s*script/;
+const REG_SCRIPE_END_TAG = /^<\s*\/\s*script\s*/;
 export const TextAdapter: FxNodeAdapter = {
     nodeNature: FxNodeNature.alone,
     nodeType: FxNodeType.text,
