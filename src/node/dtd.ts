@@ -36,7 +36,17 @@ export const DtdParser: FxNodeAdapter = {
     nodeType: FxNodeType.dtd,
     attrLeftBoundaryChar: /^'|^"|^\(/,
     attrRightBoundaryChar: /^'|^"|^\)/,
-    parseMatch: /^<\s*\!|^>|^\]\s*>/,
+    parseMatch: (xml: string, cursor: FxCursorPosition, options: FxParseOptions) => {
+        const match = /^<\s*\!|^>|^\]\s*>/.test(xml.substring(cursor.offset));
+        if (!match) {
+            return false;
+        }
+        if (xml[cursor.offset] === ">") {
+            const before = xml.substring(0, cursor.offset);
+            return /^<\s*\!/.test(before);
+        }
+        return true;
+    },
     checkAttrsEnd(xml: string, cursor: FxCursorPosition) {
         const char = xml[cursor.offset];
         if (char === ">" || char === "[") {

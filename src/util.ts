@@ -24,7 +24,7 @@ import {
 import { REX_SPACE } from "./var";
 
 export const createFxError = (msg: FxMessage, cursor: FxCursorPosition): FxWrong => {
-    const err = (new Error(msg.message) as unknown) as FxWrong;
+    const err = new Error(msg.message) as unknown as FxWrong;
     err.code = msg.code;
     if (msg.messageCN) {
         err.messageCN = msg.messageCN;
@@ -64,7 +64,7 @@ export const createStep = (
 ): FxTryStep => {
     let wrong: FxWrong;
     if (data) {
-        let tsData = (data as unknown) as FxWrong;
+        let tsData = data as unknown as FxWrong;
         if (tsData.code && tsData.message && !tsData.stack) {
             wrong = createFxError(tsData, cursor);
         }

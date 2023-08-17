@@ -39,7 +39,27 @@ export const ElementParser: FxNodeAdapter = {
     attrRightBoundaryChar: /^'|^"/,
     attrBoundaryCharNeedEqual: true,
     allowNodeNotClose: FxNodeParserAllowNodeNotCloseOption.followParserOptions,
-    parseMatch: /^<\s*\/|^</,
+    parseMatch: (xml, cursor, options) => {
+        const str = xml.substring(cursor.offset);
+        const mt = /^<\s*\/|^</.test(str);
+        if (!mt) {
+            return false;
+        }
+        let firstChar;
+        for (let i = 1, len = str.length; i < len; i++) {
+            if (str[i] === "/" || str[i] === ">") {
+                break;
+            }
+            if (!/\s/.test(str[i])) {
+                firstChar = str[i];
+                break;
+            }
+        }
+        if (!firstChar) {
+            return true;
+        }
+        return /[a-zA-Z0-9\-_]/.test(firstChar);
+    },
     checkAttrsEnd(xml: string, cursor: FxCursorPosition) {
         const char = xml[cursor.offset];
         if (char === ">") {
