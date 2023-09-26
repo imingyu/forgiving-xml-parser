@@ -4,6 +4,7 @@ import {
     ATTR_CONTENT_HAS_BR,
     ATTR_EQUAL_NEAR_SPACE,
     ATTR_HAS_MORE_EQUAL,
+    ATTR_MORE_LEFT_BOUNDARY,
     ATTR_NAME_IS_EMPTY,
     ATTR_UNEXPECTED_BOUNDARY,
 } from "../message";
@@ -29,6 +30,7 @@ import {
     createFxError,
     currentIsLineBreak,
     equalCursor,
+    findStrCursor,
     moveCursor,
     notSpaceCharCursor,
     pushStep,
@@ -414,6 +416,24 @@ export const tryParseAttr = (
             }
             if (!leftBoundaryValue && findTarget === FxParseAttrTarget.content) {
                 throw createFxError(ATTR_UNEXPECTED_BOUNDARY, cursor);
+            }
+            if (
+                leftBoundaryValue &&
+                findTarget === FxParseAttrTarget.content &&
+                xml[cursor.offset - 1] === "\\"
+            ) {
+                // 存在转义“\"”的情况
+                const another = findStrCursor(xml, cursor, '\\"');
+                if (another[0]) {
+                    plusContent(xml.substring(cursor.offset, another[2].offset + 1));
+                    moveCursor(another[2], 0, 1, 1);
+                    Object.assign(cursor, another[2]);
+                    if (checkAttrEnd()) {
+                        return returnEnd();
+                    }
+                    continue;
+                }
+                throw createFxError(ATTR_MORE_LEFT_BOUNDARY, cursor);
             }
             if (
                 leftBoundaryValue &&

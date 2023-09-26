@@ -71,6 +71,11 @@ export const ATTR_BOUNDARY_NOT_RIGHT: FxMessage = {
     message: "Attr not right boundary char",
     messageCN: "属性缺少右边界符",
 };
+export const ATTR_MORE_LEFT_BOUNDARY: FxMessage = {
+    code: 15,
+    message: "Attr has more left boundary char",
+    messageCN: "属性包含多个左界符",
+};
 export const ATTR_UNEXPECTED_BOUNDARY: FxMessage = {
     code: 16,
     message: "Attr boundary char position is wrong",
